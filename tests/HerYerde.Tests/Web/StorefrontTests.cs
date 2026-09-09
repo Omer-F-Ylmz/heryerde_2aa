@@ -147,7 +147,46 @@ public sealed class StorefrontTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Kategori_sayfasi_24_luk_sayfalama_ve_fiyat_siralamasi()
+    public async Task Kategori_sayfasi_24_luk_sayfalanir()
+    {
+        await SeedTopluAsync();
+        var client = _factory.CreateClient();
+
+        var page1 = await GetHtmlAsync(client, "/ev/toplu");
+        Assert.Equal(24, Regex.Matches(page1, "<article class=\"card\"").Count);
+        Assert.Contains("rel=\"next\"", page1);
+        Assert.Contains("aria-current=\"page\"", page1);
+
+        var page2 = await GetHtmlAsync(client, "/ev/toplu?sayfa=2");
+        Assert.Equal(6, Regex.Matches(page2, "<article class=\"card\"").Count);
+        Assert.Contains("rel=\"prev\"", page2);
+
+        var all = await GetHtmlAsync(client, "/ev");
+        Assert.Contains("href=\"/ev/toplu\"", all);
+        await GetHtmlAsync(client, "/ev/olmayan-alt", HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Kategori_sayfasi_fiyata_gore_artan_ve_yeniye_gore_azalan_siralanir()
+    {
+        await SeedTopluAsync();
+        var client = _factory.CreateClient();
+
+        var byPrice = await GetHtmlAsync(client, "/ev/toplu?sirala=fiyat");
+        var cheapest = byPrice.IndexOf("Toplu ürün 30<", StringComparison.Ordinal);
+        var second = byPrice.IndexOf("Toplu ürün 29<", StringComparison.Ordinal);
+        Assert.True(cheapest >= 0 && second > cheapest, "fiyat sıralaması artan değil");
+        Assert.DoesNotContain("Toplu ürün 1<", byPrice);
+        Assert.Matches("<a class=\"tab\"[^>]*sirala=fiyat[^>]*aria-current=\"true\"", byPrice);
+
+        var byNew = await GetHtmlAsync(client, "/ev/toplu");
+        var newest = byNew.IndexOf("Toplu ürün 30<", StringComparison.Ordinal);
+        var older = byNew.IndexOf("Toplu ürün 29<", StringComparison.Ordinal);
+        Assert.True(newest >= 0 && older > newest, "yeni sıralaması azalan değil");
+    }
+
+    /// <summary>Ev altına "Toplu" alt kategorisi ve 30 ürün: fiyat 1000-i, i büyüdükçe daha yeni.</summary>
+    private static async Task SeedTopluAsync()
     {
         await using var context = TestDb.NewContext();
         var ev = await new EfCategoryDal(context).GetAsync(c => c.Slug == "ev");
@@ -165,26 +204,6 @@ public sealed class StorefrontTests : IAsyncLifetime
         }
 
         await new EfUnitOfWork(context).SaveChangesAsync();
-        var client = _factory.CreateClient();
-
-        var page1 = await GetHtmlAsync(client, "/ev/toplu");
-        Assert.Equal(24, Regex.Matches(page1, "<article class=\"card\"").Count);
-        Assert.Contains("rel=\"next\"", page1);
-        Assert.Contains("aria-current=\"page\"", page1);
-
-        var page2 = await GetHtmlAsync(client, "/ev/toplu?sayfa=2");
-        Assert.Equal(6, Regex.Matches(page2, "<article class=\"card\"").Count);
-        Assert.Contains("rel=\"prev\"", page2);
-
-        var byPrice = await GetHtmlAsync(client, "/ev/toplu?sirala=fiyat");
-        var cheapest = byPrice.IndexOf("Toplu ürün 30<", StringComparison.Ordinal);
-        var second = byPrice.IndexOf("Toplu ürün 29<", StringComparison.Ordinal);
-        Assert.True(cheapest >= 0 && second > cheapest, "fiyat sıralaması artan değil");
-        Assert.DoesNotContain("Toplu ürün 1<", byPrice);
-
-        var all = await GetHtmlAsync(client, "/ev");
-        Assert.Contains("href=\"/ev/toplu\"", all);
-        await GetHtmlAsync(client, "/ev/olmayan-alt", HttpStatusCode.NotFound);
     }
 
     private static string CardOf(string html, string productName)
