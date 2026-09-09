@@ -14,10 +14,9 @@ public class StoreController(IProductService productService, ICategoryService ca
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
-        var (_, categories) = await categoryService.GetAllAsync(cancellationToken);
-        var slugById = categories.Data!.ToDictionary(c => c.Id, c => c.Slug);
-        var (_, all) = await productService.GetAllAsync(cancellationToken);
-        var products = all.Data!.Where(p => p.IsActive).ToList();
+        var (_, items) = await productService.GetActiveWithCategorySlugAsync(cancellationToken);
+        var categorySlugOf = items.Data!.ToDictionary(i => i.Product.Id, i => i.CategorySlug);
+        var products = items.Data!.Select(i => i.Product).ToList();
         var hero = StoreCatalog.PickHero(products, now);
         var arrivals = StoreCatalog.Sort(products, "yeni", now).Take(8).ToList();
 
@@ -33,9 +32,9 @@ public class StoreController(IProductService productService, ICategoryService ca
         return View(new HomeVm(
             hero,
             heroImage,
-            hero is null ? null : StoreCatalog.PlaceholderIcon(slugById.GetValueOrDefault(hero.CategoryId)),
+            hero is null ? null : StoreCatalog.PlaceholderIcon(categorySlugOf.GetValueOrDefault(hero.Id)),
             hero is null ? null : StoreCatalog.WhatsAppUrl(WhatsAppBase, hero.Name),
-            arrivals.Select((p, i) => StoreCatalog.Card(p, images.Data!, now, lazy: i >= 4, categorySlug: slugById.GetValueOrDefault(p.CategoryId))).ToList(),
+            arrivals.Select((p, i) => StoreCatalog.Card(p, images.Data!, now, lazy: i >= 4, categorySlug: categorySlugOf.GetValueOrDefault(p.Id))).ToList(),
             TestimonialSource.Load()));
     }
 

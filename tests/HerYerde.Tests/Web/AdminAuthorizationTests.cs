@@ -19,6 +19,7 @@ public sealed class AdminAuthorizationTests : IAsyncLifetime
     [InlineData("/admin")]
     [InlineData("/admin/products")]
     [InlineData("/admin/categories")]
+    [InlineData("/admin/orders")]
     public async Task Yetkisiz_ziyaretci_giris_sayfasina_yonlendirilir(string url)
     {
         var client = _factory.CreateNonRedirectingClient();

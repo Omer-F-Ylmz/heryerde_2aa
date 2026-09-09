@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using HerYerde.Business.Dtos;
 using HerYerde.Entities.Concrete;
+using HerYerde.Entities.Enums;
 
 namespace HerYerde.Web.Areas.Admin.Models;
 
@@ -142,4 +144,28 @@ public sealed class ImageFormViewModel
     [Range(0, 999)]
     [Display(Name = "Sıra")]
     public int SortOrder { get; set; }
+}
+
+public sealed class OrderListViewModel
+{
+    public List<Order> Orders { get; set; } = [];
+    public OrderStatus? Status { get; set; }
+    public string? Query { get; set; }
+}
+
+public sealed class OrderDetailViewModel
+{
+    public OrderDetail Detail { get; set; } = null!;
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>Sıralı akışta bir sonraki adım; yoksa (teslim/iptal) buton çıkmaz.</summary>
+    public OrderStatus? NextStatus => Detail.Order.Status switch
+    {
+        OrderStatus.Beklemede => OrderStatus.Onaylandi,
+        OrderStatus.Onaylandi => OrderStatus.Kargoda,
+        OrderStatus.Kargoda => OrderStatus.TeslimEdildi,
+        _ => null
+    };
+
+    public bool CanCancel => Detail.Order.Status == OrderStatus.Beklemede;
 }

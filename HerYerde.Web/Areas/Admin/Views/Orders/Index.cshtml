@@ -1,0 +1,82 @@
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@model OrderListViewModel
+@{
+    ViewData["Title"] = "Siparişler";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Satış</p>
+        <h1 class="display-2">Siparişler</h1>
+        <p class="page-head__note">Durum sırayla ilerler ve geri alınamaz; iptal yalnız beklemedeki siparişte yapılır.</p>
+    </div>
+</div>
+
+<form class="filters" method="get" asp-area="Admin" asp-controller="Orders" asp-action="Index">
+    <div class="field">
+        <label class="field__label" for="durum">Durum</label>
+        <select class="field__input" id="durum" name="durum">
+            <option value="">Tümü</option>
+            @foreach (var status in Enum.GetValues<OrderStatus>())
+            {
+                <option value="@((int)status)" selected="@(Model.Status == status)">@OrderLabels.For(status)</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label class="field__label" for="ara">Sipariş no veya telefon</label>
+        <input class="field__input" id="ara" name="ara" value="@Model.Query" autocomplete="off" placeholder="HY-20260910-0001" />
+    </div>
+    <button class="btn btn--secondary" type="submit">Süz</button>
+</form>
+
+@if (Model.Orders.Count == 0)
+{
+    <p class="empty surface-elevated">Bu süzgeçle sipariş yok.</p>
+}
+else
+{
+    <div class="table-wrap surface-elevated">
+        <table class="table">
+            <caption class="visually-hidden">Siparişler: numara, müşteri, tutar ve durum</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Sipariş</th>
+                    <th scope="col">Müşteri</th>
+                    <th scope="col">Ödeme</th>
+                    <th scope="col" class="table__num">Tutar</th>
+                    <th scope="col">Durum</th>
+                    <th scope="col"><span class="visually-hidden">İşlem</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var order in Model.Orders)
+            {
+                <tr>
+                    <th scope="row">
+                        <div class="cell-product">
+                            <span>@order.OrderNo</span>
+                            <span class="cell-mono">@order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                    </th>
+                    <td>
+                        <div class="cell-product">
+                            <span>@order.FullName</span>
+                            <span class="cell-mono">@order.Phone</span>
+                        </div>
+                    </td>
+                    <td>@(order.PaymentMethod == PaymentMethod.HavaleEft ? "Havale / EFT" : "Kapıda")</td>
+                    <td class="table__num"><span class="price">@Money.Tl(order.Total)</span></td>
+                    <td><partial name="Components/_StatusPill" model="order.Status" /></td>
+                    <td>
+                        <div class="table__actions">
+                            <a class="btn btn--ghost btn--sm" asp-area="Admin" asp-controller="Orders" asp-action="Detail" asp-route-id="@order.Id">Detay</a>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

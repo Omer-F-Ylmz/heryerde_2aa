@@ -1,0 +1,21 @@
+@using HerYerde.Web.Models
+@model OrderSummaryViewModel
+<div class="summary">
+    <h2 class="heading-3">Özet</h2>
+    <p class="summary__row">
+        <span>Ara toplam</span>
+        <span class="summary__value">@Money.Tl(Model.Subtotal)</span>
+    </p>
+    <p class="summary__row">
+        <span>Kargo</span>
+        <span class="summary__value">@Money.Tl(Model.ShippingFee)</span>
+    </p>
+    <p class="summary__row summary__row--total">
+        <span>Toplam</span>
+        <span class="summary__value">@Money.Tl(Model.Total)</span>
+    </p>
+    @if (Model.Note is not null)
+    {
+        <p class="summary__note">@Model.Note</p>
+    }
+</div>

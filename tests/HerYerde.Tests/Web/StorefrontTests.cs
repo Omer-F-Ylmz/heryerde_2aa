@@ -109,7 +109,9 @@ public sealed class StorefrontTests : IAsyncLifetime
         Assert.DoesNotContain("<fieldset", html);
         Assert.Contains("https://wa.me/905424970982?text=", html);
         Assert.Contains("Granit%20d%C3%B6k%C3%BCm%20tencere%20seti", html);
-        Assert.Matches("<button[^>]*disabled[^>]*title=\"[^\"]*[Yy]akında", html);
+        // Ev ürününde varyant yok: sepete ekle butonu doğrudan açık gelir (D4).
+        Assert.Matches("<button[^>]*data-add-button", html);
+        Assert.DoesNotMatch("<button[^>]*disabled[^>]*data-add-button", html);
     }
 
     [Fact]

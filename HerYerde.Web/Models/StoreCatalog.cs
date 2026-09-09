@@ -72,7 +72,10 @@ public static class StoreCatalog
     public static VariantPickerVm Picker(IEnumerable<ProductVariant> variants)
     {
         var list = variants.ToList();
-        return new VariantPickerVm(Group(list, v => v.Size), Group(list, v => v.Color));
+        return new VariantPickerVm(
+            Group(list, v => v.Size),
+            Group(list, v => v.Color),
+            list.Select(v => new VariantOptionVm(v.Id, v.Size, v.Color, v.Stock)).ToList());
 
         static List<VariantChipVm> Group(List<ProductVariant> list, Func<ProductVariant, string?> key)
             => list.Where(v => !string.IsNullOrWhiteSpace(key(v)))
@@ -127,4 +130,7 @@ public sealed record ProductPageVm(
     IReadOnlyList<ProductCardVm> Similar)
 {
     public string? PlaceholderIcon => StoreCatalog.PlaceholderIcon(CategorySlug);
+
+    /// <summary>Beden/renk seçimini varyant kimliğine çeviren tablo; sepet formu bunu okur.</summary>
+    public string VariantsJson => JsonSerializer.Serialize(Picker.Options ?? []);
 }

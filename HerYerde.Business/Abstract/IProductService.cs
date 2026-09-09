@@ -1,4 +1,5 @@
 using System.Net;
+using HerYerde.Business.Dtos;
 using HerYerde.Core.Utilities.Results;
 using HerYerde.Entities.Concrete;
 
@@ -10,6 +11,9 @@ public interface IProductService
 
     /// <summary>Okuma amaçlı: dönen kayıt izlenmez, üzerinde yapılan değişiklik veritabanına yazılmaz.</summary>
     Task<(HttpStatusCode, IDataResult<Product>)> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>Vitrin: yayındaki ürünler alt kategori slug'ıyla; ana sayfa ayrıca kategori sorgusu yapmaz.</summary>
+    Task<(HttpStatusCode, IDataResult<List<ProductListItem>>)> GetActiveWithCategorySlugAsync(CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IDataResult<Product>)> AddAsync(Product product, CancellationToken cancellationToken = default);
 

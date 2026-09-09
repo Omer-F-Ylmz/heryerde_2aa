@@ -1,0 +1,75 @@
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@model ThankYouViewModel
+@{
+    var order = Model.Detail.Order;
+    ViewData["Title"] = order.OrderNo + " siparişi";
+    var havale = order.PaymentMethod == PaymentMethod.HavaleEft;
+}
+
+<div class="container section">
+    <div class="thanks">
+        <div>
+            <p class="eyebrow">Siparişiniz alındı</p>
+            <h1 class="display-2 h-mark">Teşekkürler @order.FullName</h1>
+            <p class="thanks__no">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                @order.OrderNo
+            </p>
+        </div>
+
+        <div class="thanks__card">
+            <h2 class="heading-3">Sipariş özeti</h2>
+            @foreach (var item in Model.Detail.Items)
+            {
+                <p class="summary__row">
+                    <span>@item.ProductName × @item.Quantity</span>
+                    <span class="summary__value">@Money.Tl(item.UnitPrice * item.Quantity)</span>
+                </p>
+            }
+            <p class="summary__row">
+                <span>Kargo</span>
+                <span class="summary__value">@Money.Tl(order.ShippingFee)</span>
+            </p>
+            <p class="summary__row summary__row--total">
+                <span>Toplam</span>
+                <span class="summary__value">@Money.Tl(order.Total)</span>
+            </p>
+            <p class="summary__note">
+                <partial name="Components/_StatusPill" model="order.Status" />
+                @(havale ? "Havale / EFT" : "Kapıda ödeme") · @order.District, @order.City
+            </p>
+        </div>
+
+        @if (havale)
+        {
+            <div class="thanks__card">
+                <h2 class="heading-3">Havale bilgileri</h2>
+                <p>Açıklamaya sipariş numaranızı yazın; ödeme görüldüğünde kargoya veriyoruz.</p>
+                <div class="iban">
+                    <span class="iban__code" data-iban-value>@Model.Iban</span>
+                    <button class="btn btn--ghost btn--sm" type="button" data-iban-copy>
+                        <svg class="icon icon--sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16V4a2 2 0 0 1 2-2h10"/></svg>
+                        <span>IBAN'ı kopyala</span>
+                    </button>
+                    <span class="iban__done" data-iban-done hidden role="status">Kopyalandı</span>
+                </div>
+            </div>
+        }
+
+        <div>
+            <h2 class="heading-3">Bundan sonrası</h2>
+            <ol class="thanks__steps">
+                <li>@order.Phone numarasından sizi arayıp siparişi teyit ediyoruz.</li>
+                <li>@(havale ? "Ödeme hesabımıza geçtiğinde kargoya veriyoruz." : "Kargoya verip takip bilgisini paylaşıyoruz.")</li>
+                <li>Kargo ücreti alıcıya aittir.</li>
+            </ol>
+            <p>
+                <a class="btn btn--cta btn--lg" href="@Model.WhatsAppUrl" rel="noopener">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                    WhatsApp'tan siparişimi bildir
+                </a>
+            </p>
+        </div>
+    </div>
+</div>

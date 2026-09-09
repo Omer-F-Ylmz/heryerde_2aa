@@ -1,0 +1,112 @@
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@model OrderDetailViewModel
+@{
+    var order = Model.Detail.Order;
+    ViewData["Title"] = order.OrderNo;
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Sipariş</p>
+        <h1 class="display-2">@order.OrderNo</h1>
+        <p class="page-head__note">@order.CreatedAt.ToString("dd.MM.yyyy HH:mm") · <partial name="Components/_StatusPill" model="order.Status" /></p>
+    </div>
+    <a class="btn btn--ghost" asp-area="Admin" asp-controller="Orders" asp-action="Index">Listeye dön</a>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+<div class="surface-elevated form-card">
+    <dl class="order-facts">
+        <div>
+            <dt>Müşteri</dt>
+            <dd>@order.FullName<br />@order.Phone@(order.Email is null ? "" : " · " + order.Email)</dd>
+        </div>
+        <div>
+            <dt>Adres</dt>
+            <dd>@order.Address<br />@order.District / @order.City</dd>
+        </div>
+        <div>
+            <dt>Ödeme</dt>
+            <dd>@(order.PaymentMethod == PaymentMethod.HavaleEft ? "Havale / EFT" : "Kapıda ödeme")</dd>
+        </div>
+        <div>
+            <dt>Not</dt>
+            <dd>@(order.Note ?? "—")</dd>
+        </div>
+    </dl>
+
+    <div class="table-wrap">
+        <table class="table">
+            <caption class="visually-hidden">Sipariş satırları</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ürün</th>
+                    <th scope="col">Stok kodu</th>
+                    <th scope="col" class="table__num">Adet</th>
+                    <th scope="col" class="table__num">Birim</th>
+                    <th scope="col" class="table__num">Tutar</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model.Detail.Items)
+            {
+                <tr>
+                    <th scope="row">@item.ProductName</th>
+                    <td><span class="cell-mono">@item.Sku</span></td>
+                    <td class="table__num">@item.Quantity</td>
+                    <td class="table__num">@Money.Tl(item.UnitPrice)</td>
+                    <td class="table__num">@Money.Tl(item.UnitPrice * item.Quantity)</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <p class="summary__row">
+        <span>Ara toplam</span>
+        <span class="summary__value">@Money.Tl(order.Subtotal)</span>
+    </p>
+    <p class="summary__row">
+        <span>Kargo</span>
+        <span class="summary__value">@Money.Tl(order.ShippingFee)</span>
+    </p>
+    <p class="summary__row summary__row--total">
+        <span>Toplam</span>
+        <span class="summary__value">@Money.Tl(order.Total)</span>
+    </p>
+
+    <div class="order-actions">
+        @if (Model.NextStatus is { } next)
+        {
+            <form asp-area="Admin" asp-controller="Orders" asp-action="ChangeStatus" asp-route-id="@order.Id" method="post">
+                <input type="hidden" name="next" value="@((int)next)" />
+                <button class="btn btn--primary" type="submit">@NextLabel(next)</button>
+            </form>
+        }
+        @if (Model.CanCancel)
+        {
+            <form asp-area="Admin" asp-controller="Orders" asp-action="ChangeStatus" asp-route-id="@order.Id" method="post">
+                <input type="hidden" name="next" value="@((int)OrderStatus.IptalEdildi)" />
+                <button class="btn btn--danger" type="submit">Siparişi iptal et</button>
+            </form>
+        }
+        @if (Model.NextStatus is null && !Model.CanCancel)
+        {
+            <p class="side-card__note">Bu sipariş kapandı; durumu değişmez.</p>
+        }
+    </div>
+</div>
+
+@functions {
+    private static string NextLabel(OrderStatus next) => next switch
+    {
+        OrderStatus.Onaylandi => "Siparişi onayla",
+        OrderStatus.Kargoda => "Kargoya verdim",
+        _ => "Teslim edildi olarak işaretle"
+    };
+}

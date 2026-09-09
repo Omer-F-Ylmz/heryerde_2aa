@@ -43,7 +43,13 @@ public sealed record TestimonialVm(string Name, string Quote);
 
 public sealed record VariantChipVm(string Label, int Stock);
 
-public sealed record VariantPickerVm(IReadOnlyList<VariantChipVm> Sizes, IReadOnlyList<VariantChipVm> Colors);
+/// <summary>Sepete eklemede beden+renk seçimini varyant kimliğine çevirmek için.</summary>
+public sealed record VariantOptionVm(int Id, string? Size, string? Color, int Stock);
+
+public sealed record VariantPickerVm(
+    IReadOnlyList<VariantChipVm> Sizes,
+    IReadOnlyList<VariantChipVm> Colors,
+    IReadOnlyList<VariantOptionVm>? Options = null);
 
 public sealed record CategoryTabVm(string Name, string Url, bool Current);
 

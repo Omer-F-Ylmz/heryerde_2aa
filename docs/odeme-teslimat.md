@@ -1,4 +1,4 @@
-# Ödeme ve teslimat (D1: yalnız karar, akış D4'te)
+# Ödeme ve teslimat
 
 ## Ödeme yöntemleri
 `HerYerde.Entities.Enums.PaymentMethod`:
@@ -9,13 +9,18 @@
 | 2 | `HavaleEft` | Aktif | Sipariş sonrası IBAN paylaşılır; ödeme görülünce kargolanır. |
 | 3 | `KrediKarti` | Hayır | Sanal POS anlaşması sonrası devreye alınacak. |
 
-Sipariş kaydı, ödeme durumu ve doğrulama D4'te. D1'de yalnız bu enum vardır; UI'da seçim yoktur.
+Ödeme adımında (`/odeme`) yalnız ilk iki yöntem seçilebilir; `KrediKarti` gelen istekte 400 döner.
+Havale/EFT seçilince IBAN kutusu açılır (`Shop:Iban`).
 
 ## Teslimat
-- Kargo ücreti **alıcıya** aittir. Sipariş üzerinde `Order.shipping_fee` olarak D4'te tutulacak;
-  D1'de sipariş varlığı yoktur.
-- Ücretsiz kargo eşiği, kargo firması ve teslim süresi kararı D4'e bırakıldı.
+- Kargo ücreti **alıcıya** aittir: `appsettings` → `Shop:ShippingFee`, siparişe `order.shipping_fee`
+  olarak kopyalanır (sonradan ücret değişse de eski sipariş değişmez). Toplam = ara toplam + kargo.
+- Ücretsiz kargo eşiği ve kargo firması anlaşması henüz yok; kargo takip numarası D5'te.
+
+## Sipariş durumu
+`OrderStatus`: Beklemede → Onaylandi → Kargoda → TeslimEdildi. Geçiş tek yönlüdür, aşama atlanmaz
+ve geri alınmaz; iptal yalnız **Beklemede** anında yapılır. Kural: `Business/Rules/OrderRules`.
 
 ## İletişim
 - WhatsApp: `appsettings.json` → `Shop:WhatsApp` (`https://wa.me/905424970982`).
-  Vitrindeki buton D3'te eklenecek; D1'de yalnız konfigürasyon değeri durur.
+  Teşekkür sayfasındaki "siparişimi bildir" bağlantısı sipariş numarasını hazır metne koyar.

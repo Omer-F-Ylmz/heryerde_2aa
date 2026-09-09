@@ -14,6 +14,10 @@ public class HerYerdeContext : DbContext
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -92,6 +96,64 @@ public class HerYerdeContext : DbContext
             e.Property(a => a.FailedAttempts).HasColumnName("failed_attempts");
             e.Property(a => a.LockedUntil).HasColumnName("locked_until");
             e.HasIndex(a => a.Email).IsUnique().HasDatabaseName("ux_admin_user_email");
+        });
+
+        modelBuilder.Entity<Cart>(e =>
+        {
+            e.ToTable("cart");
+            e.HasKey(c => c.Id);
+            e.Property(c => c.Id).HasColumnName("id").ValueGeneratedNever();
+            e.Property(c => c.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<CartItem>(e =>
+        {
+            e.ToTable("cart_item", t => t.HasCheckConstraint("ck_cart_item_quantity", "[quantity] >= 1"));
+            e.HasKey(i => i.Id);
+            e.Property(i => i.Id).HasColumnName("id");
+            e.Property(i => i.CartId).HasColumnName("cart_id");
+            e.Property(i => i.ProductId).HasColumnName("product_id");
+            e.Property(i => i.VariantId).HasColumnName("variant_id");
+            e.Property(i => i.Quantity).HasColumnName("quantity");
+            e.Property(i => i.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2);
+            e.HasOne<Cart>().WithMany().HasForeignKey(i => i.CartId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Product>().WithMany().HasForeignKey(i => i.ProductId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ProductVariant>().WithMany().HasForeignKey(i => i.VariantId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<Order>(e =>
+        {
+            e.ToTable("order");
+            e.HasKey(o => o.Id);
+            e.Property(o => o.Id).HasColumnName("id");
+            e.Property(o => o.OrderNo).HasColumnName("order_no").HasMaxLength(20).IsRequired();
+            e.Property(o => o.Status).HasColumnName("status").HasConversion<int>();
+            e.Property(o => o.PaymentMethod).HasColumnName("payment_method").HasConversion<int>();
+            e.Property(o => o.Subtotal).HasColumnName("subtotal").HasPrecision(18, 2);
+            e.Property(o => o.ShippingFee).HasColumnName("shipping_fee").HasPrecision(18, 2);
+            e.Property(o => o.Total).HasColumnName("total").HasPrecision(18, 2);
+            e.Property(o => o.FullName).HasColumnName("full_name").HasMaxLength(120).IsRequired();
+            e.Property(o => o.Phone).HasColumnName("phone").HasMaxLength(11).IsRequired();
+            e.Property(o => o.Email).HasColumnName("email").HasMaxLength(200);
+            e.Property(o => o.Address).HasColumnName("address").HasMaxLength(500).IsRequired();
+            e.Property(o => o.City).HasColumnName("city").HasMaxLength(60).IsRequired();
+            e.Property(o => o.District).HasColumnName("district").HasMaxLength(60).IsRequired();
+            e.Property(o => o.Note).HasColumnName("note").HasMaxLength(500);
+            e.Property(o => o.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(o => o.OrderNo).IsUnique().HasDatabaseName("ux_order_order_no");
+        });
+
+        modelBuilder.Entity<OrderItem>(e =>
+        {
+            e.ToTable("order_item");
+            e.HasKey(i => i.Id);
+            e.Property(i => i.Id).HasColumnName("id");
+            e.Property(i => i.OrderId).HasColumnName("order_id");
+            e.Property(i => i.ProductName).HasColumnName("product_name").HasMaxLength(200).IsRequired();
+            e.Property(i => i.Sku).HasColumnName("sku").HasMaxLength(60).IsRequired();
+            e.Property(i => i.Quantity).HasColumnName("quantity");
+            e.Property(i => i.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2);
+            e.HasOne<Order>().WithMany().HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

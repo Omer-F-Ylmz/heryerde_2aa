@@ -58,12 +58,26 @@
                 <p class="product__desc">@product.Description</p>
             }
             <div class="product__cta">
-                <a class="btn btn--cta btn--lg" href="@Model.WhatsAppUrl" rel="noopener">
+                <form method="post" action="/sepet/ekle" data-add-to-cart data-variants="@Model.VariantsJson">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="productId" value="@product.Id" />
+                    <input type="hidden" name="variantId" value="" data-variant-id />
+                    <input type="hidden" name="quantity" value="1" />
+                    <input type="hidden" name="donus" value="/sepet" />
+                    <button class="btn btn--cta btn--lg" type="submit" disabled="@Model.IsClothing" data-add-button>
+                        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                        Sepete ekle
+                    </button>
+                </form>
+                <a class="btn btn--outline btn--lg" href="@Model.WhatsAppUrl" rel="noopener">
                     <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
                     WhatsApp'tan sipariş ver
                 </a>
-                <button class="btn btn--outline btn--lg" type="button" disabled title="Sepet yakında">Sepete ekle · yakında</button>
             </div>
+            @if (Model.IsClothing)
+            {
+                <p class="field__hint" data-add-hint>Sepete eklemek için beden ve renk seçin.</p>
+            }
         </div>
     </div>
     <partial name="Components/_TrustStrip" />

@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using HerYerde.Business;
 using HerYerde.Business.Abstract;
 using HerYerde.Business.DependencyResolvers.Autofac;
 using HerYerde.DataAccess.Concrete.EntityFramework;
@@ -27,6 +28,7 @@ builder.Services.AddSingleton(HtmlEncoder.Create(
     UnicodeRanges.LatinExtendedA));
 
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
+builder.Services.Configure<ShopSettings>(builder.Configuration.GetSection("Shop"));
 
 builder.Services.AddDbContext<HerYerdeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));

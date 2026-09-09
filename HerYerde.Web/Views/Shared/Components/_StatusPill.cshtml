@@ -1,0 +1,4 @@
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@model OrderStatus
+<span class="tag tag--@Model.ToString().ToLowerInvariant()">@OrderLabels.For(Model)</span>

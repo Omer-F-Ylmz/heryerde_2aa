@@ -1,0 +1,51 @@
+@using HerYerde.Web.Models
+@model CheckoutFormViewModel
+
+<fieldset class="fieldset">
+    <legend class="fieldset__legend">Teslimat bilgileri</legend>
+
+    <div class="field">
+        <label class="field__label" asp-for="FullName"></label>
+        <input class="field__input" asp-for="FullName" autocomplete="name" />
+        <span class="field__error" asp-validation-for="FullName"></span>
+    </div>
+
+    <div class="field-row">
+        <div class="field">
+            <label class="field__label" asp-for="Phone"></label>
+            <input class="field__input" asp-for="Phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0542 497 09 82" />
+            <span class="field__hint">Siparişi bu numaradan teyit ediyoruz.</span>
+            <span class="field__error" asp-validation-for="Phone"></span>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="Email"></label>
+            <input class="field__input" asp-for="Email" type="email" autocomplete="email" />
+            <span class="field__error" asp-validation-for="Email"></span>
+        </div>
+    </div>
+
+    <div class="field">
+        <label class="field__label" asp-for="Address"></label>
+        <textarea class="field__input field__input--area" asp-for="Address" rows="3" autocomplete="street-address"></textarea>
+        <span class="field__error" asp-validation-for="Address"></span>
+    </div>
+
+    <div class="field-row">
+        <div class="field">
+            <label class="field__label" asp-for="City"></label>
+            <input class="field__input" asp-for="City" autocomplete="address-level1" />
+            <span class="field__error" asp-validation-for="City"></span>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="District"></label>
+            <input class="field__input" asp-for="District" autocomplete="address-level2" />
+            <span class="field__error" asp-validation-for="District"></span>
+        </div>
+    </div>
+
+    <div class="field">
+        <label class="field__label" asp-for="Note"></label>
+        <textarea class="field__input field__input--area" asp-for="Note" rows="2" placeholder="Kapıya gelmeden arayın."></textarea>
+        <span class="field__error" asp-validation-for="Note"></span>
+    </div>
+</fieldset>

@@ -74,6 +74,23 @@ public sealed class StoreCatalogTests
     }
 
     [Fact]
+    public void Varyant_secici_beden_renk_kimlik_ucluesunu_secenek_olarak_tasir()
+    {
+        var picker = StoreCatalog.Picker(new[]
+        {
+            new ProductVariant { Id = 11, ProductId = 1, Size = "M", Color = "Kiremit", Sku = "SLV-M-K", Stock = 3 },
+            new ProductVariant { Id = 12, ProductId = 1, Size = "L", Color = "Kiremit", Sku = "SLV-L-K", Stock = 0 }
+        });
+
+        Assert.Equal(2, picker.Options!.Count);
+        var medium = picker.Options.Single(o => o.Id == 11);
+        Assert.Equal("M", medium.Size);
+        Assert.Equal("Kiremit", medium.Color);
+        Assert.Equal(3, medium.Stock);
+        Assert.Equal(0, picker.Options.Single(o => o.Id == 12).Stock);
+    }
+
+    [Fact]
     public void Whatsapp_linki_urun_adini_url_encoded_tasir()
     {
         var url = StoreCatalog.WhatsAppUrl("https://wa.me/905000000000", "Granit döküm tencere seti");

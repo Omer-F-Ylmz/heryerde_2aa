@@ -171,6 +171,35 @@ public sealed class ProductManagerTests : IAsyncLifetime
         Assert.Equal(1290.50m, (await new EfProductDal(context).GetAsync(p => p.Id == productId))!.Price);
     }
 
+    [Fact]
+    public async Task Vitrin_listesi_urunle_birlikte_alt_kategori_slugini_dondurur()
+    {
+        await using var context = TestDb.NewContext();
+        var manager = NewManager(context);
+        var rootId = await CategoryIdAsync(context, "ev");
+        var childId = await AddChildCategoryAsync(context, rootId, "Mutfak & Sofra", "mutfak-sofra");
+
+        var yayinda = await TestData.AddProductAsync(context, childId, "Çelik Tencere", "celik-tencere");
+        var taslak = await TestData.AddProductAsync(context, childId, "Cam Sürahi", "cam-surahi");
+        var draft = (await new EfProductDal(context).GetTrackedAsync(p => p.Id == taslak))!;
+        draft.IsActive = false;
+        await new EfUnitOfWork(context).SaveChangesAsync();
+
+        var (_, items) = await manager.GetActiveWithCategorySlugAsync();
+
+        var item = Assert.Single(items.Data!);
+        Assert.Equal(yayinda, item.Product.Id);
+        Assert.Equal("mutfak-sofra", item.CategorySlug);
+    }
+
+    private static async Task<int> AddChildCategoryAsync(HerYerdeContext context, int parentId, string name, string slug)
+    {
+        var category = new Category { Name = name, Slug = slug, ParentId = parentId, SortOrder = 1, IsActive = true };
+        await new EfCategoryDal(context).AddAsync(category);
+        await new EfUnitOfWork(context).SaveChangesAsync();
+        return category.Id;
+    }
+
     private static async Task<int> CategoryIdAsync(HerYerdeContext context, string rootSlug)
     {
         var dal = new EfCategoryDal(context);

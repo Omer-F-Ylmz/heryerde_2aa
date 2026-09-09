@@ -1,0 +1,70 @@
+@using HerYerde.Web.Models
+@model CartLineViewModel
+@{
+    var line = Model.Line;
+    var variant = string.Join(" · ", new[] { line.Size, line.Color }.Where(v => !string.IsNullOrWhiteSpace(v)));
+}
+<div class="line@(Model.Editable ? "" : " line--static")">
+    <a class="line__media" href="/urun/@line.Slug" tabindex="-1" aria-hidden="true">
+        @if (line.ImageUrl is null)
+        {
+            <span class="ph"></span>
+        }
+        else
+        {
+            <img src="@line.ImageUrl" alt="" width="96" height="96" loading="lazy" />
+        }
+    </a>
+    <div class="line__body">
+        <h3 class="line__title"><a href="/urun/@line.Slug">@line.ProductName</a></h3>
+        @if (variant.Length > 0)
+        {
+            <p class="line__meta">@variant</p>
+        }
+        <p class="line__meta">@Money.Tl(line.UnitPrice) @(Model.Editable ? "" : "× " + line.Quantity)</p>
+        @if (line.Insufficient)
+        {
+            <p class="line__warn">
+                <svg class="icon icon--sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                <span>Stokta @line.AvailableStock adet kaldı, adedi azaltın.</span>
+            </p>
+        }
+    </div>
+    @if (Model.Editable)
+    {
+        <div class="line__foot">
+            <div class="stepper">
+                <form method="post" action="/sepet/guncelle">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="itemId" value="@line.ItemId" />
+                    <input type="hidden" name="quantity" value="@(line.Quantity - 1)" />
+                    <button class="stepper__btn" type="submit" aria-label="@line.ProductName adedini azalt">
+                        <svg class="icon icon--sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                    </button>
+                </form>
+                <span class="stepper__value" aria-label="Adet">@line.Quantity</span>
+                <form method="post" action="/sepet/guncelle">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="itemId" value="@line.ItemId" />
+                    <input type="hidden" name="quantity" value="@(line.Quantity + 1)" />
+                    <button class="stepper__btn" type="submit" aria-label="@line.ProductName adedini artır">
+                        <svg class="icon icon--sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    </button>
+                </form>
+                <form method="post" action="/sepet/sil">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="itemId" value="@line.ItemId" />
+                    <button class="btn btn--ghost btn--sm" type="submit">
+                        <svg class="icon icon--sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                        <span>Sil</span>
+                    </button>
+                </form>
+            </div>
+            <span class="line__total">@Money.Tl(line.LineTotal)</span>
+        </div>
+    }
+    else
+    {
+        <span class="line__total">@Money.Tl(line.LineTotal)</span>
+    }
+</div>

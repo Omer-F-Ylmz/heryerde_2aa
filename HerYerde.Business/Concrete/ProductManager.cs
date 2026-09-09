@@ -1,5 +1,6 @@
 using System.Net;
 using HerYerde.Business.Abstract;
+using HerYerde.Business.Dtos;
 using HerYerde.Business.Rules;
 using HerYerde.Business.Utilities;
 using HerYerde.Core.DataAccess;
@@ -35,6 +36,13 @@ public class ProductManager : IProductService
     {
         var products = await _productDal.GetListAsync(cancellationToken: cancellationToken);
         return (HttpStatusCode.OK, new SuccessDataResult<List<Product>>(products));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<List<ProductListItem>>)> GetActiveWithCategorySlugAsync(CancellationToken cancellationToken = default)
+    {
+        var rows = await _productDal.GetActiveWithCategorySlugAsync(cancellationToken);
+        var items = rows.Select(r => new ProductListItem(r.Product, r.CategorySlug)).ToList();
+        return (HttpStatusCode.OK, new SuccessDataResult<List<ProductListItem>>(items));
     }
 
     public async Task<(HttpStatusCode, IDataResult<Product>)> GetByIdAsync(int id, CancellationToken cancellationToken = default)

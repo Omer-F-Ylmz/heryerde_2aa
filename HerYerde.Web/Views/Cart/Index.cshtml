@@ -1,0 +1,43 @@
+@using HerYerde.Web.Models
+@model CartPageViewModel
+@{
+    ViewData["Title"] = "Sepetim";
+    var cart = Model.Cart;
+    var summary = new OrderSummaryViewModel(cart.Subtotal, cart.ShippingFee, cart.Total, "Kargo ücreti alıcıya aittir.");
+}
+
+<div class="container section">
+    <h1 class="display-2 h-mark">Sepetim</h1>
+
+    @if (Model.ErrorMessage is not null)
+    {
+        <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+    }
+
+    @if (cart.IsEmpty)
+    {
+        <p class="empty surface-elevated">
+            Sepetiniz henüz boş. Mutfak ve sofra ürünlerine göz atın, beğendiğinizi sepete ekleyin.
+        </p>
+        <p><a class="btn btn--primary btn--lg" href="/ev">Ev ürünlerine bak</a></p>
+    }
+    else
+    {
+        <div class="cart">
+            <ul class="cart__lines">
+                @foreach (var line in cart.Lines)
+                {
+                    <li><partial name="Components/_CartLine" model="new CartLineViewModel(line, true)" /></li>
+                }
+            </ul>
+            <aside class="cart__aside" aria-label="Sepet özeti">
+                <partial name="Components/_OrderSummary" model="summary" />
+                <div class="summary__actions">
+                    <a class="btn btn--cta btn--lg" href="/odeme">Ödemeye geç</a>
+                    <a class="btn btn--outline" href="/ev">Alışverişe devam et</a>
+                </div>
+            </aside>
+        </div>
+        <partial name="Components/_TrustStrip" />
+    }
+</div>

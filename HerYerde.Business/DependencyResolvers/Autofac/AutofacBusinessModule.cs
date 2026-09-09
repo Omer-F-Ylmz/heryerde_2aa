@@ -18,9 +18,15 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfProductVariantDal>().As<IProductVariantDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductImageDal>().As<IProductImageDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfAdminUserDal>().As<IAdminUserDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfCartDal>().As<ICartDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfCartItemDal>().As<ICartItemDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfOrderDal>().As<IOrderDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfOrderItemDal>().As<IOrderItemDal>().InstancePerLifetimeScope();
 
         builder.RegisterType<AdminAuthManager>().As<IAdminAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<CategoryManager>().As<ICategoryService>().InstancePerLifetimeScope();
         builder.RegisterType<ProductManager>().As<IProductService>().InstancePerLifetimeScope();
+        builder.RegisterType<CartManager>().As<ICartService>().InstancePerLifetimeScope();
+        builder.RegisterType<OrderManager>().As<IOrderService>().InstancePerLifetimeScope();
     }
 }
