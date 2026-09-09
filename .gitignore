@@ -1,0 +1,8 @@
+.screens/
+node_modules/
+bin/
+obj/
+appsettings.Development.json
+*.user
+.vs/
+TestResults/

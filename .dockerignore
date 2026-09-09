@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+node_modules/
+.screens/
+.git/
+.github/
+.claude/
+tests/
+**/appsettings.Development.json

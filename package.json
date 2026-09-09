@@ -1,0 +1,13 @@
+{
+  "name": "heryerde",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "css:build": "tailwindcss -i src/input.css -o HerYerde.Web/wwwroot/css/site.css --minify",
+    "css:watch": "tailwindcss -i src/input.css -o HerYerde.Web/wwwroot/css/site.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
+}
