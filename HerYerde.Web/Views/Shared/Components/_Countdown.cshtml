@@ -7,6 +7,7 @@
     }
 }
 <p class="countdown" data-countdown="@Model.ToString("o")" aria-label="Kampanyanın bitmesine kalan süre">
+    <span class="countdown__label">Kampanya bitimine</span>
     <span class="countdown__cell"><b data-part="d">@((int)left.TotalDays)</b><small>gün</small></span>
     <span class="countdown__cell"><b data-part="h">@left.Hours.ToString("00")</b><small>saat</small></span>
     <span class="countdown__cell"><b data-part="m">@left.Minutes.ToString("00")</b><small>dk</small></span>

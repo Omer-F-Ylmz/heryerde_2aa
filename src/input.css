@@ -1121,6 +1121,7 @@
 
   /* Fotoğraf yokken keten + kiremit deseni (harici görsel yok) */
   .ph {
+    position: relative;
     display: block;
     width: 100%;
     height: 100%;
@@ -1128,6 +1129,39 @@
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M0 12h24M12 0v24' stroke='%23E5DBCB' stroke-width='1'/%3E%3Cpath d='M0 0l24 24' stroke='%23A8442A' stroke-opacity='.14' stroke-width='1'/%3E%3C/svg%3E"),
       radial-gradient(40% 40% at 50% 50%, rgb(168 68 42 / 0.10), transparent 70%);
+  }
+
+  /* Placeholder ortasında alt kategoriye göre tek çizgi ikon: "ürün bekleniyor" */
+  .ph::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: center / 96px no-repeat;
+    opacity: 0.35;
+  }
+
+  .ph--pot::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A8442A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12h20'/%3E%3Cpath d='M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8'/%3E%3Cpath d='m4 8 16-4'/%3E%3Cpath d='m8.86 6.78-.45-1.81a2 2 0 0 1 1.45-2.43l1.94-.48a2 2 0 0 1 2.43 1.46l.45 1.8'/%3E%3C/svg%3E");
+  }
+
+  .ph--plate::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A8442A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3C/svg%3E");
+  }
+
+  .ph--cutlery::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A8442A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2'/%3E%3Cpath d='M7 2v20'/%3E%3Cpath d='M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7'/%3E%3C/svg%3E");
+  }
+
+  .ph--box::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A8442A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z'/%3E%3Cpath d='M12 22V12'/%3E%3Cpath d='m3.3 7 8.7 5 8.7-5'/%3E%3C/svg%3E");
+  }
+
+  .ph--basket::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A8442A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 11-1 9'/%3E%3Cpath d='m19 11-4-7'/%3E%3Cpath d='M2 11h20'/%3E%3Cpath d='m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4'/%3E%3Cpath d='M4.5 15.5h15'/%3E%3Cpath d='m5 11 4-7'/%3E%3Cpath d='m9 11 1 9'/%3E%3C/svg%3E");
+  }
+
+  .ph--fan::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A8442A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z'/%3E%3Cpath d='M12 12v.01'/%3E%3C/svg%3E");
   }
 
   /* Ürün kartı */
@@ -1143,7 +1177,7 @@
 
   .card__media {
     position: relative;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
     background-color: var(--c-neutral);
   }
@@ -1165,8 +1199,44 @@
     opacity: 1;
   }
 
+  /* İkinci görsel yoksa hover: hafif kiremit ton + "İncele" etiketi */
+  .card__media::before,
+  .card__media::after {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms var(--ease);
+  }
+
+  .card__media::after {
+    content: "";
+    inset: 0;
+    background: rgb(168 68 42 / 0.18);
+  }
+
+  .card__media::before {
+    content: "İncele";
+    z-index: 1;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--c-brand);
+    color: var(--c-white, #fff);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .card:hover .card__media:not(:has(.card__alt))::before,
+  .card:hover .card__media:not(:has(.card__alt))::after {
+    opacity: 1;
+  }
+
   .card__media .tag {
     position: absolute;
+    z-index: 2;
     top: 8px;
     left: 8px;
   }
@@ -1197,10 +1267,6 @@
     content: "";
     position: absolute;
     inset: 0;
-  }
-
-  .card__title a:hover {
-    color: var(--c-brand);
   }
 
   .card__title a:active {
@@ -1301,9 +1367,17 @@
   /* Geri sayım */
   .countdown {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin: 0;
     font-variant-numeric: tabular-nums;
+  }
+
+  .countdown__label {
+    flex-basis: 100%;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-neutral-700);
   }
 
   .countdown__cell {
@@ -1368,7 +1442,7 @@
   /* Güven bandı */
   .trust {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 16px;
     list-style: none;
     margin: 0;
@@ -1447,7 +1521,22 @@
     font-weight: 400;
   }
 
-  /* Kategori sekmeleri */
+  /* Kategori sekmeleri: mobilde yatay kaydırma, sağ kenarda gradient ipucu */
+  .tabs--scroll {
+    position: relative;
+  }
+
+  .tabs--scroll::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 48px;
+    background: linear-gradient(to right, transparent, var(--c-neutral));
+    pointer-events: none;
+  }
+
   .tabs__list {
     display: flex;
     gap: 8px;
@@ -1513,6 +1602,11 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
+  }
+
+  /* n<4 kart → n sütun (boş hücre kalmaz) */
+  .grid--1 {
+    grid-template-columns: 1fr;
   }
 
   /* Vitrin başlığı */
@@ -1713,8 +1807,20 @@
       gap: 24px;
     }
 
+    .grid--1 {
+      grid-template-columns: 1fr;
+    }
+
+    .grid--2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
     .trust {
       grid-template-columns: repeat(4, 1fr);
+    }
+
+    .tabs--scroll::after {
+      display: none;
     }
 
     .trust li {
@@ -1744,6 +1850,18 @@
       grid-template-columns: repeat(4, 1fr);
     }
 
+    .grid--1 {
+      grid-template-columns: 1fr;
+    }
+
+    .grid--2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid--3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
     .section {
       padding-block: 96px;
     }
@@ -1751,6 +1869,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .card__alt,
+    .card__media::before,
+    .card__media::after,
     .chip,
     .tab,
     .store-nav__link,
@@ -1765,6 +1885,7 @@
   .hero__media {
     position: relative;
     aspect-ratio: 4 / 5;
+    max-height: 60vh;
     overflow: hidden;
     border: 1px solid var(--c-neutral-200);
     border-radius: var(--r-card);
@@ -1860,7 +1981,7 @@
 
   .gallery__main {
     position: relative;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 1 / 1;
     margin: 0;
     overflow: hidden;
     border: 1px solid var(--c-neutral-200);
@@ -1884,6 +2005,48 @@
     padding: 0;
   }
 
+  /* Ürün sayfası breadcrumb: Ev › alt kategori (eyebrow tonunda) */
+  .crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-accent-deep);
+  }
+
+  .crumbs a {
+    color: inherit;
+    text-decoration: none;
+    text-underline-offset: 4px;
+  }
+
+  .crumbs a:hover {
+    text-decoration: underline;
+  }
+
+  .crumbs a:active {
+    color: var(--c-brand-900);
+  }
+
+  .crumbs a:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Güven bandı ile "Benzer ürünler" arası: 390'da 48px, 1440'ta 64px */
+  .section.product-page {
+    padding-bottom: 0;
+  }
+
+  .section.similar {
+    padding-top: 48px;
+  }
+
   .product__info .price-block {
     margin: 16px 0;
   }
@@ -1903,6 +2066,10 @@
   }
 
   @media (min-width: 768px) {
+    .hero__media {
+      max-height: none;
+    }
+
     .dm-band {
       grid-template-columns: repeat(2, 1fr);
     }
@@ -1942,6 +2109,16 @@
     .product__info {
       grid-column: 3;
       margin-top: 32px;
+      position: sticky;
+      top: 24px;
+    }
+
+    .gallery__main {
+      max-height: 640px;
+    }
+
+    .section.similar {
+      padding-top: 64px;
     }
   }
 

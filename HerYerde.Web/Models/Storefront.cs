@@ -34,6 +34,7 @@ public sealed class ProductCardVm
     public string? SecondImageUrl { get; init; }
     public string ImageAlt { get; init; } = string.Empty;
     public BadgeVm? Badge { get; init; }
+    public string? PlaceholderIcon { get; init; }
     public bool Lazy { get; init; } = true;
     public string Url => "/urun/" + Slug;
 }

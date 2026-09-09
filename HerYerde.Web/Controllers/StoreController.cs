@@ -14,6 +14,8 @@ public class StoreController(IProductService productService, ICategoryService ca
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
+        var (_, categories) = await categoryService.GetAllAsync(cancellationToken);
+        var slugById = categories.Data!.ToDictionary(c => c.Id, c => c.Slug);
         var (_, all) = await productService.GetAllAsync(cancellationToken);
         var products = all.Data!.Where(p => p.IsActive).ToList();
         var hero = StoreCatalog.PickHero(products, now);
@@ -31,8 +33,9 @@ public class StoreController(IProductService productService, ICategoryService ca
         return View(new HomeVm(
             hero,
             heroImage,
+            hero is null ? null : StoreCatalog.PlaceholderIcon(slugById.GetValueOrDefault(hero.CategoryId)),
             hero is null ? null : StoreCatalog.WhatsAppUrl(WhatsAppBase, hero.Name),
-            arrivals.Select((p, i) => StoreCatalog.Card(p, images.Data!, now, lazy: i >= 4)).ToList(),
+            arrivals.Select((p, i) => StoreCatalog.Card(p, images.Data!, now, lazy: i >= 4, categorySlug: slugById.GetValueOrDefault(p.CategoryId))).ToList(),
             TestimonialSource.Load()));
     }
 
@@ -76,7 +79,7 @@ public class StoreController(IProductService productService, ICategoryService ca
             tabs,
             sirala == "fiyat" ? "fiyat" : "yeni",
             baseUrl,
-            page.Select((p, i) => StoreCatalog.Card(p, images.Data!, now, lazy: i >= 4)).ToList(),
+            page.Select((p, i) => StoreCatalog.Card(p, images.Data!, now, lazy: i >= 4, categorySlug: children.First(c => c.Id == p.CategoryId).Slug)).ToList(),
             new PaginationVm(sayfa, totalPages, sirala == "fiyat" ? baseUrl + "?sirala=fiyat" : baseUrl)));
     }
 
@@ -104,11 +107,12 @@ public class StoreController(IProductService productService, ICategoryService ca
         return View(new ProductPageVm(
             product,
             category?.Name ?? root?.Name ?? "Ev",
+            category?.Slug,
             isClothing,
             images.Data!.OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).ToList(),
             isClothing ? StoreCatalog.Picker(variants.Data!) : new VariantPickerVm([], []),
             StoreCatalog.IsCampaignActive(product, now),
             StoreCatalog.WhatsAppUrl(WhatsAppBase, product.Name),
-            similar.Select(p => StoreCatalog.Card(p, similarImages.Data!, now)).ToList()));
+            similar.Select(p => StoreCatalog.Card(p, similarImages.Data!, now, categorySlug: category?.Slug)).ToList()));
     }
 }

@@ -19,3 +19,8 @@ document.querySelectorAll("[data-countdown]").forEach(function (el) {
   };
   tick();
 });
+
+// Alt kategori sekmeleri: seçili sekme yatay kaydırmada görünür alana gelir.
+document.querySelectorAll(".tabs--scroll [aria-current=page]").forEach(function (el) {
+  el.scrollIntoView({ block: "nearest", inline: "center" });
+});

@@ -5,17 +5,17 @@
     var product = Model.Product;
 }
 
-<div class="container section">
+<div class="container section product-page">
     <div class="product">
         <div class="gallery">
             <figure class="gallery__main">
                 @if (Model.Images.Count == 0)
                 {
-                    <span class="ph"></span>
+                    <span class="ph@(Model.PlaceholderIcon is null ? "" : " ph--" + Model.PlaceholderIcon)"></span>
                 }
                 else
                 {
-                    <img src="@Model.Images[0].Url" alt="@Model.Images[0].Alt" width="600" height="750" />
+                    <img src="@Model.Images[0].Url" alt="@Model.Images[0].Alt" width="600" height="600" />
                 }
             </figure>
             @if (Model.Images.Count > 1)
@@ -29,7 +29,18 @@
             }
         </div>
         <div class="product__info">
-            <p class="eyebrow">@Model.CategoryName</p>
+            <nav class="crumbs" aria-label="Konum">
+                <a href="/ev">Ev</a>
+                <span aria-hidden="true">›</span>
+                @if (Model.CategorySlug is null)
+                {
+                    <span>@Model.CategoryName</span>
+                }
+                else
+                {
+                    <a href="/ev/@Model.CategorySlug">@Model.CategoryName</a>
+                }
+            </nav>
             <h1 class="display-2 h-mark">@product.Name</h1>
             <partial name="Components/_PriceBlock" model="new PriceBlockVm(product.Price, Model.CampaignActive ? product.CampaignPrice : null, true)" />
             @if (Model.CampaignActive && product.CampaignEndsAt is { } endsAt)
@@ -51,7 +62,7 @@
                     <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
                     WhatsApp'tan sipariş ver
                 </a>
-                <button class="btn btn--outline btn--lg" type="button" disabled title="Sepet yakında">Sepete ekle</button>
+                <button class="btn btn--outline btn--lg" type="button" disabled title="Sepet yakında">Sepete ekle · yakında</button>
             </div>
         </div>
     </div>
@@ -60,9 +71,9 @@
 
 @if (Model.Similar.Count > 0)
 {
-    <section class="container section" id="benzer" aria-labelledby="benzer-title">
+    <section class="container section similar" id="benzer" aria-labelledby="benzer-title">
         <h2 id="benzer-title" class="display-2 h-mark">Benzer ürünler</h2>
-        <div class="grid">
+        <div class="grid@(Model.Similar.Count < 4 ? " grid--" + Model.Similar.Count : "")">
             @foreach (var card in Model.Similar)
             {
                 <partial name="Components/_ProductCard" model="card" />

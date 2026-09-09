@@ -38,7 +38,19 @@ public static class StoreCatalog
     public static string WhatsAppUrl(string baseUrl, string productName)
         => baseUrl + "?text=" + Uri.EscapeDataString($"Merhaba, {productName} için sipariş vermek istiyorum.");
 
-    public static ProductCardVm Card(Product product, IEnumerable<ProductImage> images, DateTime now, bool lazy = true)
+    /// <summary>Görselsiz üründe alt kategoriye göre tek çizgi ikon; bilinmeyen slug → ikon yok.</summary>
+    public static string? PlaceholderIcon(string? categorySlug) => categorySlug switch
+    {
+        "tencere-tava" => "pot",
+        "yemek-takimi" => "plate",
+        "catal-kasik" => "cutlery",
+        "saklama-duzenleme" => "box",
+        "sepet-dekor" => "basket",
+        "kucuk-ev-aletleri" => "fan",
+        _ => null
+    };
+
+    public static ProductCardVm Card(Product product, IEnumerable<ProductImage> images, DateTime now, bool lazy = true, string? categorySlug = null)
     {
         var ordered = images.Where(i => i.ProductId == product.Id).OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).ToList();
         var active = IsCampaignActive(product, now);
@@ -52,6 +64,7 @@ public static class StoreCatalog
             ImageUrl = ordered.ElementAtOrDefault(0)?.Url,
             SecondImageUrl = ordered.ElementAtOrDefault(1)?.Url,
             ImageAlt = ordered.ElementAtOrDefault(0)?.Alt ?? product.Name,
+            PlaceholderIcon = PlaceholderIcon(categorySlug),
             Lazy = lazy
         };
     }
@@ -89,6 +102,7 @@ public static class TestimonialSource
 public sealed record HomeVm(
     Product? Hero,
     string? HeroImage,
+    string? HeroPlaceholderIcon,
     string? HeroWhatsApp,
     IReadOnlyList<ProductCardVm> NewArrivals,
     IReadOnlyList<TestimonialVm> Testimonials);
@@ -104,9 +118,13 @@ public sealed record CategoryPageVm(
 public sealed record ProductPageVm(
     Product Product,
     string CategoryName,
+    string? CategorySlug,
     bool IsClothing,
     IReadOnlyList<ProductImage> Images,
     VariantPickerVm Picker,
     bool CampaignActive,
     string WhatsAppUrl,
-    IReadOnlyList<ProductCardVm> Similar);
+    IReadOnlyList<ProductCardVm> Similar)
+{
+    public string? PlaceholderIcon => StoreCatalog.PlaceholderIcon(CategorySlug);
+}

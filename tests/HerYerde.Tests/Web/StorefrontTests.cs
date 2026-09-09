@@ -185,6 +185,45 @@ public sealed class StorefrontTests : IAsyncLifetime
         Assert.True(newest >= 0 && older > newest, "yeni sıralaması azalan değil");
     }
 
+    [Fact]
+    public async Task Benzer_urunler_ucse_grid_uc_sutun_sinifi_alir()
+    {
+        var html = await GetHtmlAsync(_factory.CreateClient(), "/urun/granit-dokum-tencere-seti");
+        var section = html[html.IndexOf("id=\"benzer\"", StringComparison.Ordinal)..];
+
+        Assert.Contains("class=\"grid grid--3\"", section);
+    }
+
+    [Fact]
+    public async Task Urun_sayfasi_alt_kategori_etiketi_breadcrumb_linkidir()
+    {
+        var html = await GetHtmlAsync(_factory.CreateClient(), "/urun/granit-dokum-tencere-seti");
+        var crumbs = html[html.IndexOf("class=\"crumbs\"", StringComparison.Ordinal)..html.IndexOf("<h1", StringComparison.Ordinal)];
+
+        Assert.Contains("href=\"/ev\"", crumbs);
+        Assert.Contains("href=\"/ev/tencere-tava\"", crumbs);
+        Assert.Contains("Tencere &amp; Tava", crumbs);
+    }
+
+    [Fact]
+    public async Task Placeholder_ikonu_yalniz_gorselsiz_urunde_cikar()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            var product = await new EfProductDal(context).GetAsync(p => p.Slug == "dokum-tava-28-cm");
+            Assert.NotNull(product);
+            await new EfProductImageDal(context).AddAsync(new ProductImage { ProductId = product.Id, Url = "/img/dokum-tava.jpg", Alt = "Döküm tava", IsPrimary = true });
+            await new EfUnitOfWork(context).SaveChangesAsync();
+        }
+
+        var html = await GetHtmlAsync(_factory.CreateClient(), "/ev/tencere-tava");
+
+        Assert.Contains("class=\"ph ph--pot\"", CardOf(html, "Çelik düdüklü tencere 7 L"));
+        var withImage = CardOf(html, "Döküm tava 28 cm");
+        Assert.Contains("src=\"/img/dokum-tava.jpg\"", withImage);
+        Assert.DoesNotContain("class=\"ph", withImage);
+    }
+
     /// <summary>Ev altına "Toplu" alt kategorisi ve 30 ürün: fiyat 1000-i, i büyüdükçe daha yeni.</summary>
     private static async Task SeedTopluAsync()
     {

@@ -37,7 +37,7 @@
     <div class="hero__panel hero__media">
         @if (Model.HeroImage is null)
         {
-            <span class="ph"></span>
+            <span class="ph@(Model.HeroPlaceholderIcon is null ? "" : " ph--" + Model.HeroPlaceholderIcon)"></span>
         }
         else
         {
