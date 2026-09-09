@@ -1,0 +1,72 @@
+@using HerYerde.Web.Models
+@model ProductPageVm
+@{
+    ViewData["Title"] = Model.Product.Name;
+    var product = Model.Product;
+}
+
+<div class="container section">
+    <div class="product">
+        <div class="gallery">
+            <figure class="gallery__main">
+                @if (Model.Images.Count == 0)
+                {
+                    <span class="ph"></span>
+                }
+                else
+                {
+                    <img src="@Model.Images[0].Url" alt="@Model.Images[0].Alt" width="600" height="750" />
+                }
+            </figure>
+            @if (Model.Images.Count > 1)
+            {
+                <ul class="gallery__thumbs">
+                    @foreach (var image in Model.Images.Skip(1))
+                    {
+                        <li><img class="thumb" src="@image.Url" alt="@image.Alt" width="64" height="80" loading="lazy" /></li>
+                    }
+                </ul>
+            }
+        </div>
+        <div class="product__info">
+            <p class="eyebrow">@Model.CategoryName</p>
+            <h1 class="display-2 h-mark">@product.Name</h1>
+            <partial name="Components/_PriceBlock" model="new PriceBlockVm(product.Price, Model.CampaignActive ? product.CampaignPrice : null, true)" />
+            @if (Model.CampaignActive && product.CampaignEndsAt is { } endsAt)
+            {
+                <partial name="Components/_Countdown" model="endsAt" />
+            }
+            @if (Model.IsClothing)
+            {
+                <partial name="Components/_VariantPicker" model="Model.Picker" />
+                <p class="product__desc">@product.Description</p>
+            }
+            else
+            {
+                <h2 class="heading-3">Set içeriği</h2>
+                <p class="product__desc">@product.Description</p>
+            }
+            <div class="product__cta">
+                <a class="btn btn--cta btn--lg" href="@Model.WhatsAppUrl" rel="noopener">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                    WhatsApp'tan sipariş ver
+                </a>
+                <button class="btn btn--outline btn--lg" type="button" disabled title="Sepet yakında">Sepete ekle</button>
+            </div>
+        </div>
+    </div>
+    <partial name="Components/_TrustStrip" />
+</div>
+
+@if (Model.Similar.Count > 0)
+{
+    <section class="container section" id="benzer" aria-labelledby="benzer-title">
+        <h2 id="benzer-title" class="display-2 h-mark">Benzer ürünler</h2>
+        <div class="grid">
+            @foreach (var card in Model.Similar)
+            {
+                <partial name="Components/_ProductCard" model="card" />
+            }
+        </div>
+    </section>
+}

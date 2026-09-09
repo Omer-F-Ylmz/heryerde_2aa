@@ -1,0 +1,89 @@
+@using HerYerde.Web.Models
+@model HomeVm
+@{
+    ViewData["Title"] = "Çeyizden mutfağa ev ürünleri";
+}
+
+<section class="hero" aria-labelledby="hero-title">
+    <div class="hero__copy">
+        @if (Model.Hero is { } hero)
+        {
+            <p class="eyebrow">Günün kampanyası@(hero.CampaignLabel is null ? "" : " · " + hero.CampaignLabel)</p>
+            <h1 id="hero-title" class="display-1 h-mark">@hero.Name</h1>
+            <p class="lead">@hero.Description</p>
+            <partial name="Components/_PriceBlock" model="new PriceBlockVm(hero.Price, hero.CampaignPrice, true)" />
+            @if (hero.CampaignEndsAt is { } endsAt)
+            {
+                <partial name="Components/_Countdown" model="endsAt" />
+            }
+            <div class="hero__actions">
+                <a class="btn btn--cta btn--lg" href="@Model.HeroWhatsApp" rel="noopener">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                    WhatsApp'tan sipariş ver
+                </a>
+                <a class="btn btn--outline btn--lg" href="/urun/@hero.Slug">Ürünü incele</a>
+            </div>
+        }
+        else
+        {
+            <p class="eyebrow">HerYerde</p>
+            <h1 id="hero-title" class="display-1 h-mark">Çeyizden mutfağa, evin her yeri.</h1>
+            <p class="lead">Tencereden sepete ev parçaları tek yerde. Beğendiğinizi WhatsApp'tan söyleyin, kapıda ödeyin.</p>
+            <div class="hero__actions">
+                <a class="btn btn--cta btn--lg" href="/ev">Ev ürünlerine bak</a>
+            </div>
+        }
+    </div>
+    <div class="hero__panel hero__media">
+        @if (Model.HeroImage is null)
+        {
+            <span class="ph"></span>
+        }
+        else
+        {
+            <img src="@Model.HeroImage" alt="@Model.Hero!.Name" width="600" height="750" />
+        }
+    </div>
+</section>
+
+<section class="container" aria-label="Alanlar">
+    <div class="doors">
+        <a class="door door--active" href="/ev">
+            <p class="eyebrow">Açık</p>
+            <h2 class="display-2">Ev</h2>
+            <p>Tencere-tava, yemek takımı, çatal-kaşık, saklama, sepet, küçük ev aletleri.</p>
+        </a>
+        <div class="door door--soon" aria-disabled="true">
+            <p class="eyebrow">Yakında</p>
+            <h2 class="display-2">Örtü &amp; Eşarp</h2>
+            <p>Giyim rafı hazırlanıyor; beden ve renk seçimiyle.</p>
+        </div>
+    </div>
+</section>
+
+<section class="container section" id="yeni" aria-labelledby="yeni-title">
+    <div class="section__head">
+        <h2 id="yeni-title" class="display-2 h-mark">Yeni gelenler</h2>
+        <a class="btn btn--outline" href="/ev">Tümünü gör</a>
+    </div>
+    <div class="grid">
+        @foreach (var card in Model.NewArrivals)
+        {
+            <partial name="Components/_ProductCard" model="card" />
+        }
+    </div>
+</section>
+
+<section class="container section" id="dm" aria-labelledby="dm-title">
+    <h2 id="dm-title" class="display-2 h-mark">Müşterilerimizden</h2>
+    <div class="dm-band">
+        @foreach (var dm in Model.Testimonials)
+        {
+            <partial name="Components/_Testimonial" model="dm" />
+        }
+    </div>
+</section>
+
+<div class="container">
+    <partial name="Components/_TrustStrip" />
+</div>

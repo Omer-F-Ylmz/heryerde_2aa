@@ -1486,7 +1486,8 @@
     outline-offset: 2px;
   }
 
-  .tab[aria-current="page"] {
+  .tab[aria-current="page"],
+  .tab[aria-current="true"] {
     background: var(--c-brand-900);
     border-color: var(--c-brand-900);
     color: var(--c-neutral-50);
@@ -1754,6 +1755,198 @@
     .tab,
     .store-nav__link,
     .icon-btn {
+      transition: none;
+    }
+  }
+}
+
+@layer components {
+  /* --- Vitrin kiti (D3b): hero görseli, kapı kartları, DM bandı, ürün sayfası --- */
+  .hero__media {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: var(--r-card);
+    background: var(--c-neutral);
+  }
+
+  .hero__media img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero .price-block {
+    margin: 16px 0;
+  }
+
+  .hero .countdown {
+    margin-bottom: 24px;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  /* Kapılar: Ev geniş, Örtü dar (kırık simetri) */
+  .doors {
+    display: grid;
+    gap: 16px;
+  }
+
+  .door {
+    display: block;
+    padding: 24px;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: var(--r-card);
+    background: var(--c-neutral-50);
+    color: var(--c-neutral-900);
+    text-decoration: none;
+    transition: background-color 240ms var(--ease);
+  }
+
+  .door p {
+    margin: 0;
+  }
+
+  .door .eyebrow {
+    margin-bottom: 8px;
+  }
+
+  .door .display-2 {
+    margin-bottom: 8px;
+  }
+
+  .door--active:hover {
+    background: var(--c-brand-100);
+  }
+
+  .door--active:active {
+    background: var(--c-neutral-200);
+  }
+
+  .door--active:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .door--soon {
+    border-style: dashed;
+    background: transparent;
+    color: var(--c-neutral-700);
+  }
+
+  .door--soon .display-2 {
+    color: var(--c-neutral-700);
+  }
+
+  /* DM bandı */
+  .dm-band {
+    display: grid;
+    gap: 24px;
+  }
+
+  /* Ürün sayfası: galeri 7, boşluk 1, bilgi 4 */
+  .product {
+    display: grid;
+    gap: 32px;
+    margin-bottom: 48px;
+  }
+
+  .gallery__main {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: var(--r-card);
+    background: var(--c-neutral);
+  }
+
+  .gallery__main img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gallery__thumbs {
+    display: flex;
+    gap: 8px;
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+
+  .product__info .price-block {
+    margin: 16px 0;
+  }
+
+  .product__info .countdown {
+    margin-bottom: 24px;
+  }
+
+  .product__desc {
+    margin: 0 0 24px;
+  }
+
+  .product__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  @media (min-width: 768px) {
+    .dm-band {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .product {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+
+    .door {
+      padding: 32px;
+    }
+  }
+
+  /* 768–1023: hero iki kolon; 1024+ kuralı (7/1/4) bozulmaz */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .hero {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .doors {
+      grid-template-columns: 7fr 5fr;
+      gap: 24px;
+    }
+
+    .dm-band {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .product {
+      grid-template-columns: 7fr 1fr 4fr;
+    }
+
+    .product__info {
+      grid-column: 3;
+      margin-top: 32px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .door {
       transition: none;
     }
   }

@@ -190,6 +190,12 @@ public class ProductManager : IProductService
         return (HttpStatusCode.OK, new SuccessResult("Varyant silindi."));
     }
 
+    public async Task<(HttpStatusCode, IDataResult<List<ProductImage>>)> GetImagesForAsync(IReadOnlyCollection<int> productIds, CancellationToken cancellationToken = default)
+    {
+        var images = await _imageDal.GetListAsync(i => productIds.Contains(i.ProductId), cancellationToken);
+        return (HttpStatusCode.OK, new SuccessDataResult<List<ProductImage>>(images));
+    }
+
     public async Task<(HttpStatusCode, IDataResult<List<ProductImage>>)> GetImagesAsync(int productId, CancellationToken cancellationToken = default)
     {
         var images = await _imageDal.GetListAsync(i => i.ProductId == productId, cancellationToken);

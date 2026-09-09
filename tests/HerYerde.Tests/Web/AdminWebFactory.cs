@@ -19,7 +19,8 @@ public sealed class AdminWebFactory : WebApplicationFactory<Program>
             {
                 ["ConnectionStrings:Default"] = TestDb.ConnectionString,
                 ["Admin:Email"] = AdminEmail,
-                ["Admin:Password"] = AdminPassword
+                ["Admin:Password"] = AdminPassword,
+                ["Seed:Catalog"] = "false"
             }));
     }
 

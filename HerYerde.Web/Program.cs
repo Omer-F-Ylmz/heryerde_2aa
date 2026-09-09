@@ -5,6 +5,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using HerYerde.Business.Abstract;
 using HerYerde.Business.DependencyResolvers.Autofac;
+using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -85,6 +86,7 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 await SeedFirstAdminAsync(app);
+await SeedCatalogAsync(app);
 
 app.Run();
 
@@ -104,6 +106,18 @@ static async Task SeedFirstAdminAsync(WebApplication app)
     var authService = scope.ServiceProvider.GetRequiredService<IAdminAuthService>();
     var (_, result) = await authService.EnsureSeedAsync(email, password);
     logger.LogInformation("Yönetici tohumlama: {Message}", result.Message);
+}
+
+/// <summary>Katalog boşsa açılış ürünleri; Seed:Catalog=false ile kapatılır (testler).</summary>
+static async Task SeedCatalogAsync(WebApplication app)
+{
+    if (!app.Configuration.GetValue("Seed:Catalog", true))
+    {
+        return;
+    }
+
+    using var scope = app.Services.CreateScope();
+    await DataSeeder.SeedCatalogAsync(scope.ServiceProvider.GetRequiredService<HerYerdeContext>());
 }
 
 /// <summary>Yalnız yönetici çerezine sahip isteklerin /admin altına girmesini sağlar.</summary>

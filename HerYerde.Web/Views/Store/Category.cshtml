@@ -1,0 +1,32 @@
+@using HerYerde.Web.Models
+@model CategoryPageVm
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container section">
+    <p class="eyebrow">Ev</p>
+    <h1 class="display-2 h-mark">@Model.Title</h1>
+    <partial name="Components/_CategoryTabs" model="Model.Tabs" />
+    <nav class="tabs" aria-label="Sıralama">
+        <ul class="tabs__list">
+            <li><a class="tab" href="@Model.SortBaseUrl" aria-current="@(Model.Sort == "yeni" ? "true" : null)">Yeni</a></li>
+            <li><a class="tab" href="@(Model.SortBaseUrl)?sirala=fiyat" aria-current="@(Model.Sort == "fiyat" ? "true" : null)">Fiyat</a></li>
+        </ul>
+    </nav>
+    <h2 class="visually-hidden">Ürünler</h2>
+    @if (Model.Cards.Count == 0)
+    {
+        <p class="empty surface-elevated">Bu rafa henüz ürün konmadı.</p>
+    }
+    else
+    {
+        <div class="grid">
+            @foreach (var card in Model.Cards)
+            {
+                <partial name="Components/_ProductCard" model="card" />
+            }
+        </div>
+    }
+    <partial name="Components/_Pagination" model="Model.Pagination" />
+</div>
