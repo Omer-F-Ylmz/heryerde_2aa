@@ -25,5 +25,6 @@ public static class TestDb
         await context.ProductVariants.ExecuteDeleteAsync();
         await context.Products.IgnoreQueryFilters().ExecuteDeleteAsync();
         await context.Categories.ExecuteDeleteAsync();
+        await context.AdminUsers.ExecuteDeleteAsync();
     }
 }

@@ -13,6 +13,7 @@ public class HerYerdeContext : DbContext
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,9 +76,22 @@ public class HerYerdeContext : DbContext
             e.Property(i => i.Id).HasColumnName("id");
             e.Property(i => i.ProductId).HasColumnName("product_id");
             e.Property(i => i.Url).HasColumnName("url").HasMaxLength(500).IsRequired();
+            e.Property(i => i.Alt).HasColumnName("alt").HasMaxLength(200).IsRequired();
             e.Property(i => i.SortOrder).HasColumnName("sort_order");
             e.Property(i => i.IsPrimary).HasColumnName("is_primary");
             e.HasOne<Product>().WithMany().HasForeignKey(i => i.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AdminUser>(e =>
+        {
+            e.ToTable("admin_user");
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).HasColumnName("id");
+            e.Property(a => a.Email).HasColumnName("email").HasMaxLength(200).IsRequired();
+            e.Property(a => a.PasswordHash).HasColumnName("password_hash").HasMaxLength(400).IsRequired();
+            e.Property(a => a.FailedAttempts).HasColumnName("failed_attempts");
+            e.Property(a => a.LockedUntil).HasColumnName("locked_until");
+            e.HasIndex(a => a.Email).IsUnique().HasDatabaseName("ux_admin_user_email");
         });
     }
 }

@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 
 @source "../HerYerde.Web/Views";
+@source "../HerYerde.Web/Areas";
 
 @theme {
   --color-*: initial;
@@ -296,3 +297,773 @@
     }
   }
 }
+
+@layer components {
+  /* --- YÃ¶netim paneli: base -> elevated -> floating (rail) --- */
+  .admin-body {
+    display: block;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .admin-shell {
+    display: grid;
+    gap: 24px;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding: 16px;
+  }
+
+  .admin-rail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--c-neutral-50);
+    border: 1px solid var(--c-neutral-200);
+    box-shadow: var(--shadow-floating);
+  }
+
+  .admin-rail__brand {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+  }
+
+  .wordmark--rail {
+    font-size: 20px;
+  }
+
+  .admin-rail__tag {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-brand-700);
+  }
+
+  .admin-nav {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    flex-wrap: wrap;
+  }
+
+  .admin-nav__link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: var(--c-neutral-900);
+    text-decoration: none;
+    transition: background-color 240ms var(--ease), color 240ms var(--ease);
+  }
+
+  .admin-nav__link:hover {
+    background: var(--c-brand-100);
+    color: var(--c-brand-900);
+  }
+
+  .admin-nav__link:active {
+    background: var(--c-neutral-200);
+  }
+
+  .admin-nav__link:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .admin-nav__link.is-current {
+    background: var(--c-brand-900);
+    color: var(--c-neutral-50);
+  }
+
+  .admin-nav__link.is-current .icon {
+    color: var(--c-brand-100);
+  }
+
+  .admin-rail__exit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .admin-rail__who {
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .admin-main {
+    display: block;
+    align-items: initial;
+    min-width: 0;
+  }
+
+  .admin-main--bare {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding: 16px;
+    width: 100%;
+  }
+
+  .admin-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding: 24px 16px;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .admin-footer--shell {
+    max-width: 1440px;
+  }
+
+  .gate-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding: 24px 16px;
+    width: 100%;
+  }
+
+  .footer-link {
+    color: var(--c-accent-deep);
+    font-weight: 600;
+    text-underline-offset: 4px;
+  }
+
+  .footer-link:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  /* --- Baslik ve tip --- */
+  .display-2 {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    margin: 0 0 8px;
+  }
+
+  .heading-3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+
+  .page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .page-head__note {
+    max-width: 640px;
+    margin: 0;
+    color: var(--c-neutral-700);
+    font-size: 14px;
+  }
+
+  /* --- Dugmeler --- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 240ms var(--ease), background-color 240ms var(--ease), color 240ms var(--ease);
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .btn:active {
+    transform: translateY(1px);
+  }
+
+  .btn--primary {
+    background: var(--c-brand);
+    color: #ffffff;
+  }
+
+  .btn--primary .icon {
+    color: currentColor;
+  }
+
+  .btn--primary:hover {
+    background: var(--c-brand-900);
+  }
+
+  .btn--secondary {
+    background: var(--c-accent);
+    color: #ffffff;
+  }
+
+  .btn--secondary .icon {
+    color: currentColor;
+  }
+
+  .btn--secondary:hover {
+    background: var(--c-accent-deep);
+  }
+
+  .btn--ghost {
+    background: transparent;
+    border-color: var(--c-neutral-200);
+    color: var(--c-neutral-900);
+  }
+
+  .btn--ghost:hover {
+    background: var(--c-brand-100);
+    color: var(--c-brand-900);
+  }
+
+  .btn--danger {
+    background: transparent;
+    border-color: var(--c-brand-300);
+    color: var(--c-brand-900);
+  }
+
+  .btn--danger:hover {
+    background: var(--c-brand-900);
+    color: var(--c-neutral-50);
+  }
+
+  .btn--sm {
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  .btn--block {
+    width: 100%;
+  }
+
+  /* --- Alanlar --- */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+    /* dar ekranda sıkışıp değeri kırpmak yerine alt satıra iner */
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+
+  .field__label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-brand-700);
+  }
+
+  .field__input {
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.4;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--c-neutral-200);
+    background: #ffffff;
+    color: var(--c-neutral-900);
+    width: 100%;
+    transition: border-color 240ms var(--ease);
+  }
+
+  .field__input:hover {
+    border-color: var(--c-brand-300);
+  }
+
+  .field__input:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 1px;
+    border-color: var(--c-accent);
+  }
+
+  .field__input--area {
+    resize: vertical;
+    line-height: 1.7;
+  }
+
+  .field__input--tiny {
+    width: 72px;
+    padding: 8px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .field__static {
+    margin: 0;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .field__hint {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: var(--c-accent-deep);
+  }
+
+  .field__error {
+    font-size: 14px;
+    color: var(--c-brand-900);
+  }
+
+  .field-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .fieldset {
+    border: 1px solid var(--c-neutral-200);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 0 0 16px;
+  }
+
+  .fieldset__legend {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-brand-700);
+    padding-inline: 8px;
+  }
+
+  .fieldset__note {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    cursor: pointer;
+  }
+
+  .switch input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--c-accent);
+  }
+
+  .switch input:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .form-card {
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .form-card__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .form-alert {
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--c-brand-300);
+    background: var(--c-brand-100);
+    color: var(--c-brand-900);
+    font-weight: 600;
+    margin: 0 0 24px;
+  }
+
+  .form-alert:empty {
+    display: none;
+  }
+
+  .empty {
+    padding: 32px;
+    border-radius: 16px;
+    color: var(--c-neutral-700);
+    margin: 0;
+  }
+
+  /* --- Tablo --- */
+  .table-wrap {
+    /* position: relative — .visually-hidden mutlak konumu tabloyla birlikte kayar, sayfayı genişletmez */
+    position: relative;
+    border-radius: 16px;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+    font-size: 16px;
+  }
+
+  .table th,
+  .table td {
+    text-align: left;
+    padding: 16px;
+    border-bottom: 1px solid var(--c-neutral-200);
+    vertical-align: middle;
+  }
+
+  .table thead th {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-brand-700);
+    white-space: nowrap;
+  }
+
+  .table tbody tr:last-child th,
+  .table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .table__num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .table__actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .table .cell-child {
+    padding-left: 32px;
+    font-weight: 400;
+  }
+
+  .cell-root {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cell-product {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cell-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .cell-mono {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--c-neutral-700);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .price {
+    display: block;
+    font-weight: 600;
+  }
+
+  .price--was {
+    font-weight: 400;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+    text-decoration: line-through;
+  }
+
+  .price--now {
+    color: var(--c-brand);
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .tag--live {
+    background: var(--c-accent);
+    color: #ffffff;
+  }
+
+  .tag--draft {
+    background: var(--c-neutral-200);
+    color: var(--c-neutral-900);
+  }
+
+  .tag--campaign {
+    background: var(--c-brand);
+    color: #ffffff;
+  }
+
+  .tag--expired {
+    background: var(--c-neutral-200);
+    color: var(--c-neutral-700);
+  }
+
+  .tag--root {
+    background: var(--c-brand-100);
+    color: var(--c-brand-900);
+  }
+
+  .tag--primary {
+    background: var(--c-accent-deep);
+    color: #ffffff;
+  }
+
+  /* --- Urun duzenleme: kirik simetri --- */
+  .editor {
+    display: grid;
+    gap: 24px;
+  }
+
+  .editor__main,
+  .editor__side {
+    min-width: 0;
+  }
+
+  .side-card {
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .side-card:last-child {
+    margin-bottom: 0;
+  }
+
+  .side-card__note {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .side-card__empty {
+    margin: 0 0 16px;
+    color: var(--c-neutral-700);
+  }
+
+  .side-card__form {
+    padding-top: 16px;
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  /* yan sütun dar: alanlar ikişerli kalsın */
+  .side-card .field {
+    flex: 1 1 120px;
+  }
+
+  .stack {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+  }
+
+  .stack__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 0;
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .stack__label {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 96px;
+  }
+
+  .stack__meta {
+    font-size: 14px;
+    color: var(--c-neutral-700);
+    overflow-wrap: anywhere;
+  }
+
+  .stack__form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .thumb {
+    border-radius: 8px;
+    border: 1px solid var(--c-neutral-200);
+    object-fit: cover;
+    background: var(--c-neutral-200);
+  }
+
+  /* --- Giris kapisi --- */
+  .gate {
+    display: grid;
+    gap: 48px;
+    padding-block: 48px;
+  }
+
+  .gate__list {
+    list-style: none;
+    margin: 32px 0 0;
+    padding: 0;
+  }
+
+  .gate__list li {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .gate__num {
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--c-brand-700);
+  }
+
+  .gate__card {
+    border-radius: 16px;
+    padding: 32px;
+    align-self: start;
+  }
+
+  .gate__card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .gate__note {
+    margin: 16px 0 0;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  @media (min-width: 768px) {
+    .admin-shell,
+    .admin-main--bare,
+    .gate-header,
+    .admin-footer {
+      padding-inline: 32px;
+    }
+
+    .display-2 {
+      font-size: 48px;
+    }
+
+    .field-row--three .field {
+      flex: 1 1 160px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .admin-shell {
+      grid-template-columns: 260px 1fr;
+      align-items: start;
+      padding-block: 32px;
+    }
+
+    .admin-rail {
+      position: sticky;
+      top: 32px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 32px;
+      padding: 24px;
+    }
+
+    .admin-nav {
+      flex-direction: column;
+      flex: initial;
+    }
+
+    .admin-rail__exit {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+    }
+
+    /* kirik simetri: form 7fr, bosluk 1fr, yan sutun 5fr ve bir kademe asagida */
+    .editor {
+      grid-template-columns: 7fr 1fr 5fr;
+      align-items: start;
+    }
+
+    .editor__main {
+      grid-column: 1;
+    }
+
+    .editor__side {
+      grid-column: 3;
+      margin-top: 32px;
+    }
+
+    .gate {
+      grid-template-columns: 6fr 1fr 5fr;
+      align-items: start;
+      padding-block: 96px;
+    }
+
+    .gate__card {
+      grid-column: 3;
+      margin-top: 32px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn,
+    .admin-nav__link,
+    .field__input {
+      transition: none;
+    }
+  }
+}
+

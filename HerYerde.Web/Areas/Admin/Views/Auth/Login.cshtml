@@ -1,0 +1,47 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Yönetim girişi";
+}
+
+<section class="gate">
+    <div class="gate__statement">
+        <p class="eyebrow">HerYerde yönetim</p>
+        <h1 class="display-2">Şalvardan sofraya, hepsi bu ekranlardan geçer.</h1>
+        <p class="lead">Giyim ve Ev alanları tek panelde: kategori ağacı, kampanya etiketi, beden ve stok.</p>
+        <ul class="gate__list">
+            <li><span class="gate__num">01</span><span>İki kök alan, iki seviye kategori</span></li>
+            <li><span class="gate__num">02</span><span>Giyim varyantlı, Ev varyantsız ürün</span></li>
+            <li><span class="gate__num">03</span><span>Kampanya fiyatı, etiketi ve bitiş anı</span></li>
+        </ul>
+    </div>
+
+    <div class="gate__card surface-elevated">
+        <div class="gate__card-head">
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <h2 class="heading-3">Giriş</h2>
+        </div>
+
+        <form method="post" asp-area="Admin" asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]">
+            <div asp-validation-summary="ModelOnly" class="form-alert" role="alert"></div>
+
+            <div class="field">
+                <label class="field__label" asp-for="Email"></label>
+                <input class="field__input" asp-for="Email" autocomplete="username" inputmode="email" />
+                <span class="field__error" asp-validation-for="Email"></span>
+            </div>
+
+            <div class="field">
+                <label class="field__label" asp-for="Password"></label>
+                <input class="field__input" asp-for="Password" type="password" autocomplete="current-password" />
+                <span class="field__error" asp-validation-for="Password"></span>
+            </div>
+
+            <button class="btn btn--primary btn--block" type="submit">
+                <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+                <span>Panele gir</span>
+            </button>
+        </form>
+
+        <p class="gate__note">Beş hatalı denemeden sonra hesap 15 dakika kilitlenir.</p>
+    </div>
+</section>

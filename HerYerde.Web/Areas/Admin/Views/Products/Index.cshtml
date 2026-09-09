@@ -1,0 +1,85 @@
+@model ProductListViewModel
+@{
+    ViewData["Title"] = "Ürünler";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Katalog</p>
+        <h1 class="display-2">Ürünler</h1>
+        <p class="page-head__note">Giyim ürünü varyantsız yayına alınamaz; Ev ürününde beden ve renk boş kalır.</p>
+    </div>
+    <a class="btn btn--primary" asp-area="Admin" asp-controller="Products" asp-action="Create">
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        <span>Ürün ekle</span>
+    </a>
+</div>
+
+@if (Model.Products.Count == 0)
+{
+    <p class="empty surface-elevated">Henüz ürün yok. İlk ürünü ekleyin; varyant ve görselleri kaydettikten sonra eklersiniz.</p>
+}
+else
+{
+    <div class="table-wrap surface-elevated">
+        <table class="table">
+            <caption class="visually-hidden">Ürünler, kategori, fiyat, stok ve yayın durumu</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ürün</th>
+                    <th scope="col">Kategori</th>
+                    <th scope="col" class="table__num">Fiyat</th>
+                    <th scope="col" class="table__num">Stok</th>
+                    <th scope="col">Durum</th>
+                    <th scope="col"><span class="visually-hidden">İşlem</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var product in Model.Products)
+            {
+                var campaignLive = ProductRules.CampaignIsActive(product, Model.Now);
+                <tr>
+                    <th scope="row">
+                        <div class="cell-product">
+                            <span>@product.Name</span>
+                            <span class="cell-mono">@product.Slug</span>
+                        </div>
+                    </th>
+                    <td>@(Model.CategoryNames.TryGetValue(product.CategoryId, out var name) ? name : "—")</td>
+                    <td class="table__num">
+                        @if (campaignLive)
+                        {
+                            <span class="price price--was">@product.Price.ToString("N2") ₺</span>
+                            <span class="price price--now">@product.CampaignPrice!.Value.ToString("N2") ₺</span>
+                        }
+                        else
+                        {
+                            <span class="price">@product.Price.ToString("N2") ₺</span>
+                        }
+                    </td>
+                    <td class="table__num">@(Model.StockTotals.TryGetValue(product.Id, out var stock) ? stock : 0)</td>
+                    <td>
+                        <div class="cell-status">
+                        <span class="tag @(product.IsActive ? "tag--live" : "tag--draft")">@(product.IsActive ? "Yayında" : "Taslak")</span>
+                        @if (product.CampaignPrice is not null)
+                        {
+                            <span class="tag @(campaignLive ? "tag--campaign" : "tag--expired")">
+                                @(campaignLive ? (product.CampaignLabel ?? "Kampanya") : "Kampanya bitti")
+                            </span>
+                        }
+                        </div>
+                    </td>
+                    <td>
+                        <div class="table__actions">
+                        <a class="btn btn--ghost btn--sm" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@product.Id">Düzenle</a>
+                        <form asp-area="Admin" asp-controller="Products" asp-action="Delete" asp-route-id="@product.Id" method="post">
+                            <button class="btn btn--danger btn--sm" type="submit">Sil</button>
+                        </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

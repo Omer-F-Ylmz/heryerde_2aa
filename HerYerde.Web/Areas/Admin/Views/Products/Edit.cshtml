@@ -1,0 +1,181 @@
+@model ProductFormViewModel
+@{
+    ViewData["Title"] = $"{Model.Name} düzenle";
+
+    static string VariantDetail(ProductVariant variant)
+    {
+        var parts = new[] { variant.Size, variant.Color }.Where(part => !string.IsNullOrWhiteSpace(part)).ToArray();
+        return parts.Length == 0 ? "tek tip" : string.Join(" · ", parts);
+    }
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Katalog</p>
+        <h1 class="display-2">@Model.Name</h1>
+        <p class="page-head__note">Adres: <span class="cell-mono">@Model.Slug</span></p>
+    </div>
+    <a class="btn btn--ghost" asp-area="Admin" asp-controller="Products" asp-action="Index">Listeye dön</a>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+<div class="editor">
+    <form class="form-card surface-elevated editor__main" method="post" asp-area="Admin" asp-controller="Products" asp-action="Edit">
+        <input type="hidden" asp-for="Id" />
+        <partial name="_ProductFields" model="Model" />
+        <div class="form-card__foot">
+            <button class="btn btn--primary" type="submit">
+                <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+                <span>Kaydet</span>
+            </button>
+        </div>
+    </form>
+
+    <div class="editor__side">
+        <section class="side-card surface-elevated" aria-labelledby="variants-heading">
+            <h2 class="heading-3" id="variants-heading">Varyantlar</h2>
+            <p class="side-card__note">
+                @(Model.RequiresVariants
+                    ? "Giyim alanı: beden ve renk girin, stok kodu benzersizdir."
+                    : "Ev alanı: beden ve renk boş kalır, yalnız stok kodu ve adet.")
+            </p>
+
+            @if (Model.Variants.Count == 0)
+            {
+                <p class="side-card__empty">Varyant yok.</p>
+            }
+            else
+            {
+                <ul class="stack">
+                    @foreach (var variant in Model.Variants)
+                    {
+                        <li class="stack__row">
+                            <div class="stack__label">
+                                <span class="cell-mono">@variant.Sku</span>
+                                <span class="stack__meta">@VariantDetail(variant)</span>
+                            </div>
+                            <form class="stack__form" asp-area="Admin" asp-controller="Products" asp-action="UpdateStock" method="post">
+                                <input type="hidden" name="productId" value="@Model.Id" />
+                                <input type="hidden" name="variantId" value="@variant.Id" />
+                                <label class="visually-hidden" for="stock-@variant.Id">@variant.Sku stok adedi</label>
+                                <input class="field__input field__input--tiny" id="stock-@variant.Id" name="stock" type="number" min="0" value="@variant.Stock" />
+                                <button class="btn btn--ghost btn--sm" type="submit">Stok</button>
+                            </form>
+                            <form asp-area="Admin" asp-controller="Products" asp-action="DeleteVariant" method="post">
+                                <input type="hidden" name="productId" value="@Model.Id" />
+                                <input type="hidden" name="variantId" value="@variant.Id" />
+                                <button class="btn btn--danger btn--sm" type="submit">Sil</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <form class="side-card__form" asp-area="Admin" asp-controller="Products" asp-action="AddVariant" method="post">
+                <input type="hidden" name="ProductId" value="@Model.Id" />
+                @if (Model.RequiresVariants)
+                {
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field__label" for="variant-size">Beden</label>
+                            <input class="field__input" id="variant-size" name="Size" autocomplete="off" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="variant-color">Renk</label>
+                            <input class="field__input" id="variant-color" name="Color" autocomplete="off" />
+                        </div>
+                    </div>
+                }
+                <div class="field-row">
+                    <div class="field">
+                        <label class="field__label" for="variant-sku">Stok kodu</label>
+                        <input class="field__input" id="variant-sku" name="Sku" autocomplete="off" required />
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="variant-stock">Stok</label>
+                        <input class="field__input" id="variant-stock" name="Stock" type="number" min="0" value="0" />
+                    </div>
+                </div>
+                <button class="btn btn--secondary btn--block" type="submit">
+                    <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span>Varyant ekle</span>
+                </button>
+            </form>
+        </section>
+
+        <section class="side-card surface-elevated" aria-labelledby="images-heading">
+            <h2 class="heading-3" id="images-heading">Görseller</h2>
+            <p class="side-card__note">Adres olarak dosya yolu girilir; yükleme sonraki dalgada. Sıra küçükten büyüğe dizilir.</p>
+
+            @if (Model.Images.Count == 0)
+            {
+                <p class="side-card__empty">Görsel yok.</p>
+            }
+            else
+            {
+                <ul class="stack">
+                    @foreach (var image in Model.Images)
+                    {
+                        <li class="stack__row stack__row--image">
+                            <img class="thumb" src="@image.Url" alt="@image.Alt" width="56" height="56" loading="lazy" />
+                            <div class="stack__label">
+                                <span>@image.Alt</span>
+                                <span class="stack__meta cell-mono">@image.Url</span>
+                            </div>
+                            <form class="stack__form" asp-area="Admin" asp-controller="Products" asp-action="UpdateImageSort" method="post">
+                                <input type="hidden" name="productId" value="@Model.Id" />
+                                <input type="hidden" name="imageId" value="@image.Id" />
+                                <label class="visually-hidden" for="sort-@image.Id">@image.Alt sırası</label>
+                                <input class="field__input field__input--tiny" id="sort-@image.Id" name="sortOrder" type="number" min="0" value="@image.SortOrder" />
+                                <button class="btn btn--ghost btn--sm" type="submit">Sıra</button>
+                            </form>
+                            @if (image.IsPrimary)
+                            {
+                                <span class="tag tag--primary">Birincil</span>
+                            }
+                            else
+                            {
+                                <form asp-area="Admin" asp-controller="Products" asp-action="SetPrimaryImage" method="post">
+                                    <input type="hidden" name="productId" value="@Model.Id" />
+                                    <input type="hidden" name="imageId" value="@image.Id" />
+                                    <button class="btn btn--ghost btn--sm" type="submit">Birincil yap</button>
+                                </form>
+                            }
+                            <form asp-area="Admin" asp-controller="Products" asp-action="DeleteImage" method="post">
+                                <input type="hidden" name="productId" value="@Model.Id" />
+                                <input type="hidden" name="imageId" value="@image.Id" />
+                                <button class="btn btn--danger btn--sm" type="submit">Sil</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <form class="side-card__form" asp-area="Admin" asp-controller="Products" asp-action="AddImage" method="post">
+                <input type="hidden" name="ProductId" value="@Model.Id" />
+                <div class="field">
+                    <label class="field__label" for="image-url">Görsel adresi</label>
+                    <input class="field__input" id="image-url" name="Url" autocomplete="off" required placeholder="/img/urun/salvar-1.jpg" />
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label class="field__label" for="image-alt">Alternatif metin</label>
+                        <input class="field__input" id="image-alt" name="Alt" autocomplete="off" required />
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="image-sort">Sıra</label>
+                        <input class="field__input" id="image-sort" name="SortOrder" type="number" min="0" value="@Model.Images.Count" />
+                    </div>
+                </div>
+                <button class="btn btn--secondary btn--block" type="submit">
+                    <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span>Görsel ekle</span>
+                </button>
+            </form>
+        </section>
+    </div>
+</div>

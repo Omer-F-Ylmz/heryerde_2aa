@@ -1,4 +1,6 @@
 using Autofac;
+using HerYerde.Business.Abstract;
+using HerYerde.Business.Concrete;
 using HerYerde.Core.DataAccess;
 using HerYerde.DataAccess.Abstract;
 using HerYerde.DataAccess.Concrete.EntityFramework;
@@ -15,5 +17,10 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfProductDal>().As<IProductDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductVariantDal>().As<IProductVariantDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductImageDal>().As<IProductImageDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfAdminUserDal>().As<IAdminUserDal>().InstancePerLifetimeScope();
+
+        builder.RegisterType<AdminAuthManager>().As<IAdminAuthService>().InstancePerLifetimeScope();
+        builder.RegisterType<CategoryManager>().As<ICategoryService>().InstancePerLifetimeScope();
+        builder.RegisterType<ProductManager>().As<IProductService>().InstancePerLifetimeScope();
     }
 }

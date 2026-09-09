@@ -1,0 +1,79 @@
+@model CategoryListViewModel
+@{
+    ViewData["Title"] = "Kategoriler";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Kategori ağacı</p>
+        <h1 class="display-2">Kategoriler</h1>
+        <p class="page-head__note">Kök alanlar (Giyim, Ev) sabittir: adresi değişmez, silinmez. Alt kategoriler onların altına açılır.</p>
+    </div>
+    <a class="btn btn--primary" asp-area="Admin" asp-controller="Categories" asp-action="Create">
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        <span>Kategori ekle</span>
+    </a>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+@if (Model.Categories.Count == 0)
+{
+    <p class="empty surface-elevated">Henüz kategori yok. Önce Giyim ve Ev kök kategorilerini açın.</p>
+}
+else
+{
+    <div class="table-wrap surface-elevated">
+        <table class="table">
+            <caption class="visually-hidden">Kategoriler, kök alan ve ürün sayısıyla</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ad</th>
+                    <th scope="col">Adres</th>
+                    <th scope="col" class="table__num">Sıra</th>
+                    <th scope="col" class="table__num">Ürün</th>
+                    <th scope="col">Durum</th>
+                    <th scope="col"><span class="visually-hidden">İşlem</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var category in Model.Categories)
+            {
+                var isRoot = category.ParentId is null;
+                var count = Model.ProductCounts.TryGetValue(category.Id, out var c) ? c : 0;
+                <tr>
+                    <th scope="row" class="@(isRoot ? null : "cell-child")">
+                        <div class="cell-root">
+                            @if (isRoot)
+                            {
+                                <span class="tag tag--root">Kök alan</span>
+                            }
+                            <span>@category.Name</span>
+                        </div>
+                    </th>
+                    <td class="cell-mono">@category.Slug</td>
+                    <td class="table__num">@category.SortOrder</td>
+                    <td class="table__num">@count</td>
+                    <td>
+                        <span class="tag @(category.IsActive ? "tag--live" : "tag--draft")">@(category.IsActive ? "Yayında" : "Taslak")</span>
+                    </td>
+                    <td>
+                        <div class="table__actions">
+                        <a class="btn btn--ghost btn--sm" asp-area="Admin" asp-controller="Categories" asp-action="Edit" asp-route-id="@category.Id">Düzenle</a>
+                        @if (!isRoot)
+                        {
+                            <form asp-area="Admin" asp-controller="Categories" asp-action="Delete" asp-route-id="@category.Id" method="post">
+                                <button class="btn btn--danger btn--sm" type="submit">Sil</button>
+                            </form>
+                        }
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
