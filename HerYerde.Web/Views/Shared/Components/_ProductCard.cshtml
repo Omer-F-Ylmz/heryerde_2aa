@@ -1,0 +1,26 @@
+@using HerYerde.Web.Models
+@model ProductCardVm
+<article class="card">
+    <a class="card__media" href="@Model.Url" tabindex="-1" aria-hidden="true">
+        @if (Model.ImageUrl is null)
+        {
+            <span class="ph"></span>
+        }
+        else
+        {
+            <img src="@Model.ImageUrl" alt="" width="600" height="750" loading="@(Model.Lazy ? "lazy" : "eager")" />
+            @if (Model.SecondImageUrl is not null)
+            {
+                <img class="card__alt" src="@Model.SecondImageUrl" alt="" width="600" height="750" loading="lazy" />
+            }
+        }
+        @if (Model.Badge is not null)
+        {
+            <partial name="Components/_Badge" model="Model.Badge" />
+        }
+    </a>
+    <div class="card__body">
+        <h3 class="card__title"><a href="@Model.Url">@Model.Name</a></h3>
+        <partial name="Components/_PriceBlock" model="new PriceBlockVm(Model.Price, Model.CampaignPrice)" />
+    </div>
+</article>

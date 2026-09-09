@@ -65,6 +65,7 @@ app.UseRequestLocalization(new RequestLocalizationOptions
     SupportedUICultures = [turkish]
 });
 
+app.UseStatusCodePagesWithReExecute("/hata/{0}");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();

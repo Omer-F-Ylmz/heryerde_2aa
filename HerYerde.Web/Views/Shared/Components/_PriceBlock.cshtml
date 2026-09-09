@@ -1,0 +1,13 @@
+@using HerYerde.Web.Models
+@model PriceBlockVm
+<p class="price-block@(Model.Large ? " price-block--lg" : "")">
+    @if (Model.HasCampaign)
+    {
+        <span class="price-block__now">@Money.Tl(Model.CampaignPrice!.Value)</span>
+        <s class="price-block__was"><span class="visually-hidden">Eski fiyat </span>@Money.Tl(Model.Price)</s>
+    }
+    else
+    {
+        <span class="price-block__now price-block__now--plain">@Money.Tl(Model.Price)</span>
+    }
+</p>

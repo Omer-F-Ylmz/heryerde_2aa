@@ -1,0 +1,133 @@
+@using HerYerde.Web.Models
+@{
+    ViewData["Title"] = "Stil rehberi";
+    var card = new ProductCardVm { Name = "Granit döküm tencere seti", Slug = "granit-dokum-tencere-seti", Price = 3190m, CampaignPrice = 2490m, ImageAlt = "Granit döküm tencere seti", Badge = new BadgeVm(BadgeKind.Campaign, "Günün kampanyası"), Lazy = false };
+    var cardPlain = new ProductCardVm { Name = "Hasır piknik sepeti", Slug = "hasir-piknik-sepeti", Price = 890m, ImageAlt = "Hasır piknik sepeti", Badge = new BadgeVm(BadgeKind.Gift, "Hediye paketi") };
+    var cardLow = new ProductCardVm { Name = "Bambu kapaklı baharatlık", Slug = "bambu-kapakli-baharatlik", Price = 420m, ImageAlt = "Bambu kapaklı baharatlık", Badge = new BadgeVm(BadgeKind.Low, "Son 3 adet") };
+    var cardImg = new ProductCardVm { Name = "24 parça porselen yemek takımı", Slug = "24-parca-porselen-yemek-takimi", Price = 4290m, ImageAlt = "Porselen yemek takımı", ImageUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 750'%3E%3Crect width='600' height='750' fill='%23F2DED6'/%3E%3Ccircle cx='300' cy='375' r='160' fill='%23A8442A'/%3E%3C/svg%3E", SecondImageUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 750'%3E%3Crect width='600' height='750' fill='%230F6E5C'/%3E%3Crect x='140' y='215' width='320' height='320' rx='24' fill='%23FDFAF5'/%3E%3C/svg%3E" };
+    var picker = new VariantPickerVm(
+        [new("S", 4), new("M", 2), new("L", 0), new("XL", 6)],
+        [new("Kiremit", 3), new("Krem", 0)]);
+    var badges = new[] { new BadgeVm(BadgeKind.Campaign, "Kampanya"), new BadgeVm(BadgeKind.Gift, "Hediye"), new BadgeVm(BadgeKind.Low, "Tükeniyor") };
+    var priceCampaign = new PriceBlockVm(3190m, 2490m);
+    var pricePlain = new PriceBlockVm(890m, null);
+    var priceLarge = new PriceBlockVm(3190m, 2490m, true);
+    var dm1 = new TestimonialVm("Ayşe K.", "Tencereler tam fotoğraftaki gibi geldi, kapıda ödedim, teşekkürler.");
+    var dm2 = new TestimonialVm("Merve T.", "Çeyiz için aldım, paketleme çok özenliydi.");
+    var pager = new PaginationVm(2, 5, "/ev");
+    var tabs = new List<CategoryTabVm>
+    {
+        new("Tümü", "/ev", true), new("Tencere & Tava", "/ev/tencere-tava", false), new("Yemek Takımı", "/ev/yemek-takimi", false),
+        new("Çatal-Kaşık", "/ev/catal-kasik", false), new("Saklama & Düzenleme", "/ev/saklama-duzenleme", false), new("Sepet & Dekor", "/ev/sepet-dekor", false)
+    };
+}
+
+<div class="container">
+    <section class="section">
+        <p class="eyebrow">Yalnız geliştirme ortamı</p>
+        <h1 class="display-1 h-mark">Sıcak Dükkân tasarım sistemi</h1>
+        <p class="lead">Kiremit, krem ve yeşil; Lora + Figtree; 8px ölçek; gölge yok, köşe 12px.</p>
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-colors">
+        <h2 id="sg-colors" class="display-2 h-mark">Renkler</h2>
+        <div class="sg-row">
+            <div class="sg-swatch sg-swatch--brand" title="Ana #A8442A"></div>
+            <div class="sg-swatch sg-swatch--brand-900" title="Ana koyu #5E2214"></div>
+            <div class="sg-swatch sg-swatch--brand-100" title="Ana açık #F2DED6"></div>
+            <div class="sg-swatch sg-swatch--neutral" title="Krem #F6F1E8"></div>
+            <div class="sg-swatch sg-swatch--neutral-200" title="Ayraç #E5DBCB"></div>
+            <div class="sg-swatch sg-swatch--accent" title="Yeşil #0F6E5C"></div>
+            <div class="sg-swatch sg-swatch--warn" title="Sarı #F3D27A"></div>
+        </div>
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-type">
+        <h2 id="sg-type" class="display-2 h-mark">Tipografi</h2>
+        <p class="display-1">Şalvardan sofraya</p>
+        <p class="display-2">Günün kampanyası</p>
+        <p class="heading-3">Kart başlığı 20px</p>
+        <p>Gövde 16px / 1.7 — Figtree. Çeyiz alıcısına güven veren, bağırmayan bir ton.</p>
+        <p class="page-head__note">Not metni 14px.</p>
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-buttons">
+        <h2 id="sg-buttons" class="display-2 h-mark">Düğmeler</h2>
+        <div class="sg-row">
+            <a class="btn btn--cta" href="#sg-buttons">Birincil (yeşil)</a>
+            <a class="btn btn--outline" href="#sg-buttons">İkincil (kiremit çerçeve)</a>
+            <a class="btn btn--cta" href="https://wa.me/905000000000?text=Merhaba">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                WhatsApp'tan sipariş ver
+            </a>
+            <button class="btn btn--outline" type="button" disabled title="Yakında">Sepete ekle</button>
+        </div>
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-badges">
+        <h2 id="sg-badges" class="display-2 h-mark">Rozetler</h2>
+        <div class="sg-row">
+            @foreach (var badge in badges)
+            {
+                <partial name="Components/_Badge" model="badge" />
+            }
+        </div>
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-price">
+        <h2 id="sg-price" class="display-2 h-mark">Fiyat bloğu</h2>
+        <div class="sg-row">
+            <partial name="Components/_PriceBlock" model="priceCampaign" />
+            <partial name="Components/_PriceBlock" model="pricePlain" />
+            <partial name="Components/_PriceBlock" model="priceLarge" />
+        </div>
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-cards">
+        <h2 id="sg-cards" class="display-2 h-mark">Ürün kartı</h2>
+        <div class="grid">
+            <partial name="Components/_ProductCard" model="card" />
+            <partial name="Components/_ProductCard" model="cardPlain" />
+            <partial name="Components/_ProductCard" model="cardLow" />
+            <partial name="Components/_ProductCard" model="cardImg" />
+        </div>
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-countdown">
+        <h2 id="sg-countdown" class="display-2 h-mark">Geri sayım</h2>
+        <partial name="Components/_Countdown" model="DateTime.UtcNow.AddDays(1).AddHours(3)" />
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-dm">
+        <h2 id="sg-dm" class="display-2 h-mark">Alıntı (DM)</h2>
+        <div class="sg-row">
+            <partial name="Components/_Testimonial" model="dm1" />
+            <partial name="Components/_Testimonial" model="dm2" />
+        </div>
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-trust">
+        <h2 id="sg-trust" class="display-2 h-mark">Güven bandı</h2>
+        <partial name="Components/_TrustStrip" />
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-picker">
+        <h2 id="sg-picker" class="display-2 h-mark">Varyant seçici</h2>
+        <partial name="Components/_VariantPicker" model="picker" />
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-tabs">
+        <h2 id="sg-tabs" class="display-2 h-mark">Kategori sekmeleri</h2>
+        <partial name="Components/_CategoryTabs" model="tabs" />
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-pager">
+        <h2 id="sg-pager" class="display-2 h-mark">Sayfalama</h2>
+        <partial name="Components/_Pagination" model="pager" />
+    </section>
+
+    <section class="sg-block" aria-labelledby="sg-404">
+        <h2 id="sg-404" class="display-2 h-mark">404</h2>
+        <p><a class="footer-link" href="/olmayan-sayfa">Markalı 404 sayfasını aç</a></p>
+    </section>
+</div>

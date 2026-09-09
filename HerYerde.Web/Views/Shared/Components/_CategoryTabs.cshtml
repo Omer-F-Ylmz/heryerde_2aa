@@ -1,0 +1,9 @@
+@model IReadOnlyList<HerYerde.Web.Models.CategoryTabVm>
+<nav class="tabs" aria-label="Alt kategoriler">
+    <ul class="tabs__list">
+        @foreach (var tab in Model)
+        {
+            <li><a class="tab" href="@tab.Url" aria-current="@(tab.Current ? "page" : null)">@tab.Name</a></li>
+        }
+    </ul>
+</nav>

@@ -1,27 +1,51 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@(ViewData["Title"] is string t ? $"{t} · HerYerde" : "HerYerde")</title>
-    <meta name="description" content="HerYerde — şalvardan sofraya, giyim ve ev ürünleri. Yakında." />
+    <meta name="description" content="HerYerde — çeyizden mutfağa ev ürünleri; kapıda ödeme, WhatsApp'tan sipariş." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600&family=Lora:wght@600&display=swap" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="surface-base">
-    <header class="site-header">
+    <header class="store-header">
         <a class="wordmark" href="/" aria-label="HerYerde ana sayfa">HerYerde</a>
-        <span class="site-header__meta">Giyim &amp; Ev</span>
+        <nav class="store-nav" aria-label="Alanlar">
+            <a class="store-nav__link" href="/ev">Ev</a>
+            <span class="store-nav__link store-nav__link--soon" aria-disabled="true">Örtü &amp; Eşarp <small>yakında</small></span>
+        </nav>
+        <div class="search" role="search">
+            <label class="visually-hidden" for="site-search">Ürün ara</label>
+            <input class="field__input" id="site-search" type="search" placeholder="Ürün ara (yakında)" readonly />
+            <button class="icon-btn" type="button" disabled aria-label="Ara (yakında)">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </button>
+        </div>
+        <button class="icon-btn" type="button" disabled aria-label="Sepet (yakında)">
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </button>
     </header>
-    <main id="main">
+    <main id="main" class="store-main">
         @RenderBody()
     </main>
-    <footer class="site-footer">
-        <span>HerYerde, @DateTime.UtcNow.Year</span>
-        <span class="site-footer__note">Kapıda ödeme &amp; havale/EFT</span>
+    <footer class="store-footer">
+        <div class="store-footer__links">
+            <a class="footer-link" href="@Config["Shop:WhatsApp"]" rel="noopener">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                WhatsApp
+            </a>
+            <a class="footer-link" href="https://instagram.com/heryerde_2aa" rel="noopener">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                @@heryerde_2aa
+            </a>
+        </div>
+        <span>HerYerde, @DateTime.UtcNow.Year · <span class="site-footer__note">Kapıda ödeme &amp; havale/EFT</span></span>
     </footer>
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

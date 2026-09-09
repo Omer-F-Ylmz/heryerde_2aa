@@ -1,0 +1,15 @@
+@model HerYerde.Web.Models.PaginationVm
+@if (Model.TotalPages > 1)
+{
+    <nav class="pager" aria-label="Sayfalar">
+        @if (Model.Page > 1)
+        {
+            <a class="btn btn--outline" rel="prev" href="@Model.UrlFor(Model.Page - 1)">Önceki</a>
+        }
+        <span class="pager__state">Sayfa @Model.Page / @Model.TotalPages</span>
+        @if (Model.Page < Model.TotalPages)
+        {
+            <a class="btn btn--outline" rel="next" href="@Model.UrlFor(Model.Page + 1)">Sonraki</a>
+        }
+    </nav>
+}

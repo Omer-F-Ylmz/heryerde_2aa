@@ -1,0 +1,25 @@
+@model HerYerde.Web.Models.VariantPickerVm
+@if (Model.Sizes.Count > 0)
+{
+    <fieldset class="chips">
+        <legend class="chips__legend">Beden</legend>
+        @foreach (var size in Model.Sizes)
+        {
+            var id = "size-" + size.Label.ToLowerInvariant().Replace(' ', '-');
+            <input class="chips__input" type="radio" name="size" id="@id" value="@size.Label" disabled="@(size.Stock <= 0)" />
+            <label class="chip" for="@id">@size.Label@(size.Stock <= 0 ? " · tükendi" : "")</label>
+        }
+    </fieldset>
+}
+@if (Model.Colors.Count > 0)
+{
+    <fieldset class="chips">
+        <legend class="chips__legend">Renk</legend>
+        @foreach (var color in Model.Colors)
+        {
+            var id = "color-" + color.Label.ToLowerInvariant().Replace(' ', '-');
+            <input class="chips__input" type="radio" name="color" id="@id" value="@color.Label" disabled="@(color.Stock <= 0)" />
+            <label class="chip" for="@id">@color.Label@(color.Stock <= 0 ? " · tükendi" : "")</label>
+        }
+    </fieldset>
+}
