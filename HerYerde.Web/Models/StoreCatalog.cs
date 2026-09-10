@@ -13,27 +13,8 @@ public static class StoreCatalog
            && campaign < product.Price
            && (product.CampaignEndsAt is null || product.CampaignEndsAt > now);
 
-    /// <summary>Aktif kampanyalılardan en yakın biten; süresizler en sona.</summary>
-    public static Product? PickHero(IEnumerable<Product> products, DateTime now)
-        => products
-            .Where(p => p.IsActive && IsCampaignActive(p, now))
-            .OrderBy(p => p.CampaignEndsAt ?? DateTime.MaxValue)
-            .ThenBy(p => p.Id)
-            .FirstOrDefault();
-
     public static decimal EffectivePrice(Product product, DateTime now)
         => IsCampaignActive(product, now) ? product.CampaignPrice!.Value : product.Price;
-
-    public static IEnumerable<Product> Sort(IEnumerable<Product> products, string? sort, DateTime now)
-        => sort == "fiyat"
-            ? products.OrderBy(p => EffectivePrice(p, now)).ThenBy(p => p.Id)
-            : products.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id);
-
-    public static List<Product> Similar(IEnumerable<Product> products, Product self, int take = 4)
-        => products
-            .Where(p => p.IsActive && p.Id != self.Id && p.CategoryId == self.CategoryId)
-            .Take(take)
-            .ToList();
 
     public static string WhatsAppUrl(string baseUrl, string productName)
         => baseUrl + "?text=" + Uri.EscapeDataString($"Merhaba, {productName} için sipariş vermek istiyorum.");

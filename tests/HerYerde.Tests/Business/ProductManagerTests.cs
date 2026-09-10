@@ -1,5 +1,6 @@
 using System.Net;
 using HerYerde.Business.Concrete;
+using HerYerde.DataAccess.Abstract;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Entities.Concrete;
@@ -185,9 +186,9 @@ public sealed class ProductManagerTests : IAsyncLifetime
         draft.IsActive = false;
         await new EfUnitOfWork(context).SaveChangesAsync();
 
-        var (_, items) = await manager.GetActiveWithCategorySlugAsync();
+        var (_, page) = await manager.GetActiveAsync(new ProductQuery { Now = DateTime.UtcNow });
 
-        var item = Assert.Single(items.Data!);
+        var item = Assert.Single(page.Data!.Items);
         Assert.Equal(yayinda, item.Product.Id);
         Assert.Equal("mutfak-sofra", item.CategorySlug);
     }

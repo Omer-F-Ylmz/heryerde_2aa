@@ -58,6 +58,10 @@ public class HerYerdeContext : DbContext
             e.Property(p => p.CreatedAt).HasColumnName("created_at");
             e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
             e.HasIndex(p => p.Slug).IsUnique().HasDatabaseName("ux_product_slug");
+            // Vitrin listesi: kategori + yayın süzgeci, en yeni önce.
+            e.HasIndex(p => new { p.CategoryId, p.IsActive, p.CreatedAt })
+                .IsDescending(false, false, true)
+                .HasDatabaseName("ix_product_category_id_is_active_created_at");
             e.HasQueryFilter(p => p.DeletedAt == null);
             e.HasOne<Category>().WithMany().HasForeignKey(p => p.CategoryId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -147,6 +151,10 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.CreatedAt).HasColumnName("created_at");
             e.HasIndex(o => o.OrderNo).IsUnique().HasDatabaseName("ux_order_order_no");
             e.HasIndex(o => o.AccessToken).IsUnique().HasDatabaseName("ux_order_access_token");
+            // Yönetim sipariş listesi: duruma göre süzüp en yeniden eskiye.
+            e.HasIndex(o => new { o.Status, o.CreatedAt })
+                .IsDescending(false, true)
+                .HasDatabaseName("ix_order_status_created_at");
         });
 
         modelBuilder.Entity<OrderItem>(e =>

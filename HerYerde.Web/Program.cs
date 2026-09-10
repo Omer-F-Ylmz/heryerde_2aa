@@ -15,7 +15,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Primitives;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +45,25 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(RateLimitPolicy.Select);
+});
+
+// Metin yanıtları br, yoksa gzip ile sıkışır; TLS altında da açık (statik varlıklar zaten sürümlü).
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes =
+    [
+        "text/html",
+        "text/css",
+        "text/javascript",
+        "application/javascript",
+        "application/json",
+        "image/svg+xml",
+        "application/xml",
+        "text/xml"
+    ];
 });
 
 builder.Services.AddDbContext<HerYerdeContext>(options =>
@@ -112,7 +133,13 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 
 app.UseStatusCodePagesWithReExecute("/hata/{0}");
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseResponseCompression();
+// Statik varlıklar asp-append-version ile sürümlendiği için bir yıl değişmez sayılır.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context => context.Context.Response.Headers.CacheControl =
+        new StringValues("public, max-age=31536000, immutable")
+});
 app.UseRouting();
 app.UseRateLimiter();
 app.UseCookiePolicy();

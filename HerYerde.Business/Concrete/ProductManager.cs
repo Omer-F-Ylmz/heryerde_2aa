@@ -39,11 +39,26 @@ public class ProductManager : IProductService
         return (HttpStatusCode.OK, new SuccessDataResult<List<Product>>(products));
     }
 
-    public async Task<(HttpStatusCode, IDataResult<List<ProductListItem>>)> GetActiveWithCategorySlugAsync(CancellationToken cancellationToken = default)
+    public async Task<(HttpStatusCode, IDataResult<ProductPage>)> GetActiveAsync(ProductQuery query, CancellationToken cancellationToken = default)
     {
-        var rows = await _productDal.GetActiveWithCategorySlugAsync(cancellationToken);
+        var (rows, total) = await _productDal.GetActiveAsync(query, cancellationToken);
         var items = rows.Select(r => new ProductListItem(r.Product, r.CategorySlug)).ToList();
-        return (HttpStatusCode.OK, new SuccessDataResult<List<ProductListItem>>(items));
+        return (HttpStatusCode.OK, new SuccessDataResult<ProductPage>(new ProductPage(items, total)));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<ProductListItem?>)> GetCampaignHeroAsync(DateTime now, CancellationToken cancellationToken = default)
+    {
+        var row = await _productDal.GetCampaignHeroAsync(now, cancellationToken);
+        var hero = row is null ? null : new ProductListItem(row.Value.Product, row.Value.CategorySlug);
+        return (HttpStatusCode.OK, new SuccessDataResult<ProductListItem?>(hero));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<Product>)> GetActiveBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        var product = await _productDal.GetAsync(p => p.Slug == slug && p.IsActive, cancellationToken);
+        return product is null
+            ? (HttpStatusCode.NotFound, new ErrorDataResult<Product>("Ürün bulunamadı."))
+            : (HttpStatusCode.OK, new SuccessDataResult<Product>(product));
     }
 
     public async Task<(HttpStatusCode, IDataResult<Product>)> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -129,6 +144,12 @@ public class ProductManager : IProductService
     {
         var variants = await _variantDal.GetListAsync(v => v.ProductId == productId, cancellationToken);
         return (HttpStatusCode.OK, new SuccessDataResult<List<ProductVariant>>(variants));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<Dictionary<int, int>>)> GetStockTotalsAsync(CancellationToken cancellationToken = default)
+    {
+        var totals = await _productDal.GetStockTotalsAsync(cancellationToken);
+        return (HttpStatusCode.OK, new SuccessDataResult<Dictionary<int, int>>(totals));
     }
 
     public async Task<(HttpStatusCode, IResult)> AddVariantAsync(ProductVariant variant, CancellationToken cancellationToken = default)

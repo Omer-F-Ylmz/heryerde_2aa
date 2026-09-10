@@ -1,7 +1,7 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
 @inject HerYerde.Business.Abstract.ICartService CartService
 @{
-    var cartCount = await CartService.CountAsync(HerYerde.Web.Infrastructure.CartCookie.Read(Context));
+    var cartCount = await HerYerde.Web.Infrastructure.CartBadge.CountAsync(Context, CartService);
 }
 <!DOCTYPE html>
 <html lang="tr">

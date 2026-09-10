@@ -27,18 +27,13 @@ public class ProductsController : Controller
         var (_, products) = await _productService.GetAllAsync(cancellationToken);
         var (_, categories) = await _categoryService.GetAllAsync(cancellationToken);
 
-        var stockTotals = new Dictionary<int, int>();
-        foreach (var product in products.Data!)
-        {
-            var (_, variants) = await _productService.GetVariantsAsync(product.Id, cancellationToken);
-            stockTotals[product.Id] = variants.Data!.Sum(v => v.Stock);
-        }
+        var (_, stockTotals) = await _productService.GetStockTotalsAsync(cancellationToken);
 
         return View(new ProductListViewModel
         {
             Products = products.Data!.OrderByDescending(p => p.UpdatedAt).ToList(),
             CategoryNames = categories.Data!.ToDictionary(c => c.Id, c => c.Name),
-            StockTotals = stockTotals,
+            StockTotals = stockTotals.Data!,
             Now = DateTime.UtcNow
         });
     }

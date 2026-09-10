@@ -1,5 +1,6 @@
 using System.Net;
 using HerYerde.Business.Dtos;
+using HerYerde.DataAccess.Abstract;
 using HerYerde.Core.Utilities.Results;
 using HerYerde.Entities.Concrete;
 
@@ -12,8 +13,14 @@ public interface IProductService
     /// <summary>Okuma amaçlı: dönen kayıt izlenmez, üzerinde yapılan değişiklik veritabanına yazılmaz.</summary>
     Task<(HttpStatusCode, IDataResult<Product>)> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
-    /// <summary>Vitrin: yayındaki ürünler alt kategori slug'ıyla; ana sayfa ayrıca kategori sorgusu yapmaz.</summary>
-    Task<(HttpStatusCode, IDataResult<List<ProductListItem>>)> GetActiveWithCategorySlugAsync(CancellationToken cancellationToken = default);
+    /// <summary>Vitrin: yayındaki ürünler alt kategori slug'ıyla; süzme/sıralama/sayfalama SQL'de.</summary>
+    Task<(HttpStatusCode, IDataResult<ProductPage>)> GetActiveAsync(ProductQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>Ana sayfa hero'su: kampanyası süren, en yakın biten ürün; yoksa null.</summary>
+    Task<(HttpStatusCode, IDataResult<ProductListItem?>)> GetCampaignHeroAsync(DateTime now, CancellationToken cancellationToken = default);
+
+    /// <summary>Vitrin ürün sayfası: yayındaki ürünü slug'ıyla tek sorguda getirir.</summary>
+    Task<(HttpStatusCode, IDataResult<Product>)> GetActiveBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IDataResult<Product>)> AddAsync(Product product, CancellationToken cancellationToken = default);
 
@@ -24,6 +31,9 @@ public interface IProductService
     Task<(HttpStatusCode, IResult)> DeleteAsync(int id, CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IDataResult<List<ProductVariant>>)> GetVariantsAsync(int productId, CancellationToken cancellationToken = default);
+
+    /// <summary>Yönetim listesi: ürün kimliği başına varyant stok toplamı, tek sorguda.</summary>
+    Task<(HttpStatusCode, IDataResult<Dictionary<int, int>>)> GetStockTotalsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Ev ürününde beden/renk boş kalmak zorunda.</summary>
     Task<(HttpStatusCode, IResult)> AddVariantAsync(ProductVariant variant, CancellationToken cancellationToken = default);

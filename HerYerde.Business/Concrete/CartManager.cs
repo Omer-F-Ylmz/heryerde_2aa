@@ -88,7 +88,10 @@ public class CartManager : ICartService
 
         var productIds = items.Select(i => i.ProductId).Distinct().ToList();
         var products = (await _productDal.GetListAsync(p => productIds.Contains(p.Id), cancellationToken)).ToDictionary(p => p.Id);
-        var variants = (await _variantDal.GetListAsync(v => productIds.Contains(v.ProductId), cancellationToken)).ToDictionary(v => v.Id);
+        // Varyantsız (Ev) sepette varyant tablosuna hiç gidilmez.
+        var variants = items.Any(i => i.VariantId is not null)
+            ? (await _variantDal.GetListAsync(v => productIds.Contains(v.ProductId), cancellationToken)).ToDictionary(v => v.Id)
+            : [];
         var images = await _imageDal.GetListAsync(i => productIds.Contains(i.ProductId), cancellationToken);
 
         var lines = new List<CartLine>();

@@ -1,4 +1,5 @@
 using HerYerde.Business.Abstract;
+using HerYerde.DataAccess.Abstract;
 using HerYerde.Entities.Concrete;
 using HerYerde.Web.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -14,13 +15,13 @@ public class StoreController(IProductService productService, ICategoryService ca
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
-        var (_, items) = await productService.GetActiveWithCategorySlugAsync(cancellationToken);
-        var categorySlugOf = items.Data!.ToDictionary(i => i.Product.Id, i => i.CategorySlug);
-        var products = items.Data!.Select(i => i.Product).ToList();
-        var hero = StoreCatalog.PickHero(products, now);
-        var arrivals = StoreCatalog.Sort(products, "yeni", now).Take(8).ToList();
+        var (_, heroItem) = await productService.GetCampaignHeroAsync(now, cancellationToken);
+        var (_, arrivals) = await productService.GetActiveAsync(
+            new ProductQuery { Order = ProductOrder.Newest, Now = now, Take = 8 },
+            cancellationToken);
 
-        var ids = arrivals.Select(p => p.Id).ToList();
+        var hero = heroItem.Data?.Product;
+        var ids = arrivals.Data!.Items.Select(i => i.Product.Id).ToList();
         if (hero is not null)
         {
             ids.Add(hero.Id);
@@ -32,9 +33,9 @@ public class StoreController(IProductService productService, ICategoryService ca
         return View(new HomeVm(
             hero,
             heroImage,
-            hero is null ? null : StoreCatalog.PlaceholderIcon(categorySlugOf.GetValueOrDefault(hero.Id)),
+            hero is null ? null : StoreCatalog.PlaceholderIcon(heroItem.Data!.CategorySlug),
             hero is null ? null : StoreCatalog.WhatsAppUrl(WhatsAppBase, hero.Name),
-            arrivals.Select((p, i) => StoreCatalog.Card(p, images.Data!, now, lazy: i >= 4, categorySlug: categorySlugOf.GetValueOrDefault(p.Id))).ToList(),
+            arrivals.Data!.Items.Select((i, index) => StoreCatalog.Card(i.Product, images.Data!, now, lazy: index >= 4, categorySlug: i.CategorySlug)).ToList(),
             TestimonialSource.Load()));
     }
 
@@ -61,13 +62,39 @@ public class StoreController(IProductService productService, ICategoryService ca
             }
         }
 
-        var scope = current is null ? children.Select(c => c.Id).ToHashSet() : [current.Id];
-        var (_, all) = await productService.GetAllAsync(cancellationToken);
-        var sorted = StoreCatalog.Sort(all.Data!.Where(p => p.IsActive && scope.Contains(p.CategoryId)), sirala, now).ToList();
-        var totalPages = Math.Max(1, (int)Math.Ceiling(sorted.Count / (double)StoreCatalog.PageSize));
-        sayfa = Math.Clamp(sayfa, 1, totalPages);
-        var page = sorted.Skip((sayfa - 1) * StoreCatalog.PageSize).Take(StoreCatalog.PageSize).ToList();
-        var (_, images) = await productService.GetImagesForAsync(page.Select(p => p.Id).ToList(), cancellationToken);
+        var scope = current is null ? children.Select(c => c.Id).ToList() : [current.Id];
+        var byPrice = sirala == "fiyat";
+        var (_, first) = await productService.GetActiveAsync(
+            new ProductQuery
+            {
+                CategoryIds = scope,
+                Order = byPrice ? ProductOrder.Price : ProductOrder.Newest,
+                Now = now,
+                Skip = (Math.Max(sayfa, 1) - 1) * StoreCatalog.PageSize,
+                Take = StoreCatalog.PageSize
+            },
+            cancellationToken);
+
+        var totalPages = Math.Max(1, (int)Math.Ceiling(first.Data!.Total / (double)StoreCatalog.PageSize));
+        var clamped = Math.Clamp(sayfa, 1, totalPages);
+        var page = first.Data.Items;
+        if (clamped != sayfa)
+        {
+            // İstenen sayfa aralık dışıysa sınıra çekilir; ikinci sorgu yalnız bu durumda çalışır.
+            var (_, retry) = await productService.GetActiveAsync(
+                new ProductQuery
+                {
+                    CategoryIds = scope,
+                    Order = byPrice ? ProductOrder.Price : ProductOrder.Newest,
+                    Now = now,
+                    Skip = (clamped - 1) * StoreCatalog.PageSize,
+                    Take = StoreCatalog.PageSize
+                },
+                cancellationToken);
+            page = retry.Data!.Items;
+        }
+
+        var (_, images) = await productService.GetImagesForAsync(page.Select(i => i.Product.Id).ToList(), cancellationToken);
 
         var baseUrl = current is null ? "/ev" : "/ev/" + current.Slug;
         var tabs = new List<CategoryTabVm> { new("Tümü", "/ev", current is null) };
@@ -76,33 +103,48 @@ public class StoreController(IProductService productService, ICategoryService ca
         return View(new CategoryPageVm(
             current?.Name ?? root.Name,
             tabs,
-            sirala == "fiyat" ? "fiyat" : "yeni",
+            byPrice ? "fiyat" : "yeni",
             baseUrl,
-            page.Select((p, i) => StoreCatalog.Card(p, images.Data!, now, lazy: i >= 4, categorySlug: children.First(c => c.Id == p.CategoryId).Slug)).ToList(),
-            new PaginationVm(sayfa, totalPages, sirala == "fiyat" ? baseUrl + "?sirala=fiyat" : baseUrl)));
+            page.Select((i, index) => StoreCatalog.Card(i.Product, images.Data!, now, lazy: index >= 4, categorySlug: i.CategorySlug)).ToList(),
+            new PaginationVm(clamped, totalPages, byPrice ? baseUrl + "?sirala=fiyat" : baseUrl)));
     }
 
     [HttpGet("urun/{slug}")]
     public async Task<IActionResult> Product(string slug, CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
-        var (_, all) = await productService.GetAllAsync(cancellationToken);
-        var product = all.Data!.FirstOrDefault(p => p.Slug == slug && p.IsActive);
-        if (product is null)
+        var (status, found) = await productService.GetActiveBySlugAsync(slug, cancellationToken);
+        if (status != System.Net.HttpStatusCode.OK)
         {
             return NotFound();
         }
 
+        var product = found.Data!;
         var (_, categories) = await categoryService.GetAllAsync(cancellationToken);
         var category = categories.Data!.FirstOrDefault(c => c.Id == product.CategoryId);
         var root = category?.ParentId is { } parentId ? categories.Data!.FirstOrDefault(c => c.Id == parentId) : category;
         var isClothing = root?.Slug == "giyim";
         var (rootName, rootUrl) = StoreCatalog.Root(root?.Slug, root?.Name ?? "Ev");
 
-        var (_, images) = await productService.GetImagesAsync(product.Id, cancellationToken);
-        var (_, variants) = await productService.GetVariantsAsync(product.Id, cancellationToken);
-        var similar = StoreCatalog.Similar(all.Data!, product);
-        var (_, similarImages) = await productService.GetImagesForAsync(similar.Select(p => p.Id).ToList(), cancellationToken);
+        var (_, similar) = await productService.GetActiveAsync(
+            new ProductQuery
+            {
+                CategoryIds = [product.CategoryId],
+                ExcludedProductId = product.Id,
+                Now = now,
+                Take = 4
+            },
+            cancellationToken);
+
+        // Ürünün ve benzerlerinin görselleri tek sorguda.
+        var (_, images) = await productService.GetImagesForAsync(
+            similar.Data!.Items.Select(i => i.Product.Id).Append(product.Id).ToList(),
+            cancellationToken);
+
+        // Varyant seçici yalnız giyimde çizilir; ev ürününde sorgu da atılmaz.
+        var variants = isClothing
+            ? (await productService.GetVariantsAsync(product.Id, cancellationToken)).Item2.Data!
+            : [];
 
         return View(new ProductPageVm(
             product,
@@ -112,10 +154,10 @@ public class StoreController(IProductService productService, ICategoryService ca
             category is null || category.Id == root?.Id ? null : category.Name,
             category?.Slug,
             isClothing,
-            images.Data!.OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).ToList(),
-            isClothing ? StoreCatalog.Picker(variants.Data!) : new VariantPickerVm([], []),
+            images.Data!.Where(i => i.ProductId == product.Id).OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).ToList(),
+            isClothing ? StoreCatalog.Picker(variants) : new VariantPickerVm([], []),
             StoreCatalog.IsCampaignActive(product, now),
             StoreCatalog.WhatsAppUrl(WhatsAppBase, product.Name),
-            similar.Select(p => StoreCatalog.Card(p, similarImages.Data!, now, categorySlug: category?.Slug)).ToList()));
+            similar.Data!.Items.Select(i => StoreCatalog.Card(i.Product, images.Data!, now, categorySlug: i.CategorySlug)).ToList()));
     }
 }

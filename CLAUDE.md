@@ -27,6 +27,7 @@ modelinde — varyantsız üründe `size`/`color` NULL kalır.
    olmadan kapanış yok. Marka kararı: `brand.md`.
 8. En basit çözüm, cerrahi değişiklik: istenmeyen özellik/soyutlama/konfigürasyon eklenmez.
 9. Kapanış raporu tek biçim: **commit · test sayısı · CI · sapmalar** (sapma yoksa "yok" yazılır).
+   Rapor yalnız bu dört başlıktır; tablo, KANIT bölümü, tur dökümü, ölçüm listesi YAZILMAZ.
 
 ## graphify
 
