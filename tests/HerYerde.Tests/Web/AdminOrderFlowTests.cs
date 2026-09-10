@@ -1,5 +1,6 @@
 using System.Net;
 using HerYerde.Business.Dtos;
+using HerYerde.Business.Rules;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Entities.Concrete;
@@ -74,6 +75,16 @@ public sealed class AdminOrderFlowTests : IAsyncLifetime
         // Süzgeç kutusunun örnek metni de sipariş numarası biçiminde; bu yüzden tablo satırına bakıyoruz.
         Assert.Contains($"<span>{second.OrderNo}</span>", html);
         Assert.DoesNotContain($"<span>{first.OrderNo}</span>", html);
+    }
+
+    [Fact]
+    public async Task Arama_kutusunun_ornegi_saat_saglayicisindan_uretilir()
+    {
+        var client = await _factory.CreateSignedInClientAsync();
+
+        var html = await (await client.GetAsync("/admin/orders")).Content.ReadAsStringAsync();
+
+        Assert.Contains($"placeholder=\"{OrderNo.Build(TestClock.Now, 1)}\"", html);
     }
 
     private static async Task<Order> PlaceOrderAsync(

@@ -151,6 +151,9 @@ public sealed class OrderListViewModel
     public List<Order> Orders { get; set; } = [];
     public OrderStatus? Status { get; set; }
     public string? Query { get; set; }
+
+    /// <summary>Arama kutusunun örnek metni; bugünün numarası olsun diye saatten üretilir.</summary>
+    public string SampleOrderNo { get; set; } = string.Empty;
 }
 
 public sealed class OrderDetailViewModel

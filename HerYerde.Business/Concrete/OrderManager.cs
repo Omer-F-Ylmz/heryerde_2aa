@@ -20,6 +20,7 @@ public class OrderManager : IOrderService
     private readonly IProductVariantDal _variantDal;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ShopSettings _shop;
+    private readonly TimeProvider _clock;
 
     public OrderManager(
         IOrderDal orderDal,
@@ -28,7 +29,8 @@ public class OrderManager : IOrderService
         IProductDal productDal,
         IProductVariantDal variantDal,
         IUnitOfWork unitOfWork,
-        IOptions<ShopSettings> shop)
+        IOptions<ShopSettings> shop,
+        TimeProvider clock)
     {
         _orderDal = orderDal;
         _orderItemDal = orderItemDal;
@@ -37,6 +39,7 @@ public class OrderManager : IOrderService
         _variantDal = variantDal;
         _unitOfWork = unitOfWork;
         _shop = shop.Value;
+        _clock = clock;
     }
 
     public async Task<(HttpStatusCode, IDataResult<Order>)> PlaceAsync(Guid cartId, OrderDraft draft, CancellationToken cancellationToken = default)
@@ -84,7 +87,7 @@ public class OrderManager : IOrderService
                 $"Stok yetersiz: {string.Join(", ", shortages.Distinct())}. Sepetteki adedi azaltın."));
         }
 
-        var now = DateTime.UtcNow;
+        var now = _clock.GetUtcNow().UtcDateTime;
         var subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
         var order = new Order
         {

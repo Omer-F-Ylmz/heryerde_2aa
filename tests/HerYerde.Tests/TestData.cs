@@ -49,14 +49,15 @@ public static class TestData
         new EfUnitOfWork(context),
         Options.Create(new ShopSettings { ShippingFee = ShippingFee, Iban = Iban }));
 
-    public static OrderManager NewOrderManager(HerYerdeContext context) => new(
+    public static OrderManager NewOrderManager(HerYerdeContext context, TimeProvider? clock = null) => new(
         new EfOrderDal(context),
         new EfOrderItemDal(context),
         new EfCartItemDal(context),
         new EfProductDal(context),
         new EfProductVariantDal(context),
         new EfUnitOfWork(context),
-        Options.Create(new ShopSettings { ShippingFee = ShippingFee, Iban = Iban }));
+        Options.Create(new ShopSettings { ShippingFee = ShippingFee, Iban = Iban }),
+        clock ?? TestClock.Fixed);
 
     /// <summary>Ev alanında varyantsız ürün.</summary>
     public static async Task<int> AddHomeProductAsync(

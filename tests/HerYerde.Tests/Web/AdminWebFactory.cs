@@ -2,7 +2,9 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HerYerde.Tests.Web;
 
@@ -22,6 +24,7 @@ public sealed class AdminWebFactory : WebApplicationFactory<Program>
                 ["Admin:Password"] = AdminPassword,
                 ["Seed:Catalog"] = "false"
             }));
+        builder.ConfigureTestServices(services => services.AddSingleton(TestClock.Fixed));
     }
 
     public HttpClient CreateNonRedirectingClient()

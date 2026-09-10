@@ -1,5 +1,6 @@
 using System.Net;
 using HerYerde.Business.Abstract;
+using HerYerde.Business.Rules;
 using HerYerde.Entities.Enums;
 using HerYerde.Web.Areas.Admin.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -12,10 +13,12 @@ namespace HerYerde.Web.Areas.Admin.Controllers;
 public class OrdersController : Controller
 {
     private readonly IOrderService _orderService;
+    private readonly TimeProvider _clock;
 
-    public OrdersController(IOrderService orderService)
+    public OrdersController(IOrderService orderService, TimeProvider clock)
     {
         _orderService = orderService;
+        _clock = clock;
     }
 
     [HttpGet]
@@ -26,7 +29,8 @@ public class OrdersController : Controller
         {
             Orders = orders.Data!,
             Status = durum,
-            Query = ara
+            Query = ara,
+            SampleOrderNo = OrderNo.Build(_clock.GetUtcNow().UtcDateTime, 1)
         });
     }
 

@@ -28,13 +28,25 @@ public sealed class OrderManagerTests : IAsyncLifetime
     public async Task Siparis_numarasi_gun_icinde_sirayla_artar()
     {
         await using var context = TestDb.NewContext();
-        var prefix = OrderNo.PrefixFor(DateTime.UtcNow);
+        var prefix = OrderNo.PrefixFor(TestClock.Now);
 
         var first = await PlaceAsync(context, quantity: 1);
         var second = await PlaceAsync(context, quantity: 1, name: "Cam Sürahi", slug: "cam-surahi");
 
         Assert.Equal(prefix + "0001", first.OrderNo);
         Assert.Equal(prefix + "0002", second.OrderNo);
+    }
+
+    [Fact]
+    public async Task Siparis_numarasi_ve_tarihi_saat_saglayicisindan_gelir()
+    {
+        await using var context = TestDb.NewContext();
+        var (cartId, _) = await FilledCartAsync(context, quantity: 1);
+
+        var (_, result) = await TestData.NewOrderManager(context).PlaceAsync(cartId, Draft);
+
+        Assert.StartsWith(OrderNo.PrefixFor(TestClock.Now), result.Data!.OrderNo);
+        Assert.Equal(TestClock.Now, result.Data.CreatedAt);
     }
 
     [Fact]

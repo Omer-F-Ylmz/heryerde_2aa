@@ -33,6 +33,7 @@ builder.Services.Configure<ShopSettings>(builder.Configuration.GetSection("Shop"
 builder.Services.AddDbContext<HerYerdeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddHealthChecks();
+builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
