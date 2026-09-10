@@ -3,6 +3,7 @@ using HerYerde.Business.Concrete;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Entities.Concrete;
+using HerYerde.Entities.Enums;
 using Microsoft.Extensions.Options;
 
 namespace HerYerde.Tests;
@@ -78,16 +79,39 @@ public static class TestData
         string name,
         string slug,
         decimal price = 450m,
-        decimal? campaignPrice = null)
+        decimal? campaignPrice = null,
+        int? stock = null)
     {
         var categoryId = await RootCategoryIdAsync(context, "Ev", "ev");
         var product = NewProduct(categoryId, name, slug);
         product.Price = price;
         product.CampaignPrice = campaignPrice;
+        product.Stock = stock;
         await new EfProductDal(context).AddAsync(product);
         await new EfUnitOfWork(context).SaveChangesAsync();
         return product.Id;
     }
+
+    /// <summary>Ürüne "1 alana 1 hediye" kampanyası yazar; bitiş boşsa süresizdir.</summary>
+    public static async Task SetGiftAsync(
+        HerYerdeContext context,
+        int productId,
+        GiftMode mode,
+        int? giftProductId = null,
+        int giftQty = 1,
+        DateTime? endsAt = null)
+    {
+        var dal = new EfProductDal(context);
+        var product = (await dal.GetTrackedAsync(p => p.Id == productId))!;
+        product.GiftMode = mode;
+        product.GiftProductId = giftProductId;
+        product.GiftQty = giftQty;
+        product.CampaignEndsAt = endsAt;
+        await new EfUnitOfWork(context).SaveChangesAsync();
+    }
+
+    public static async Task<int?> ProductStockAsync(HerYerdeContext context, int productId)
+        => (await new EfProductDal(context).GetAsync(p => p.Id == productId))!.Stock;
 
     /// <summary>Giyim alanında tek varyantlı ürün; varyant kimliğiyle döner.</summary>
     public static async Task<(int ProductId, int VariantId)> AddClothingProductAsync(

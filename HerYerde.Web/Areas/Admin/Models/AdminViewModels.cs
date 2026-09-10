@@ -18,6 +18,29 @@ public sealed class LoginViewModel
     public string Password { get; set; } = string.Empty;
 }
 
+public sealed class ChangePasswordViewModel
+{
+    [Required(ErrorMessage = "Mevcut parola gerekli.")]
+    [DataType(DataType.Password)]
+    [Display(Name = "Mevcut parola")]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Yeni parola gerekli.")]
+    [StringLength(200, MinimumLength = 10, ErrorMessage = "Yeni parola en az 10 karakter olmalı.")]
+    [DataType(DataType.Password)]
+    [Display(Name = "Yeni parola")]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Yeni parolayı tekrar yazın.")]
+    [Compare(nameof(NewPassword), ErrorMessage = "İki parola aynı değil.")]
+    [DataType(DataType.Password)]
+    [Display(Name = "Yeni parola (tekrar)")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+
+    public string? ErrorMessage { get; set; }
+    public bool Changed { get; set; }
+}
+
 public sealed class CategoryFormViewModel
 {
     public int Id { get; set; }
@@ -83,6 +106,20 @@ public sealed class ProductFormViewModel
     [Display(Name = "Kampanya bitişi")]
     public DateTime? CampaignEndsAt { get; set; }
 
+    [Display(Name = "Stok (boş = takip yok)")]
+    [Range(0, int.MaxValue, ErrorMessage = "Stok negatif olamaz.")]
+    public int? Stock { get; set; }
+
+    [Display(Name = "Hediye")]
+    public GiftMode GiftMode { get; set; }
+
+    [Display(Name = "Hediye edilen ürün")]
+    public int? GiftProductId { get; set; }
+
+    [Range(1, 99, ErrorMessage = "Hediye adedi en az 1 olmalı.")]
+    [Display(Name = "Hediye adedi")]
+    public int GiftQty { get; set; } = 1;
+
     [Display(Name = "Yayında")]
     public bool IsActive { get; set; }
 
@@ -92,6 +129,9 @@ public sealed class ProductFormViewModel
     public bool RequiresVariants { get; set; }
 
     public List<Category> Categories { get; set; } = [];
+
+    /// <summary>Hediye olarak seçilebilecek ürünler; kendisi listede yer almaz.</summary>
+    public List<Product> GiftProducts { get; set; } = [];
     public List<ProductVariant> Variants { get; set; } = [];
     public List<ProductImage> Images { get; set; } = [];
     public string? ErrorMessage { get; set; }

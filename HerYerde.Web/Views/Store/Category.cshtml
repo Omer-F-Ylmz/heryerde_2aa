@@ -8,12 +8,10 @@
     <p class="eyebrow">Ev</p>
     <h1 class="display-2 h-mark">@Model.Title</h1>
     <partial name="Components/_CategoryTabs" model="Model.Tabs" />
-    <nav class="tabs" aria-label="Sıralama">
-        <ul class="tabs__list">
-            <li><a class="tab" href="@Model.SortBaseUrl" aria-current="@(Model.Sort == "yeni" ? "true" : null)">Yeni</a></li>
-            <li><a class="tab" href="@(Model.SortBaseUrl)?sirala=fiyat" aria-current="@(Model.Sort == "fiyat" ? "true" : null)">Fiyat</a></li>
-        </ul>
-    </nav>
+    <div class="listing-bar">
+        <partial name="Components/_SortTabs" model="Model.Sort" />
+        <partial name="Components/_PriceFilter" model="Model.Filter" />
+    </div>
     <h2 class="visually-hidden">Ürünler</h2>
     @if (Model.Cards.Count == 0)
     {

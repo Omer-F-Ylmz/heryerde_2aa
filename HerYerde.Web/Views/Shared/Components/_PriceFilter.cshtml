@@ -1,0 +1,23 @@
+@using HerYerde.Web.Models
+@model PriceFilterVm
+<form class="filter" method="get" action="@Model.Action" role="search">
+    @foreach (var hidden in Model.Hidden)
+    {
+        <input type="hidden" name="@hidden.Name" value="@hidden.Value" />
+    }
+    <div class="field filter__field">
+        <label class="field__label" for="filter-min">En az (₺)</label>
+        <input class="field__input field__input--tiny" id="filter-min" name="min" type="number"
+               min="0" step="0.01" inputmode="decimal" value="@StoreCatalog.Amount(Model.Min)" />
+    </div>
+    <div class="field filter__field">
+        <label class="field__label" for="filter-max">En çok (₺)</label>
+        <input class="field__input field__input--tiny" id="filter-max" name="max" type="number"
+               min="0" step="0.01" inputmode="decimal" value="@StoreCatalog.Amount(Model.Max)" />
+    </div>
+    <button class="btn btn--secondary filter__go" type="submit" aria-label="Fiyat aralığını uygula">@Model.SubmitLabel</button>
+    @if (Model.Min is not null || Model.Max is not null)
+    {
+        <a class="btn btn--ghost btn--sm" href="@StoreCatalog.Url(Model.Action, Model.Hidden.Select(h => (h.Name, (string?)h.Value)).ToArray())">Temizle</a>
+    }
+</form>

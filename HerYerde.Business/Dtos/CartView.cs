@@ -16,13 +16,23 @@ public sealed record CartLine(
 {
     public decimal LineTotal => UnitPrice * Quantity;
 
-    /// <summary>Varyantlı üründe stok satırdaki adedi karşılamıyor; ödeme adımında 409 döner.</summary>
+    /// <summary>Stok takipli üründe stok satırdaki adedi karşılamıyor; ödeme adımında 409 döner.</summary>
     public bool Insufficient => StockTracked && AvailableStock < Quantity;
 }
 
-public sealed record CartView(Guid CartId, IReadOnlyList<CartLine> Lines, decimal Subtotal, decimal ShippingFee)
+/// <summary>"1 alana 1 hediye" satırı: sepette gösterilmez, ödeme özetinde ve siparişte 0 ₺ görünür.</summary>
+public sealed record CartGift(string ProductName, int Quantity);
+
+public sealed record CartView(
+    Guid CartId,
+    IReadOnlyList<CartLine> Lines,
+    decimal Subtotal,
+    decimal ShippingFee,
+    IReadOnlyList<CartGift>? Gifts = null,
+    string? GiftNote = null)
 {
     public decimal Total => Subtotal + ShippingFee;
     public int Count => Lines.Sum(l => l.Quantity);
     public bool IsEmpty => Lines.Count == 0;
+    public IReadOnlyList<CartGift> GiftLines => Gifts ?? [];
 }

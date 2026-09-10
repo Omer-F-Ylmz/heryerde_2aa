@@ -14,7 +14,8 @@ public enum BadgeKind
 {
     Campaign,
     Gift,
-    Low
+    Low,
+    SoldOut
 }
 
 public sealed record BadgeVm(BadgeKind Kind, string Text);
@@ -52,6 +53,19 @@ public sealed record VariantPickerVm(
     IReadOnlyList<VariantOptionVm>? Options = null);
 
 public sealed record CategoryTabVm(string Name, string Url, bool Current);
+
+/// <summary>FRONT kiti: fiyat aralığı süzgeci. Hidden, arama terimi/sıralama gibi korunacak alanlar.</summary>
+public sealed record HiddenFieldVm(string Name, string Value);
+
+public sealed record PriceFilterVm(
+    string Action,
+    decimal? Min,
+    decimal? Max,
+    IReadOnlyList<HiddenFieldVm> Hidden,
+    string SubmitLabel = "Uygula");
+
+/// <summary>FRONT kiti: yeni/fiyat sıralama sekmeleri; bağlantılar süzgeçleri korur.</summary>
+public sealed record SortTabsVm(string NewUrl, string PriceUrl, bool ByPrice);
 
 public sealed record PaginationVm(int Page, int TotalPages, string BaseUrl)
 {

@@ -1,0 +1,7 @@
+@model HerYerde.Web.Models.SortTabsVm
+<nav class="tabs" aria-label="Sıralama">
+    <ul class="tabs__list">
+        <li><a class="tab" href="@Model.NewUrl" aria-current="@(Model.ByPrice ? null : "true")">Yeni</a></li>
+        <li><a class="tab" href="@Model.PriceUrl" aria-current="@(Model.ByPrice ? "true" : null)">Fiyat</a></li>
+    </ul>
+</nav>

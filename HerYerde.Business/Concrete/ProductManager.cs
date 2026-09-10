@@ -7,6 +7,7 @@ using HerYerde.Core.DataAccess;
 using HerYerde.Core.Utilities.Results;
 using HerYerde.DataAccess.Abstract;
 using HerYerde.Entities.Concrete;
+using HerYerde.Entities.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HerYerde.Business.Concrete;
@@ -42,14 +43,14 @@ public class ProductManager : IProductService
     public async Task<(HttpStatusCode, IDataResult<ProductPage>)> GetActiveAsync(ProductQuery query, CancellationToken cancellationToken = default)
     {
         var (rows, total) = await _productDal.GetActiveAsync(query, cancellationToken);
-        var items = rows.Select(r => new ProductListItem(r.Product, r.CategorySlug)).ToList();
+        var items = rows.Select(r => new ProductListItem(r.Product, r.CategorySlug, r.SoldOut)).ToList();
         return (HttpStatusCode.OK, new SuccessDataResult<ProductPage>(new ProductPage(items, total)));
     }
 
     public async Task<(HttpStatusCode, IDataResult<ProductListItem?>)> GetCampaignHeroAsync(DateTime now, CancellationToken cancellationToken = default)
     {
         var row = await _productDal.GetCampaignHeroAsync(now, cancellationToken);
-        var hero = row is null ? null : new ProductListItem(row.Value.Product, row.Value.CategorySlug);
+        var hero = row is null ? null : new ProductListItem(row.Value.Product, row.Value.CategorySlug, SoldOut: false);
         return (HttpStatusCode.OK, new SuccessDataResult<ProductListItem?>(hero));
     }
 
@@ -82,6 +83,18 @@ public class ProductManager : IProductService
             return (HttpStatusCode.BadRequest, new ErrorDataResult<Product>(VariantRequiredMessage));
         }
 
+        if (StockProblem(product, root) is { } stockProblem)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<Product>(stockProblem));
+        }
+
+        if (await GiftProblemAsync(product, cancellationToken) is { } giftProblem)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<Product>(giftProblem));
+        }
+
+        product.GiftProductId = product.GiftMode == GiftMode.BaskaUrun ? product.GiftProductId : null;
+        product.GiftQty = Math.Max(product.GiftQty, 1);
         product.Slug = await UniqueSlugAsync(product.Name, excludedId: 0, cancellationToken);
         product.CreatedAt = DateTime.UtcNow;
         product.UpdatedAt = product.CreatedAt;
@@ -110,6 +123,16 @@ public class ProductManager : IProductService
             return (HttpStatusCode.BadRequest, new ErrorResult(VariantRequiredMessage));
         }
 
+        if (StockProblem(product, root) is { } stockProblem)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorResult(stockProblem));
+        }
+
+        if (await GiftProblemAsync(product, cancellationToken) is { } giftProblem)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorResult(giftProblem));
+        }
+
         stored.Name = product.Name;
         stored.Description = product.Description;
         stored.CategoryId = product.CategoryId;
@@ -117,6 +140,10 @@ public class ProductManager : IProductService
         stored.CampaignPrice = product.CampaignPrice;
         stored.CampaignLabel = product.CampaignLabel;
         stored.CampaignEndsAt = product.CampaignEndsAt;
+        stored.GiftMode = product.GiftMode;
+        stored.GiftProductId = product.GiftMode == GiftMode.BaskaUrun ? product.GiftProductId : null;
+        stored.GiftQty = Math.Max(product.GiftQty, 1);
+        stored.Stock = product.Stock;
         stored.IsActive = product.IsActive;
         stored.Slug = await UniqueSlugAsync(product.Name, stored.Id, cancellationToken);
         stored.UpdatedAt = DateTime.UtcNow;
@@ -307,6 +334,34 @@ public class ProductManager : IProductService
     }
 
     private const string VariantRequiredMessage = "Giyim ürünü en az bir varyant olmadan yayına alınamaz.";
+
+    /// <summary>Giyim'de stok varyantta durur; ürünün kendi stok alanı boş kalmak zorundadır.</summary>
+    private static string? StockProblem(Product product, Category root)
+    {
+        if (ProductRules.RequiresVariants(root) && product.Stock is not null)
+        {
+            return "Giyim ürününde stok varyantta tutulur; ürün stoğu boş kalmalı.";
+        }
+
+        return product.Stock < 0 ? "Stok negatif olamaz." : null;
+    }
+
+    private async Task<string?> GiftProblemAsync(Product product, CancellationToken cancellationToken)
+    {
+        if (product.GiftMode != GiftMode.BaskaUrun)
+        {
+            return null;
+        }
+
+        if (product.GiftProductId is not { } giftId || giftId == product.Id)
+        {
+            return "Hediye edilecek ürünü seçin.";
+        }
+
+        return await _productDal.GetAsync(p => p.Id == giftId, cancellationToken) is null
+            ? "Hediye edilecek ürün bulunamadı."
+            : null;
+    }
 
     private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 

@@ -40,7 +40,11 @@ public class ProductsController : Controller
 
     [HttpGet]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
-        => View(new ProductFormViewModel { Categories = await CategoriesAsync(cancellationToken) });
+        => View(new ProductFormViewModel
+        {
+            Categories = await CategoriesAsync(cancellationToken),
+            GiftProducts = await GiftProductsAsync(0, cancellationToken)
+        });
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -48,14 +52,14 @@ public class ProductsController : Controller
     {
         if (!ModelState.IsValid)
         {
-            model.Categories = await CategoriesAsync(cancellationToken);
+            await FillListsAsync(model, cancellationToken);
             return View(model);
         }
 
         var (status, created) = await _productService.AddAsync(ToProduct(model), cancellationToken);
         if (status != HttpStatusCode.Created)
         {
-            model.Categories = await CategoriesAsync(cancellationToken);
+            await FillListsAsync(model, cancellationToken);
             model.ErrorMessage = created.Message;
             Response.StatusCode = (int)status;
             return View(model);
@@ -202,6 +206,10 @@ public class ProductsController : Controller
         CampaignPrice = model.CampaignPrice,
         CampaignLabel = string.IsNullOrWhiteSpace(model.CampaignLabel) ? null : model.CampaignLabel,
         CampaignEndsAt = model.CampaignEndsAt,
+        GiftMode = model.GiftMode,
+        GiftProductId = model.GiftProductId,
+        GiftQty = model.GiftQty,
+        Stock = model.Stock,
         IsActive = model.IsActive
     };
 
@@ -240,6 +248,10 @@ public class ProductsController : Controller
             CampaignPrice = product.CampaignPrice,
             CampaignLabel = product.CampaignLabel,
             CampaignEndsAt = product.CampaignEndsAt,
+            GiftMode = product.GiftMode,
+            GiftProductId = product.GiftProductId,
+            GiftQty = product.GiftQty,
+            Stock = product.Stock,
             IsActive = product.IsActive,
             Slug = product.Slug,
             ErrorMessage = errorMessage
@@ -255,9 +267,17 @@ public class ProductsController : Controller
         var (_, images) = await _productService.GetImagesAsync(model.Id, cancellationToken);
 
         model.Categories = await CategoriesAsync(cancellationToken);
+        model.GiftProducts = await GiftProductsAsync(model.Id, cancellationToken);
         model.Variants = variants.Data!.OrderBy(v => v.Size).ThenBy(v => v.Color).ThenBy(v => v.Sku).ToList();
         model.Images = images.Data!.OrderBy(i => i.SortOrder).ToList();
         model.RequiresVariants = await RequiresVariantsAsync(model.CategoryId, cancellationToken);
+    }
+
+    /// <summary>Hediye olarak seçilebilecek ürünler; ürün kendini hediye edemez.</summary>
+    private async Task<List<Product>> GiftProductsAsync(int excludedId, CancellationToken cancellationToken)
+    {
+        var (_, products) = await _productService.GetAllAsync(cancellationToken);
+        return products.Data!.Where(p => p.Id != excludedId).OrderBy(p => p.Name).ToList();
     }
 
     private async Task<bool> RequiresVariantsAsync(int categoryId, CancellationToken cancellationToken)

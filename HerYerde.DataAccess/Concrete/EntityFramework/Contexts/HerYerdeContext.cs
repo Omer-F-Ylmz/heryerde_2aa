@@ -40,9 +40,18 @@ public class HerYerdeContext : DbContext
 
         modelBuilder.Entity<Product>(e =>
         {
-            e.ToTable("product", t => t.HasCheckConstraint(
-                "ck_product_campaign_price",
-                "[campaign_price] IS NULL OR [campaign_price] < [price]"));
+            e.ToTable("product", t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_product_campaign_price",
+                    "[campaign_price] IS NULL OR [campaign_price] < [price]");
+                t.HasCheckConstraint("ck_product_stock", "[stock] IS NULL OR [stock] >= 0");
+                // Hediye başka bir ürünse hedefi zorunlu, değilse boş kalır.
+                t.HasCheckConstraint(
+                    "ck_product_gift",
+                    "([gift_mode] = 2 AND [gift_product_id] IS NOT NULL) OR ([gift_mode] <> 2 AND [gift_product_id] IS NULL)");
+                t.HasCheckConstraint("ck_product_gift_qty", "[gift_qty] >= 1");
+            });
             e.HasKey(p => p.Id);
             e.Property(p => p.Id).HasColumnName("id");
             e.Property(p => p.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
@@ -53,6 +62,10 @@ public class HerYerdeContext : DbContext
             e.Property(p => p.CampaignPrice).HasColumnName("campaign_price").HasPrecision(18, 2);
             e.Property(p => p.CampaignLabel).HasColumnName("campaign_label").HasMaxLength(40);
             e.Property(p => p.CampaignEndsAt).HasColumnName("campaign_ends_at");
+            e.Property(p => p.GiftMode).HasColumnName("gift_mode").HasConversion<int>();
+            e.Property(p => p.GiftProductId).HasColumnName("gift_product_id");
+            e.Property(p => p.GiftQty).HasColumnName("gift_qty").HasDefaultValue(1);
+            e.Property(p => p.Stock).HasColumnName("stock");
             e.Property(p => p.IsActive).HasColumnName("is_active");
             e.Property(p => p.DeletedAt).HasColumnName("deleted_at");
             e.Property(p => p.CreatedAt).HasColumnName("created_at");
@@ -64,6 +77,7 @@ public class HerYerdeContext : DbContext
                 .HasDatabaseName("ix_product_category_id_is_active_created_at");
             e.HasQueryFilter(p => p.DeletedAt == null);
             e.HasOne<Category>().WithMany().HasForeignKey(p => p.CategoryId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Product>().WithMany().HasForeignKey(p => p.GiftProductId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ProductVariant>(e =>
@@ -103,6 +117,7 @@ public class HerYerdeContext : DbContext
             e.Property(a => a.PasswordHash).HasColumnName("password_hash").HasMaxLength(400).IsRequired();
             e.Property(a => a.FailedAttempts).HasColumnName("failed_attempts");
             e.Property(a => a.LockedUntil).HasColumnName("locked_until");
+            e.Property(a => a.PasswordChangedAt).HasColumnName("password_changed_at");
             e.HasIndex(a => a.Email).IsUnique().HasDatabaseName("ux_admin_user_email");
         });
 
@@ -167,6 +182,7 @@ public class HerYerdeContext : DbContext
             e.Property(i => i.Sku).HasColumnName("sku").HasMaxLength(60).IsRequired();
             e.Property(i => i.Quantity).HasColumnName("quantity");
             e.Property(i => i.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2);
+            e.Property(i => i.IsGift).HasColumnName("is_gift");
             e.HasOne<Order>().WithMany().HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.Cascade);
         });
     }

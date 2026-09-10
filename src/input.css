@@ -734,6 +734,11 @@
     padding: 24px;
   }
 
+  /* Tek amaçlı kısa form (parola) geniş ekranda satır boyu uzamasın */
+  .form-card--narrow {
+    max-width: 560px;
+  }
+
   .form-card__foot {
     display: flex;
     justify-content: flex-end;
@@ -1368,6 +1373,65 @@
   .tag--low {
     background: var(--c-warn);
     color: var(--c-neutral-900);
+  }
+
+  /* Tükendi gri: kampanya ve hediye rozetinin önüne geçer, dikkat çekmeden bilgi verir */
+  .tag--soldout {
+    background: var(--c-neutral-200);
+    color: var(--c-neutral-900);
+  }
+
+  /* Liste çubuğu: sıralama solda, fiyat aralığı sağda; dar ekranda alt alta iner */
+  .listing-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .listing-bar .tabs__list {
+    margin-bottom: 0;
+  }
+
+  .filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .filter__field {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+  }
+
+  .filter__go {
+    min-height: 44px;
+  }
+
+  /* Arama sayfasındaki kutu başlıktaki gride bağlı değil: 768+ sağa yaslanmasın */
+  .search.search--page {
+    grid-area: auto;
+    justify-self: start;
+    max-width: 480px;
+    margin-right: auto;
+    margin-bottom: 32px;
+  }
+
+  .summary__row--gift {
+    color: var(--c-accent-deep);
+    flex-wrap: wrap;
+  }
+
+  .summary__row--gift .tag {
+    margin-right: 8px;
+  }
+
+  /* Boş arama sonucu ile öneri başlığı arasında ölçekten boşluk */
+  .empty + .heading-3 {
+    margin-top: 32px;
   }
 
   /* Düğmeler: vitrin birincil yeşil, ikincil kiremit çerçeve */

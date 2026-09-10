@@ -1,3 +1,4 @@
+@using HerYerde.Entities.Enums
 @model ProductFormViewModel
 
 <div class="field">
@@ -50,6 +51,50 @@
             <label class="field__label" asp-for="CampaignEndsAt"></label>
             <input class="field__input" asp-for="CampaignEndsAt" type="datetime-local" value="@(Model.CampaignEndsAt?.ToString("yyyy-MM-ddTHH:mm"))" />
             <span class="field__error" asp-validation-for="CampaignEndsAt"></span>
+        </div>
+    </div>
+</fieldset>
+
+@if (!Model.RequiresVariants)
+{
+    <div class="field-row">
+        <div class="field">
+            <label class="field__label" asp-for="Stock"></label>
+            <input class="field__input" asp-for="Stock" type="number" min="0" step="1" inputmode="numeric" />
+            <span class="field__hint">Boş bırakılırsa stok takibi yapılmaz; 0 yazılırsa vitrinde "Tükendi" görünür.</span>
+            <span class="field__error" asp-validation-for="Stock"></span>
+        </div>
+    </div>
+}
+
+<fieldset class="fieldset">
+    <legend class="fieldset__legend">1 alana 1 hediye</legend>
+    <p class="fieldset__note">Hediye yalnız kampanya bitiş anına kadar geçerlidir. Rozet metni kampanya etiketinden gelir.</p>
+    <div class="field-row field-row--three">
+        <div class="field">
+            <label class="field__label" asp-for="GiftMode"></label>
+            <select class="field__input" asp-for="GiftMode">
+                <option value="0" selected="@(Model.GiftMode == GiftMode.Yok)">Yok</option>
+                <option value="1" selected="@(Model.GiftMode == GiftMode.AyniUrun)">Aynı üründen</option>
+                <option value="2" selected="@(Model.GiftMode == GiftMode.BaskaUrun)">Başka üründen</option>
+            </select>
+            <span class="field__error" asp-validation-for="GiftMode"></span>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="GiftProductId"></label>
+            <select class="field__input" asp-for="GiftProductId">
+                <option value="">Ürün seçin</option>
+                @foreach (var gift in Model.GiftProducts)
+                {
+                    <option value="@gift.Id" selected="@(Model.GiftProductId == gift.Id)">@gift.Name</option>
+                }
+            </select>
+            <span class="field__error" asp-validation-for="GiftProductId"></span>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="GiftQty"></label>
+            <input class="field__input" asp-for="GiftQty" type="number" min="1" max="99" step="1" inputmode="numeric" />
+            <span class="field__error" asp-validation-for="GiftQty"></span>
         </div>
     </div>
 </fieldset>

@@ -11,4 +11,7 @@ public class OrderItem : IEntity
     public string Sku { get; set; } = string.Empty;
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
+
+    /// <summary>Kampanya hediyesi satırı; birim fiyatı 0 ve tutara girmez.</summary>
+    public bool IsGift { get; set; }
 }

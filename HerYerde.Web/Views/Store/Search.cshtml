@@ -1,0 +1,54 @@
+@using HerYerde.Web.Models
+@model SearchPageVm
+@{
+    ViewData["Title"] = Model.Query.Length > 0 ? "\"" + Model.Query + "\" araması" : "Arama";
+}
+
+<div class="container section">
+    <p class="eyebrow">Arama</p>
+    @if (Model.Message is not null)
+    {
+        <h1 class="display-2 h-mark">Ne arıyorsunuz?</h1>
+        <p class="lead">@Model.Message</p>
+        <form class="search search--page" method="get" action="/ara" role="search">
+            <label class="visually-hidden" for="search-again">Ürün ara</label>
+            <input class="field__input" id="search-again" name="q" type="search" value="@Model.Query"
+                   maxlength="60" minlength="2" placeholder="Tencere, sepet, şalvar…" />
+            <button class="btn btn--cta" type="submit">Ara</button>
+        </form>
+    }
+    else
+    {
+        <h1 class="display-2 h-mark">&#8220;@Model.Query&#8221; için @Model.Total sonuç</h1>
+        <div class="listing-bar">
+            <partial name="Components/_SortTabs" model="Model.Sort" />
+            <partial name="Components/_PriceFilter" model="Model.Filter" />
+        </div>
+
+        if (Model.Cards.Count > 0)
+        {
+            <h2 class="visually-hidden">Sonuçlar</h2>
+            <div class="grid">
+                @foreach (var card in Model.Cards)
+                {
+                    <partial name="Components/_ProductCard" model="card" />
+                }
+            </div>
+            <partial name="Components/_Pagination" model="Model.Pagination" />
+        }
+        else
+        {
+            <p class="empty surface-elevated">Bu aramaya uyan ürün bulamadık. Daha kısa bir kelime deneyin ya da yeni gelenlere göz atın.</p>
+            if (Model.Suggestions.Count > 0)
+            {
+                <h2 class="heading-3">Yeni gelenler</h2>
+                <div class="grid@(Model.Suggestions.Count < 4 ? " grid--" + Model.Suggestions.Count : "")">
+                    @foreach (var card in Model.Suggestions)
+                    {
+                        <partial name="Components/_ProductCard" model="card" />
+                    }
+                </div>
+            }
+        }
+    }
+</div>

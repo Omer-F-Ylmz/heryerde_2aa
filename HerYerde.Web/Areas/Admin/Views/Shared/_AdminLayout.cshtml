@@ -42,6 +42,12 @@
                         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
                         <span>Kategoriler</span>
                     </a>
+                    <a class="admin-nav__link @(section == "Auth" ? "is-current" : null)"
+                       asp-area="Admin" asp-controller="Auth" asp-action="ChangePassword"
+                       aria-current="@(section == "Auth" ? "page" : null)">
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <span>Parola</span>
+                    </a>
                 </nav>
                 <form class="admin-rail__exit" asp-area="Admin" asp-controller="Auth" asp-action="Logout" method="post">
                     <span class="admin-rail__who">@User.Identity!.Name</span>

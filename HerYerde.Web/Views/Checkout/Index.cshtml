@@ -74,6 +74,17 @@
                 {
                     <partial name="Components/_CartLine" model="new CartLineViewModel(line, false)" />
                 }
+                @foreach (var gift in cart.GiftLines)
+                {
+                    <p class="summary__row summary__row--gift">
+                        <span><span class="tag tag--gift">Hediye</span> @gift.ProductName × @gift.Quantity</span>
+                        <span class="summary__value">0,00 ₺</span>
+                    </p>
+                }
+                @if (cart.GiftNote is not null)
+                {
+                    <p class="summary__note" role="status">@cart.GiftNote</p>
+                }
                 <p class="summary__row">
                     <span>Ara toplam</span>
                     <span class="summary__value">@Money.Tl(cart.Subtotal)</span>

@@ -13,6 +13,7 @@ public class AdminAuthManager : IAdminAuthService
     private const int MaxFailedAttempts = 5;
     private static readonly TimeSpan LockDuration = TimeSpan.FromMinutes(15);
     private const string CredentialsMessage = "E-posta ya da parola hatalı.";
+    private const int MinPasswordLength = 10;
 
     /// <summary>Bilinmeyen e-postada da doğrulanan sabit damga; böylece yanıt süresi hesabı ele vermez.</summary>
     private static readonly AdminUser DecoyUser = new() { Email = "decoy@heryerde.invalid" };
@@ -62,6 +63,52 @@ public class AdminAuthManager : IAdminAuthService
         return (HttpStatusCode.OK, new SuccessDataResult<AdminUser>(admin));
     }
 
+    public async Task<(HttpStatusCode, IDataResult<AdminUser>)> ChangePasswordAsync(
+        int adminId,
+        string currentPassword,
+        string newPassword,
+        CancellationToken cancellationToken = default)
+    {
+        if (PasswordProblem(newPassword) is { } problem)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<AdminUser>(problem));
+        }
+
+        var admin = await _adminUserDal.GetTrackedAsync(a => a.Id == adminId, cancellationToken);
+        if (admin is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorDataResult<AdminUser>("Yönetici bulunamadı."));
+        }
+
+        if (_passwordHasher.VerifyHashedPassword(admin, admin.PasswordHash, currentPassword) == PasswordVerificationResult.Failed)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<AdminUser>("Mevcut parola hatalı."));
+        }
+
+        admin.PasswordHash = _passwordHasher.HashPassword(admin, newPassword);
+        // Damga ilerleyince diğer tarayıcılardaki çerezler bir sonraki istekte düşer.
+        admin.PasswordChangedAt = DateTime.UtcNow;
+        admin.FailedAttempts = 0;
+        admin.LockedUntil = null;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (HttpStatusCode.OK, new SuccessDataResult<AdminUser>(admin, "Parola değiştirildi."));
+    }
+
+    public async Task<bool> StampIsCurrentAsync(int adminId, long stamp, CancellationToken cancellationToken = default)
+        => await _adminUserDal.GetAsync(a => a.Id == adminId, cancellationToken) is { } admin
+           && admin.PasswordChangedAt.Ticks == stamp;
+
+    /// <summary>En az 10 karakter ve en az bir rakam.</summary>
+    private static string? PasswordProblem(string password)
+    {
+        if (string.IsNullOrEmpty(password) || password.Length < MinPasswordLength)
+        {
+            return $"Yeni parola en az {MinPasswordLength} karakter olmalı.";
+        }
+
+        return password.Any(char.IsDigit) ? null : "Yeni parola en az bir rakam içermeli.";
+    }
+
     public async Task<(HttpStatusCode, IResult)> EnsureSeedAsync(string email, string password, CancellationToken cancellationToken = default)
     {
         if (await _adminUserDal.GetAsync(a => a.Email == email, cancellationToken) is not null)
@@ -69,7 +116,7 @@ public class AdminAuthManager : IAdminAuthService
             return (HttpStatusCode.OK, new SuccessResult("Yönetici zaten var."));
         }
 
-        var admin = new AdminUser { Email = email };
+        var admin = new AdminUser { Email = email, PasswordChangedAt = DateTime.UtcNow };
         admin.PasswordHash = _passwordHasher.HashPassword(admin, password);
 
         await _adminUserDal.AddAsync(admin, cancellationToken);

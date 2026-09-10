@@ -17,6 +17,13 @@ public sealed record ProductQuery
 
     public int? ExcludedProductId { get; init; }
 
+    /// <summary>Doluysa ad, açıklama ya da kategori adında geçen ürünler; LIKE ile SQL'de.</summary>
+    public string? Term { get; init; }
+
+    /// <summary>Etkin fiyat (kampanya sürüyorsa kampanya fiyatı) bu aralıkta kalır.</summary>
+    public decimal? MinPrice { get; init; }
+    public decimal? MaxPrice { get; init; }
+
     public ProductOrder Order { get; init; } = ProductOrder.Newest;
 
     /// <summary>Kampanyanın süresi dolmuş mu kararı bu ana göre verilir.</summary>

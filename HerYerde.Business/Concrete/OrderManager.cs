@@ -67,6 +67,7 @@ public class OrderManager : IOrderService
         var products = (await _productDal.GetListAsync(p => productIds.Contains(p.Id), cancellationToken)).ToDictionary(p => p.Id);
 
         var now = _clock.GetUtcNow().UtcDateTime;
+        var gifts = GiftRules.Plan(items, await WithGiftProductsAsync(products, now, cancellationToken), now);
         var subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
         var order = new Order
         {
@@ -87,6 +88,7 @@ public class OrderManager : IOrderService
             CreatedAt = now
         };
 
+        var granted = new List<GiftPlan>();
         try
         {
             await _unitOfWork.InTransactionAsync(async () =>
@@ -94,9 +96,16 @@ public class OrderManager : IOrderService
                 // Stok kontrolü ve düşümü tek koşullu UPDATE; aynı işlem içinde olduğu için
                 // yetersiz kalan satırda önceki düşümler de geri alınır.
                 var shortages = new List<string>();
-                foreach (var item in items.Where(i => i.VariantId is not null))
+                foreach (var item in items)
                 {
-                    if (await _variantDal.TryDecrementStockAsync(item.VariantId!.Value, item.Quantity, cancellationToken) == 0)
+                    // Giyim'de stok varyantta, Ev'de ürünün kendisinde; stok tutmayan üründe düşüm yok.
+                    var decremented = item.VariantId is { } variantId
+                        ? await _variantDal.TryDecrementStockAsync(variantId, item.Quantity, cancellationToken)
+                        : products.TryGetValue(item.ProductId, out var tracked) && tracked.Stock is not null
+                            ? await _productDal.TryDecrementStockAsync(item.ProductId, item.Quantity, cancellationToken)
+                            : 1;
+
+                    if (decremented == 0)
                     {
                         shortages.Add(products.TryGetValue(item.ProductId, out var missing) ? missing.Name : "Ürün");
                     }
@@ -105,6 +114,16 @@ public class OrderManager : IOrderService
                 if (shortages.Count > 0)
                 {
                     throw new StockShortageException(shortages.Distinct().ToList());
+                }
+
+                // Hediye stoğu da düşer; bu sırada tükendiyse hediye satırı hiç açılmaz.
+                foreach (var gift in gifts.Where(g => g.Available))
+                {
+                    if (await _productDal.TryDecrementStockAsync(gift.ProductId, gift.Quantity, cancellationToken) > 0
+                        || products.GetValueOrDefault(gift.ProductId)?.Stock is null)
+                    {
+                        granted.Add(gift);
+                    }
                 }
 
                 await _orderDal.AddAsync(order, cancellationToken);
@@ -126,11 +145,24 @@ public class OrderManager : IOrderService
                         UnitPrice = item.UnitPrice
                     }, cancellationToken);
 
-                    var tracked = await _cartItemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken);
-                    if (tracked is not null)
+                    var line = await _cartItemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken);
+                    if (line is not null)
                     {
-                        _cartItemDal.Delete(tracked);
+                        _cartItemDal.Delete(line);
                     }
+                }
+
+                foreach (var gift in granted)
+                {
+                    await _orderItemDal.AddAsync(new OrderItem
+                    {
+                        OrderId = order.Id,
+                        ProductName = gift.ProductName,
+                        Sku = gift.Sku,
+                        Quantity = gift.Quantity,
+                        UnitPrice = 0m,
+                        IsGift = true
+                    }, cancellationToken);
                 }
 
                 return await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -142,7 +174,11 @@ public class OrderManager : IOrderService
                 $"Stok yetersiz: {string.Join(", ", shortage.ProductNames)}. Sepetteki adedi azaltın."));
         }
 
-        return (HttpStatusCode.Created, new SuccessDataResult<Order>(order, "Siparişiniz alındı."));
+        // Not, planlanana değil gerçekten yazılan hediyelere bakar: son anda tükenen de mesaja girer.
+        var note = GiftRules.Note(gifts.Select(g => g with { Available = granted.Any(x => x.ProductId == g.ProductId) }));
+        return (HttpStatusCode.Created, new SuccessDataResult<Order>(
+            order,
+            note.Length == 0 ? "Siparişiniz alındı." : "Siparişiniz alındı. " + note));
     }
 
     public async Task<(HttpStatusCode, IDataResult<OrderDetail>)> GetByOrderNoAsync(string orderNo, CancellationToken cancellationToken = default)
@@ -190,7 +226,11 @@ public class OrderManager : IOrderService
             {
                 foreach (var item in await _orderItemDal.GetListAsync(i => i.OrderId == order.Id, cancellationToken))
                 {
-                    await _variantDal.IncrementStockBySkuAsync(item.Sku, item.Quantity, cancellationToken);
+                    // Stok kodu varyanta uymuyorsa satır varyantsız (Ev) üründür; iade ürünün stoğuna yazılır.
+                    if (await _variantDal.IncrementStockBySkuAsync(item.Sku, item.Quantity, cancellationToken) == 0)
+                    {
+                        await _productDal.IncrementStockBySlugAsync(item.Sku, item.Quantity, cancellationToken);
+                    }
                 }
 
                 order.Status = next;
@@ -214,6 +254,30 @@ public class OrderManager : IOrderService
 
         var items = await _orderItemDal.GetListAsync(i => i.OrderId == order.Id, cancellationToken);
         return (HttpStatusCode.OK, new SuccessDataResult<OrderDetail>(new OrderDetail(order, items.OrderBy(i => i.Id).ToList())));
+    }
+
+    /// <summary>Hediye edilen başka ürünler de sözlüğe girsin; adı ve stoğu oradan okunur.</summary>
+    private async Task<Dictionary<int, Product>> WithGiftProductsAsync(
+        Dictionary<int, Product> products,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        var missing = products.Values
+            .Where(p => GiftRules.IsActive(p, now))
+            .Select(p => p.GiftProductId)
+            .OfType<int>()
+            .Where(id => !products.ContainsKey(id))
+            .Distinct()
+            .ToList();
+
+        foreach (var gift in missing.Count == 0
+                     ? []
+                     : await _productDal.GetListAsync(p => missing.Contains(p.Id), cancellationToken))
+        {
+            products[gift.Id] = gift;
+        }
+
+        return products;
     }
 
     private async Task<string> NextOrderNoAsync(DateTime moment, CancellationToken cancellationToken)

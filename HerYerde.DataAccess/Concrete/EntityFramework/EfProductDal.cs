@@ -12,14 +12,25 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
     {
     }
 
-    public async Task<(List<(Product Product, string CategorySlug)> Items, int Total)> GetActiveAsync(
+    public async Task<(List<ProductRow> Items, int Total)> GetActiveAsync(
         ProductQuery query,
         CancellationToken cancellationToken = default)
     {
         var source = Context.Products
             .AsNoTracking()
             .Where(p => p.IsActive)
-            .Join(Context.Categories, p => p.CategoryId, c => c.Id, (p, c) => new { Product = p, c.Slug });
+            .Join(Context.Categories, p => p.CategoryId, c => c.Id, (p, c) => new
+            {
+                Product = p,
+                c.Slug,
+                CategoryName = c.Name,
+                // Etkin fiyat: kampanya süresi içindeyse kampanya fiyatı. Süzme de sıralama da buna bakar.
+                Effective = p.CampaignPrice != null
+                            && p.CampaignPrice < p.Price
+                            && (p.CampaignEndsAt == null || p.CampaignEndsAt > query.Now)
+                    ? p.CampaignPrice!.Value
+                    : p.Price
+            });
 
         if (query.CategoryIds.Count > 0)
         {
@@ -31,13 +42,26 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
             source = source.Where(r => r.Product.Id != excluded);
         }
 
+        if (LikePattern(query.Term) is { } pattern)
+        {
+            source = source.Where(r => EF.Functions.Like(r.Product.Name, pattern, LikeEscape)
+                                       || EF.Functions.Like(r.Product.Description, pattern, LikeEscape)
+                                       || EF.Functions.Like(r.CategoryName, pattern, LikeEscape));
+        }
+
+        if (query.MinPrice is { } min)
+        {
+            source = source.Where(r => r.Effective >= min);
+        }
+
+        if (query.MaxPrice is { } max)
+        {
+            source = source.Where(r => r.Effective <= max);
+        }
+
         var ordered = query.Order == ProductOrder.Price
             ? source
-                .OrderBy(r => r.Product.CampaignPrice != null
-                              && r.Product.CampaignPrice < r.Product.Price
-                              && (r.Product.CampaignEndsAt == null || r.Product.CampaignEndsAt > query.Now)
-                    ? r.Product.CampaignPrice!.Value
-                    : r.Product.Price)
+                .OrderBy(r => r.Effective)
                 .ThenBy(r => r.Product.Id)
             : source
                 .OrderByDescending(r => r.Product.CreatedAt)
@@ -47,10 +71,20 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
         var rows = await ordered
             .Skip(query.Skip)
             .Take(query.Take)
-            .Select(r => new { r.Product, r.Slug, Total = source.Count() })
+            .Select(r => new
+            {
+                r.Product,
+                r.Slug,
+                // Ev'de ürünün kendi stoğu, Giyim'de varyantların tamamı bitmişse tükendi.
+                SoldOut = r.Product.Stock == 0
+                          || (r.Product.Stock == null
+                              && Context.ProductVariants.Any(v => v.ProductId == r.Product.Id)
+                              && !Context.ProductVariants.Any(v => v.ProductId == r.Product.Id && v.Stock > 0)),
+                Total = source.Count()
+            })
             .ToListAsync(cancellationToken);
 
-        var items = rows.Select(r => (r.Product, r.Slug)).ToList();
+        var items = rows.Select(r => new ProductRow(r.Product, r.Slug, r.SoldOut)).ToList();
         return (items, rows.Count == 0 ? 0 : rows[0].Total);
     }
 
@@ -88,4 +122,33 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
             .IgnoreQueryFilters()
             .AsNoTracking()
             .AnyAsync(p => p.Slug == slug && p.Id != excludedId, cancellationToken);
+
+    public Task<int> TryDecrementStockAsync(int productId, int quantity, CancellationToken cancellationToken = default)
+        => Context.Products
+            .Where(p => p.Id == productId && p.Stock != null && p.Stock >= quantity)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock - quantity), cancellationToken);
+
+    public Task<int> IncrementStockBySlugAsync(string slug, int quantity, CancellationToken cancellationToken = default)
+        => Context.Products
+            .Where(p => p.Slug == slug && p.Stock != null)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock + quantity), cancellationToken);
+
+    private const string LikeEscape = "\\";
+
+    /// <summary>Kullanıcının yazdığı %, _ ve [ karakterleri joker sayılmaz.</summary>
+    private static string? LikePattern(string? term)
+    {
+        if (string.IsNullOrWhiteSpace(term))
+        {
+            return null;
+        }
+
+        var escaped = term.Trim()
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal)
+            .Replace("[", "\\[", StringComparison.Ordinal);
+
+        return "%" + escaped + "%";
+    }
 }

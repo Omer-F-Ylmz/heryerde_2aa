@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -11,6 +12,7 @@ using HerYerde.Business.DependencyResolvers.Autofac;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Web.Infrastructure;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
@@ -106,6 +108,8 @@ builder.Services
         options.AccessDeniedPath = "/admin/auth/login";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
+        // Parola değiştiğinde damga ilerler; eski damgayı taşıyan çerezler ilk istekte düşer.
+        options.Events.OnValidatePrincipal = AdminPolicy.ValidateStampAsync;
     });
 
 builder.Services.AddAuthorizationBuilder()
@@ -203,6 +207,28 @@ public static class AdminPolicy
     public const string Name = "Admin";
     public const string ClaimType = "heryerde:admin";
     public const string ClaimValue = "true";
+
+    /// <summary>Çerezdeki parola damgası; veritabanındakiyle uymazsa oturum geçersizdir.</summary>
+    public const string StampClaim = "heryerde:pwd";
+
+    public static async Task ValidateStampAsync(CookieValidatePrincipalContext context)
+    {
+        var principal = context.Principal;
+        if (principal?.FindFirst(ClaimType) is null)
+        {
+            return;
+        }
+
+        var admin = int.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+        var stamp = long.TryParse(principal.FindFirst(StampClaim)?.Value, out var ticks) ? ticks : -1;
+        var authService = context.HttpContext.RequestServices.GetRequiredService<IAdminAuthService>();
+
+        if (admin == 0 || !await authService.StampIsCurrentAsync(admin, stamp, context.HttpContext.RequestAborted))
+        {
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+    }
 }
 
 public partial class Program

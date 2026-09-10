@@ -1,9 +1,12 @@
+using System.Globalization;
 using System.Net;
 using System.Security.Claims;
 using HerYerde.Business.Abstract;
+using HerYerde.Entities.Concrete;
 using HerYerde.Web.Areas.Admin.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HerYerde.Web.Areas.Admin.Controllers;
@@ -42,15 +45,7 @@ public class AuthController : Controller
             return View(model);
         }
 
-        var identity = new ClaimsIdentity(
-            [
-                new Claim(ClaimTypes.NameIdentifier, result.Data!.Id.ToString()),
-                new Claim(ClaimTypes.Name, result.Data.Email),
-                new Claim(AdminPolicy.ClaimType, AdminPolicy.ClaimValue)
-            ],
-            CookieAuthenticationDefaults.AuthenticationScheme);
-
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+        await SignInAsync(result.Data!);
 
         return Url.IsLocalUrl(returnUrl)
             ? Redirect(returnUrl!)
@@ -63,5 +58,54 @@ public class AuthController : Controller
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction(nameof(Login));
+    }
+
+    [HttpGet("admin/sifre")]
+    [Authorize(Policy = AdminPolicy.Name)]
+    public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
+
+    [HttpPost("admin/sifre")]
+    [Authorize(Policy = AdminPolicy.Name)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            return View(model);
+        }
+
+        var (status, result) = await _adminAuthService.ChangePasswordAsync(
+            CurrentAdminId,
+            model.CurrentPassword,
+            model.NewPassword,
+            cancellationToken);
+
+        if (status != HttpStatusCode.OK)
+        {
+            Response.StatusCode = (int)status;
+            return View(new ChangePasswordViewModel { ErrorMessage = result.Message });
+        }
+
+        // Damga ilerledi: bu tarayıcı yeni damgayla yeniden imzalanır, diğerleri düşer.
+        await SignInAsync(result.Data!);
+        return View(new ChangePasswordViewModel { Changed = true });
+    }
+
+    private int CurrentAdminId
+        => int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+
+    private Task SignInAsync(AdminUser admin)
+    {
+        var identity = new ClaimsIdentity(
+            [
+                new Claim(ClaimTypes.NameIdentifier, admin.Id.ToString(CultureInfo.InvariantCulture)),
+                new Claim(ClaimTypes.Name, admin.Email),
+                new Claim(AdminPolicy.ClaimType, AdminPolicy.ClaimValue),
+                new Claim(AdminPolicy.StampClaim, admin.PasswordChangedAt.Ticks.ToString(CultureInfo.InvariantCulture))
+            ],
+            CookieAuthenticationDefaults.AuthenticationScheme);
+
+        return HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
     }
 }

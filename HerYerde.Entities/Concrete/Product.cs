@@ -1,4 +1,5 @@
 using HerYerde.Core.Entities;
+using HerYerde.Entities.Enums;
 
 namespace HerYerde.Entities.Concrete;
 
@@ -15,6 +16,18 @@ public class Product : IEntity
     public decimal? CampaignPrice { get; set; }
     public string? CampaignLabel { get; set; }
     public DateTime? CampaignEndsAt { get; set; }
+
+    /// <summary>"1 alana 1 hediye"; yalnız kampanya süresi içinde geçerli.</summary>
+    public GiftMode GiftMode { get; set; }
+
+    /// <summary>GiftMode = BaskaUrun iken hediye edilen ürün.</summary>
+    public int? GiftProductId { get; set; }
+
+    /// <summary>Hediye adedi; en az 1.</summary>
+    public int GiftQty { get; set; } = 1;
+
+    /// <summary>Ev ürününde adet takibi. NULL = takip yok; Giyim'de daima NULL, stok varyantta durur.</summary>
+    public int? Stock { get; set; }
 
     public bool IsActive { get; set; }
 

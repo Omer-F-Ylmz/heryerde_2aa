@@ -12,4 +12,7 @@ public class AdminUser : IEntity
 
     /// <summary>Doluysa bu ana kadar giriş kapalı (5 hatalı denemeden sonra 15 dakika).</summary>
     public DateTime? LockedUntil { get; set; }
+
+    /// <summary>Parola her değiştiğinde ilerler; çerezdeki damga buna uymazsa oturum düşer.</summary>
+    public DateTime PasswordChangedAt { get; set; }
 }

@@ -88,6 +88,7 @@ public class CartManager : ICartService
 
         var productIds = items.Select(i => i.ProductId).Distinct().ToList();
         var products = (await _productDal.GetListAsync(p => productIds.Contains(p.Id), cancellationToken)).ToDictionary(p => p.Id);
+        await AddGiftProductsAsync(products, cancellationToken);
         // Varyantsız (Ev) sepette varyant tablosuna hiç gidilmez.
         var variants = items.Any(i => i.VariantId is not null)
             ? (await _variantDal.GetListAsync(v => productIds.Contains(v.ProductId), cancellationToken)).ToDictionary(v => v.Id)
@@ -119,13 +120,20 @@ public class CartManager : ICartService
                 variant?.Color,
                 item.Quantity,
                 item.UnitPrice,
-                variant?.Stock ?? 0,
-                variant is not null));
+                variant?.Stock ?? product.Stock ?? 0,
+                variant is not null || product.Stock is not null));
         }
 
         var subtotal = lines.Sum(l => l.LineTotal);
         var shipping = lines.Count == 0 ? 0m : _shop.ShippingFee;
-        return (HttpStatusCode.OK, new SuccessDataResult<CartView>(new CartView(cartId, lines, subtotal, shipping)));
+        var gifts = GiftRules.Plan(items, products, _clock.GetUtcNow().UtcDateTime);
+        return (HttpStatusCode.OK, new SuccessDataResult<CartView>(new CartView(
+            cartId,
+            lines,
+            subtotal,
+            shipping,
+            gifts.Where(g => g.Available).Select(g => new CartGift(g.ProductName, g.Quantity)).ToList(),
+            GiftRules.Note(gifts) is { Length: > 0 } note ? note : null)));
     }
 
     public async Task<(HttpStatusCode, IResult)> AddAsync(Guid cartId, int productId, int? variantId, int quantity, CancellationToken cancellationToken = default)
@@ -156,7 +164,7 @@ public class CartManager : ICartService
             cancellationToken);
 
         // Satır birleştiğinde tavan toplam adet üzerinden bakılır.
-        if (QuantityProblem(quantity + (existing?.Quantity ?? 0), variant) is { } problem)
+        if (QuantityProblem(quantity + (existing?.Quantity ?? 0), variant, product) is { } problem)
         {
             return problem;
         }
@@ -203,8 +211,9 @@ public class CartManager : ICartService
             var variant = item.VariantId is { } id
                 ? await _variantDal.GetAsync(v => v.Id == id, cancellationToken)
                 : null;
+            var product = await _productDal.GetAsync(p => p.Id == item.ProductId, cancellationToken);
 
-            if (QuantityProblem(quantity, variant) is { } problem)
+            if (QuantityProblem(quantity, variant, product) is { } problem)
             {
                 return problem;
             }
@@ -251,8 +260,9 @@ public class CartManager : ICartService
         return changed;
     }
 
-    /// <summary>Satır adedi 1..MaxQtyPerLine arasında; varyantlı üründe ayrıca stok kadar.</summary>
-    private (HttpStatusCode, IResult)? QuantityProblem(int quantity, ProductVariant? variant)
+    /// <summary>Satır adedi 1..MaxQtyPerLine arasında; stok takipli üründe (varyant ya da Ev ürünü)
+    /// ayrıca kalan stok kadar.</summary>
+    private (HttpStatusCode, IResult)? QuantityProblem(int quantity, ProductVariant? variant, Product? product)
     {
         if (quantity < 1)
         {
@@ -272,7 +282,36 @@ public class CartManager : ICartService
                 : $"Bu seçenekten yalnız {variant.Stock} adet kaldı."));
         }
 
+        if (variant is null && product?.Stock is { } stock && stock < quantity)
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult(stock == 0
+                ? "Bu ürün tükendi."
+                : $"Bu üründen yalnız {stock} adet kaldı."));
+        }
+
         return null;
+    }
+
+    /// <summary>Hediye edilen başka ürünler de sözlüğe girsin; adı ve stoğu oradan okunur.</summary>
+    private async Task AddGiftProductsAsync(Dictionary<int, Product> products, CancellationToken cancellationToken)
+    {
+        var missing = products.Values
+            .Where(p => GiftRules.IsActive(p, _clock.GetUtcNow().UtcDateTime))
+            .Select(p => p.GiftProductId)
+            .OfType<int>()
+            .Where(id => !products.ContainsKey(id))
+            .Distinct()
+            .ToList();
+
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var gift in await _productDal.GetListAsync(p => missing.Contains(p.Id), cancellationToken))
+        {
+            products[gift.Id] = gift;
+        }
     }
 
     private decimal CurrentPrice(Product product)
