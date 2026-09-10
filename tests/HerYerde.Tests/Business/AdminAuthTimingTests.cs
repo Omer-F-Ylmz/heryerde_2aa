@@ -29,7 +29,7 @@ public sealed class AdminAuthTimingTests : IAsyncLifetime
 
         var (lockedStatus, locked) = await manager.SignInAsync(Email, Password);
 
-        Assert.Equal(HttpStatusCode.Locked, lockedStatus);
+        Assert.Equal(HttpStatusCode.Unauthorized, lockedStatus);
         Assert.Equal(wrong.Message, locked.Message);
     }
 

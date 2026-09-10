@@ -127,11 +127,6 @@ public class CartManager : ICartService
 
     public async Task<(HttpStatusCode, IResult)> AddAsync(Guid cartId, int productId, int? variantId, int quantity, CancellationToken cancellationToken = default)
     {
-        if (quantity < 1)
-        {
-            return (HttpStatusCode.BadRequest, new ErrorResult("Adet en az 1 olmalı."));
-        }
-
         if (await _cartDal.GetAsync(c => c.Id == cartId, cancellationToken) is null)
         {
             return (HttpStatusCode.NotFound, new ErrorResult("Sepet bulunamadı."));
@@ -143,14 +138,25 @@ public class CartManager : ICartService
             return (HttpStatusCode.NotFound, new ErrorResult("Ürün bulunamadı."));
         }
 
-        if (variantId is { } id && await _variantDal.GetAsync(v => v.Id == id && v.ProductId == productId, cancellationToken) is null)
+        ProductVariant? variant = null;
+        if (variantId is { } id)
         {
-            return (HttpStatusCode.NotFound, new ErrorResult("Seçilen varyant bulunamadı."));
+            variant = await _variantDal.GetAsync(v => v.Id == id && v.ProductId == productId, cancellationToken);
+            if (variant is null)
+            {
+                return (HttpStatusCode.NotFound, new ErrorResult("Seçilen varyant bulunamadı."));
+            }
         }
 
         var existing = await _itemDal.GetTrackedAsync(
             i => i.CartId == cartId && i.ProductId == productId && i.VariantId == variantId,
             cancellationToken);
+
+        // Satır birleştiğinde tavan toplam adet üzerinden bakılır.
+        if (QuantityProblem(quantity + (existing?.Quantity ?? 0), variant) is { } problem)
+        {
+            return problem;
+        }
 
         if (existing is null)
         {
@@ -160,7 +166,7 @@ public class CartManager : ICartService
                 ProductId = productId,
                 VariantId = variantId,
                 Quantity = quantity,
-                UnitPrice = ProductRules.CampaignIsActive(product, DateTime.UtcNow) ? product.CampaignPrice!.Value : product.Price
+                UnitPrice = CurrentPrice(product)
             }, cancellationToken);
         }
         else
@@ -191,12 +197,85 @@ public class CartManager : ICartService
         }
         else
         {
+            var variant = item.VariantId is { } id
+                ? await _variantDal.GetAsync(v => v.Id == id, cancellationToken)
+                : null;
+
+            if (QuantityProblem(quantity, variant) is { } problem)
+            {
+                return problem;
+            }
+
             item.Quantity = quantity;
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Sepet güncellendi."));
     }
+
+    public async Task<int> RevalueAsync(Guid cartId, CancellationToken cancellationToken = default)
+    {
+        var items = await _itemDal.GetListAsync(i => i.CartId == cartId, cancellationToken);
+        if (items.Count == 0)
+        {
+            return 0;
+        }
+
+        var productIds = items.Select(i => i.ProductId).Distinct().ToList();
+        var products = (await _productDal.GetListAsync(p => productIds.Contains(p.Id), cancellationToken)).ToDictionary(p => p.Id);
+
+        var changed = 0;
+        foreach (var item in items)
+        {
+            if (!products.TryGetValue(item.ProductId, out var product) || CurrentPrice(product) == item.UnitPrice)
+            {
+                continue;
+            }
+
+            var tracked = await _itemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken);
+            if (tracked is not null)
+            {
+                tracked.UnitPrice = CurrentPrice(product);
+                changed++;
+            }
+        }
+
+        if (changed > 0)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        return changed;
+    }
+
+    /// <summary>Satır adedi 1..MaxQtyPerLine arasında; varyantlı üründe ayrıca stok kadar.</summary>
+    private (HttpStatusCode, IResult)? QuantityProblem(int quantity, ProductVariant? variant)
+    {
+        if (quantity < 1)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorResult("Adet en az 1 olmalı."));
+        }
+
+        if (quantity > _shop.MaxQtyPerLine)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorResult(
+                $"Bir üründen en çok {_shop.MaxQtyPerLine} adet alabilirsiniz."));
+        }
+
+        if (variant is not null && variant.Stock < quantity)
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult(variant.Stock == 0
+                ? "Bu seçenek tükendi."
+                : $"Bu seçenekten yalnız {variant.Stock} adet kaldı."));
+        }
+
+        return null;
+    }
+
+    private decimal CurrentPrice(Product product)
+        => ProductRules.CampaignIsActive(product, _clock.GetUtcNow().UtcDateTime)
+            ? product.CampaignPrice!.Value
+            : product.Price;
 
     public async Task<int> CountAsync(Guid? cartId, CancellationToken cancellationToken = default)
     {

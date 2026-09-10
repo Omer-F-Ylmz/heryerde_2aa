@@ -18,6 +18,9 @@ public interface ICartService
     /// <summary>Adet 0 verilirse satır silinir.</summary>
     Task<(HttpStatusCode, IResult)> SetQuantityAsync(Guid cartId, int itemId, int quantity, CancellationToken cancellationToken = default);
 
+    /// <summary>Satır fiyatlarını güncel liste/kampanya fiyatına çeker; değişen satır sayısını döner.</summary>
+    Task<int> RevalueAsync(Guid cartId, CancellationToken cancellationToken = default);
+
     /// <summary>Başlıktaki rozet için toplam adet.</summary>
     Task<int> CountAsync(Guid? cartId, CancellationToken cancellationToken = default);
 

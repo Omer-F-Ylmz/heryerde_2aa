@@ -16,4 +16,9 @@ public class EfProductVariantDal : EfEntityRepositoryBase<ProductVariant, HerYer
         => Context.ProductVariants
             .Where(v => v.Id == variantId && v.Stock >= quantity)
             .ExecuteUpdateAsync(s => s.SetProperty(v => v.Stock, v => v.Stock - quantity), cancellationToken);
+
+    public Task<int> IncrementStockBySkuAsync(string sku, int quantity, CancellationToken cancellationToken = default)
+        => Context.ProductVariants
+            .Where(v => v.Sku == sku)
+            .ExecuteUpdateAsync(s => s.SetProperty(v => v.Stock, v => v.Stock + quantity), cancellationToken);
 }

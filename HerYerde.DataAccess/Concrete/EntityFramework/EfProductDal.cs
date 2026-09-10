@@ -22,4 +22,10 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
 
         return rows.Select(r => (r.Product, r.Slug)).ToList();
     }
+
+    public Task<bool> SlugTakenAsync(string slug, int excludedId, CancellationToken cancellationToken = default)
+        => Context.Products
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .AnyAsync(p => p.Slug == slug && p.Id != excludedId, cancellationToken);
 }

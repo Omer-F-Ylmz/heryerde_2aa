@@ -38,6 +38,7 @@ public static class TestData
     };
 
     public const decimal ShippingFee = 79.90m;
+    public const int MaxQtyPerLine = 10;
     public const string Iban = "TR00 0000 0000 0000 0000 0000 00";
 
     public static CartManager NewCartManager(HerYerdeContext context, TimeProvider? clock = null) => new(
@@ -47,7 +48,7 @@ public static class TestData
         new EfProductVariantDal(context),
         new EfProductImageDal(context),
         new EfUnitOfWork(context),
-        Options.Create(new ShopSettings { ShippingFee = ShippingFee, Iban = Iban }),
+        Options.Create(new ShopSettings { ShippingFee = ShippingFee, Iban = Iban, MaxQtyPerLine = MaxQtyPerLine }),
         clock ?? TestClock.Fixed);
 
     public static AdminAuthManager NewAdminAuthManager(HerYerdeContext context) => new(

@@ -183,6 +183,23 @@ public class OrderManager : IOrderService
                 $"'{order.Status}' durumundan '{next}' durumuna geçilemez; durum geri alınamaz."));
         }
 
+        if (next == OrderStatus.IptalEdildi)
+        {
+            // İade ve durum aynı işlemde: durum yazılamazsa stok da geri eklenmiş sayılmaz.
+            await _unitOfWork.InTransactionAsync(async () =>
+            {
+                foreach (var item in await _orderItemDal.GetListAsync(i => i.OrderId == order.Id, cancellationToken))
+                {
+                    await _variantDal.IncrementStockBySkuAsync(item.Sku, item.Quantity, cancellationToken);
+                }
+
+                order.Status = next;
+                return await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+
+            return (HttpStatusCode.OK, new SuccessResult("Sipariş iptal edildi, stok geri alındı."));
+        }
+
         order.Status = next;
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Sipariş durumu güncellendi."));

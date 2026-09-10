@@ -38,6 +38,15 @@ public static class StoreCatalog
     public static string WhatsAppUrl(string baseUrl, string productName)
         => baseUrl + "?text=" + Uri.EscapeDataString($"Merhaba, {productName} için sipariş vermek istiyorum.");
 
+    /// <summary>Kırıntının kökü: vitrindeki ad ve bağlantı. Giyim alanının kendi rotası henüz yok,
+    /// kök bağlantısı ana sayfaya gider.</summary>
+    public static (string Name, string Url) Root(string? rootSlug, string rootName) => rootSlug switch
+    {
+        "ev" => ("Ev", "/ev"),
+        "giyim" => ("Örtü & Eşarp", "/"),
+        _ => (rootName, "/")
+    };
+
     /// <summary>Görselsiz üründe alt kategoriye göre tek çizgi ikon; bilinmeyen slug → ikon yok.</summary>
     public static string? PlaceholderIcon(string? categorySlug) => categorySlug switch
     {
@@ -120,7 +129,9 @@ public sealed record CategoryPageVm(
 
 public sealed record ProductPageVm(
     Product Product,
-    string CategoryName,
+    string RootName,
+    string RootUrl,
+    string? CategoryName,
     string? CategorySlug,
     bool IsClothing,
     IReadOnlyList<ProductImage> Images,
@@ -130,6 +141,9 @@ public sealed record ProductPageVm(
     IReadOnlyList<ProductCardVm> Similar)
 {
     public string? PlaceholderIcon => StoreCatalog.PlaceholderIcon(CategorySlug);
+
+    /// <summary>Alt kategori bağlantısı yalnız gezilebilir kökte (Ev) vardır; giyimin rotası henüz yok.</summary>
+    public string? CategoryUrl => CategorySlug is { } slug && RootUrl == "/ev" ? "/ev/" + slug : null;
 
     /// <summary>Beden/renk seçimini varyant kimliğine çeviren tablo; sepet formu bunu okur.</summary>
     public string VariantsJson => JsonSerializer.Serialize(Picker.Options ?? []);

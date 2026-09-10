@@ -19,16 +19,31 @@ public class CheckoutController(
 {
     private ShopSettings Shop => shop.Value;
 
+    /// <summary>Sepetteki fiyat donmasın diye ödeme adımına girerken satırlar yeniden değerlenir.</summary>
+    private const string PriceChangedMessage =
+        "Sepetinizdeki bazı ürünlerin fiyatı güncellendi. Yeni tutarı onaylayıp devam edebilirsiniz.";
+
     [HttpGet("odeme")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
+        if (CartCookie.Read(HttpContext) is not { } cartId)
+        {
+            return Redirect("/sepet");
+        }
+
+        var revalued = await cartService.RevalueAsync(cartId, cancellationToken);
         var cart = await CurrentCartAsync(cancellationToken);
         if (cart is null || cart.IsEmpty)
         {
             return Redirect("/sepet");
         }
 
-        return View(new CheckoutPageViewModel(new CheckoutFormViewModel(), cart, Shop.Iban, null));
+        return View(new CheckoutPageViewModel(
+            new CheckoutFormViewModel(),
+            cart,
+            Shop.Iban,
+            null,
+            revalued > 0 ? PriceChangedMessage : null));
     }
 
     [HttpPost("odeme")]
@@ -40,6 +55,14 @@ public class CheckoutController(
         if (cartId is null || cart is null || cart.IsEmpty)
         {
             return Redirect("/sepet");
+        }
+
+        // Fiyat değiştiyse sipariş açılmaz: kullanıcı yeni tutarı sepette görüp yeniden onaylar.
+        if (await cartService.RevalueAsync(cartId.Value, cancellationToken) > 0)
+        {
+            TempData[CartController.ErrorKey] = PriceChangedMessage;
+            Response.Headers.Location = "/sepet";
+            return StatusCode(StatusCodes.Status303SeeOther);
         }
 
         if (form.PaymentMethod is not (PaymentMethod.KapidaOdeme or PaymentMethod.HavaleEft))

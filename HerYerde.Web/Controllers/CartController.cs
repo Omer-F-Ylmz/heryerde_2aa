@@ -31,10 +31,10 @@ public class CartController(ICartService cartService) : Controller
         var (_, cart) = await cartService.GetOrCreateAsync(CartCookie.Read(HttpContext), cancellationToken);
         CartCookie.Write(HttpContext, cart.Data!.Id);
 
-        var (status, result) = await cartService.AddAsync(cart.Data.Id, productId, variantId, Math.Max(1, quantity), cancellationToken);
+        var (status, result) = await cartService.AddAsync(cart.Data.Id, productId, variantId, quantity, cancellationToken);
         if (status != System.Net.HttpStatusCode.OK)
         {
-            TempData[ErrorKey] = result.Message;
+            return await RejectedAsync(cart.Data.Id, status, result.Message, cancellationToken);
         }
 
         return Redirect(LocalOr(donus, "/sepet"));
@@ -44,9 +44,15 @@ public class CartController(ICartService cartService) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SetQuantity(int itemId, int quantity, CancellationToken cancellationToken)
     {
-        if (CartCookie.Read(HttpContext) is { } cartId)
+        if (CartCookie.Read(HttpContext) is not { } cartId)
         {
-            await cartService.SetQuantityAsync(cartId, itemId, Math.Max(0, quantity), cancellationToken);
+            return Redirect("/sepet");
+        }
+
+        var (status, result) = await cartService.SetQuantityAsync(cartId, itemId, quantity, cancellationToken);
+        if (status != System.Net.HttpStatusCode.OK)
+        {
+            return await RejectedAsync(cartId, status, result.Message, cancellationToken);
         }
 
         return Redirect("/sepet");
@@ -56,6 +62,18 @@ public class CartController(ICartService cartService) : Controller
     [ValidateAntiForgeryToken]
     public Task<IActionResult> Remove(int itemId, CancellationToken cancellationToken)
         => SetQuantity(itemId, 0, cancellationToken);
+
+    /// <summary>Geçersiz sepet isteği sessizce yuvarlanmaz: durum kodu korunur, sepet sayfası mesajla çizilir.</summary>
+    private async Task<IActionResult> RejectedAsync(
+        Guid cartId,
+        System.Net.HttpStatusCode status,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        var (_, view) = await cartService.GetAsync(cartId, cancellationToken);
+        Response.StatusCode = (int)status;
+        return View("Index", new CartPageViewModel(view.Data!, message));
+    }
 
     /// <summary>Açık yönlendirmeyi engeller: yalnız site içi adrese döner.</summary>
     private string LocalOr(string? url, string fallback)

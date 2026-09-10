@@ -11,6 +11,11 @@
     <h1 class="display-2 h-mark">Ödeme</h1>
     <p class="lead">Kart bilgisi istemiyoruz: kapıda ödeyin ya da havale/EFT ile gönderin.</p>
 
+    @if (Model.Notice is not null)
+    {
+        <p class="form-alert form-alert--notice" role="status">@Model.Notice</p>
+    }
+
     @if (Model.ErrorMessage is not null)
     {
         <p class="form-alert" role="alert">@Model.ErrorMessage</p>

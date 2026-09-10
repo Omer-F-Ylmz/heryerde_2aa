@@ -325,5 +325,5 @@ public class ProductManager : IProductService
     private Task<string> UniqueSlugAsync(string name, int excludedId, CancellationToken cancellationToken)
         => SlugGenerator.MakeUniqueAsync(
             SlugGenerator.Generate(name),
-            async slug => await _productDal.GetAsync(p => p.Slug == slug && p.Id != excludedId, cancellationToken) is not null);
+            slug => _productDal.SlugTakenAsync(slug, excludedId, cancellationToken));
 }

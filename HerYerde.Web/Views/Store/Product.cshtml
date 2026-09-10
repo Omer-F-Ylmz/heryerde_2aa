@@ -30,15 +30,18 @@
         </div>
         <div class="product__info">
             <nav class="crumbs" aria-label="Konum">
-                <a href="/ev">Ev</a>
-                <span aria-hidden="true">›</span>
-                @if (Model.CategorySlug is null)
+                <a href="@Model.RootUrl">@Model.RootName</a>
+                @if (Model.CategoryName is { } categoryName)
                 {
-                    <span>@Model.CategoryName</span>
-                }
-                else
-                {
-                    <a href="/ev/@Model.CategorySlug">@Model.CategoryName</a>
+                    <span aria-hidden="true">›</span>
+                    if (Model.CategoryUrl is { } categoryUrl)
+                    {
+                        <a href="@categoryUrl">@categoryName</a>
+                    }
+                    else
+                    {
+                        <span>@categoryName</span>
+                    }
                 }
             </nav>
             <h1 class="display-2 h-mark">@product.Name</h1>

@@ -1,5 +1,5 @@
 # Prod şablonu. Gizli değerler ortamdan gelir (.env dosyası veya CI secret):
-#   HERYERDE_DB_PASSWORD, HERYERDE_CONNECTION_STRING
+#   HERYERDE_DB_PASSWORD, HERYERDE_CONNECTION_STRING, HERYERDE_ADMIN_EMAIL, HERYERDE_ADMIN_PASSWORD
 services:
   web:
     build:
@@ -12,6 +12,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: ${HERYERDE_CONNECTION_STRING:?HERYERDE_CONNECTION_STRING gerekli}
+      Admin__Email: ${HERYERDE_ADMIN_EMAIL:?HERYERDE_ADMIN_EMAIL gerekli}
+      Admin__Password: ${HERYERDE_ADMIN_PASSWORD:?HERYERDE_ADMIN_PASSWORD gerekli}
     depends_on:
       db:
         condition: service_healthy

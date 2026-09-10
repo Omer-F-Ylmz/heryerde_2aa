@@ -97,6 +97,7 @@ public class StoreController(IProductService productService, ICategoryService ca
         var category = categories.Data!.FirstOrDefault(c => c.Id == product.CategoryId);
         var root = category?.ParentId is { } parentId ? categories.Data!.FirstOrDefault(c => c.Id == parentId) : category;
         var isClothing = root?.Slug == "giyim";
+        var (rootName, rootUrl) = StoreCatalog.Root(root?.Slug, root?.Name ?? "Ev");
 
         var (_, images) = await productService.GetImagesAsync(product.Id, cancellationToken);
         var (_, variants) = await productService.GetVariantsAsync(product.Id, cancellationToken);
@@ -105,7 +106,10 @@ public class StoreController(IProductService productService, ICategoryService ca
 
         return View(new ProductPageVm(
             product,
-            category?.Name ?? root?.Name ?? "Ev",
+            rootName,
+            rootUrl,
+            // Ürünün kategorisi kökün kendisiyse kırıntı ikinci kez yazılmaz.
+            category is null || category.Id == root?.Id ? null : category.Name,
             category?.Slug,
             isClothing,
             images.Data!.OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).ToList(),

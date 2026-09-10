@@ -44,7 +44,13 @@ public sealed class CheckoutFormViewModel
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.KapidaOdeme;
 }
 
-public sealed record CheckoutPageViewModel(CheckoutFormViewModel Form, CartView Cart, string Iban, string? ErrorMessage);
+/// <summary>Notice: hata değil, kullanıcıya söylenmesi gereken değişiklik (ör. fiyat güncellendi).</summary>
+public sealed record CheckoutPageViewModel(
+    CheckoutFormViewModel Form,
+    CartView Cart,
+    string Iban,
+    string? ErrorMessage,
+    string? Notice = null);
 
 public sealed record ThankYouViewModel(OrderDetail Detail, string WhatsAppUrl, string Iban);
 

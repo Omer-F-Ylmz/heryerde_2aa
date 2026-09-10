@@ -131,6 +131,10 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+await DatabaseMigrator.ApplyAsync(
+    app.Environment,
+    app.Services,
+    app.Services.GetRequiredService<ILogger<Program>>());
 await SeedFirstAdminAsync(app);
 await SeedCatalogAsync(app);
 

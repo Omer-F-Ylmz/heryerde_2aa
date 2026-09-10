@@ -40,8 +40,8 @@ public class AdminAuthManager : IAdminAuthService
 
         if (admin.LockedUntil is { } lockedUntil && lockedUntil > DateTime.UtcNow)
         {
-            // Kilit durumu mesajla ele verilmez; ayırt edici bilgi yalnız durum kodunda kalır.
-            return (HttpStatusCode.Locked, new ErrorDataResult<AdminUser>(CredentialsMessage));
+            // Kilitli hesap hatalı girişten ayırt edilemez: ne mesaj ne durum kodu bilgi sızdırır.
+            return (HttpStatusCode.Unauthorized, new ErrorDataResult<AdminUser>(CredentialsMessage));
         }
 
         if (_passwordHasher.VerifyHashedPassword(admin, admin.PasswordHash, password) == PasswordVerificationResult.Failed)
