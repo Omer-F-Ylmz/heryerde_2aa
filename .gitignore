@@ -6,3 +6,4 @@ appsettings.Development.json
 *.user
 .vs/
 TestResults/
+graphify-out/
