@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Net;
+using System.Threading.RateLimiting;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Autofac;
@@ -10,7 +12,9 @@ using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,7 +23,11 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 builder.Host.ConfigureContainer<ContainerBuilder>(container => container.RegisterModule(new AutofacBusinessModule()));
 
 builder.Services.AddControllersWithViews(options =>
-    options.ModelBinderProviders.Insert(0, new InvariantDecimalModelBinderProvider()));
+{
+    options.ModelBinderProviders.Insert(0, new InvariantDecimalModelBinderProvider());
+    // Tek bir POST'ta bile unutulmasın diye antiforgery doğrulaması genelde açık.
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+});
 
 // Türkçe harfler HTML kaynağında entity'ye çevrilmesin.
 builder.Services.AddSingleton(HtmlEncoder.Create(
@@ -30,10 +38,40 @@ builder.Services.AddSingleton(HtmlEncoder.Create(
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.Configure<ShopSettings>(builder.Configuration.GetSection("Shop"));
 
+builder.Services.Configure<RateLimitSettings>(builder.Configuration.GetSection("RateLimit"));
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(RateLimitPolicy.Select);
+});
+
 builder.Services.AddDbContext<HerYerdeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddHealthChecks();
+
+// TLS'i sonlandıran vekil arkasında şema ve istemci IP'si başlıktan okunur.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+    foreach (var network in builder.Configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [])
+    {
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
+    }
+
+    foreach (var proxy in builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
+    {
+        options.KnownProxies.Add(IPAddress.Parse(proxy));
+    }
+});
+
+// Üretimde çerezler her zaman Secure; geliştirmede http ile çalışılabilsin diye istekle aynı.
+builder.Services.Configure<CookiePolicyOptions>(options => options.Secure = builder.Environment.IsDevelopment()
+    ? CookieSecurePolicy.SameAsRequest
+    : CookieSecurePolicy.Always);
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddHostedService<CartCleanupHostedService>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -54,6 +92,9 @@ builder.Services.AddAuthorizationBuilder()
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -73,6 +114,8 @@ app.UseStatusCodePagesWithReExecute("/hata/{0}");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
+app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();
 

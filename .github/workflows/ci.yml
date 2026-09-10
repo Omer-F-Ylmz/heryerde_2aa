@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Her pazartesi 06:00 UTC: yeni yayımlanan güvenlik açıkları için haftalık tarama.
+    - cron: "0 6 * * 1"
 
 jobs:
   build-test:
@@ -61,3 +64,39 @@ jobs:
           name: test-results
           path: "**/TestResults/*.trx"
           if-no-files-found: ignore
+
+  security-scan:
+    runs-on: ubuntu-latest
+
+    env:
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      # Bulgu metnini dilden bagimsiz kilmak icin CLI ciktisi Ingilizce.
+      DOTNET_CLI_UI_LANGUAGE: "en"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Restore
+        run: dotnet restore HerYerde.sln
+
+      - name: NuGet vulnerability scan
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then
+            echo "::error::Güvenlik açığı olan NuGet paketi bulundu."
+            exit 1
+          fi
+
+      - name: npm audit
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=high

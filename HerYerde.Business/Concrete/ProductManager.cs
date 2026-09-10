@@ -7,6 +7,7 @@ using HerYerde.Core.DataAccess;
 using HerYerde.Core.Utilities.Results;
 using HerYerde.DataAccess.Abstract;
 using HerYerde.Entities.Concrete;
+using Microsoft.EntityFrameworkCore;
 
 namespace HerYerde.Business.Concrete;
 
@@ -181,7 +182,16 @@ public class ProductManager : IProductService
         }
 
         variant.Stock = stock;
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult(
+                "Stok bu sırada değişti. Sayfayı yenileyip yeniden deneyin."));
+        }
+
         return (HttpStatusCode.OK, new SuccessResult("Stok güncellendi."));
     }
 
@@ -217,6 +227,13 @@ public class ProductManager : IProductService
             return (HttpStatusCode.NotFound, new ErrorResult("Ürün bulunamadı."));
         }
 
+        if (!ProductRules.IsAllowedImageUrl(image.Url))
+        {
+            return (HttpStatusCode.BadRequest, new ErrorResult(
+                "Görsel adresi http:// veya https:// ile ya da site içi / ile başlamalı."));
+        }
+
+        image.Url = image.Url.Trim();
         await _imageDal.AddAsync(image, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -66,27 +66,6 @@ public class OrderManager : IOrderService
         var productIds = items.Select(i => i.ProductId).Distinct().ToList();
         var products = (await _productDal.GetListAsync(p => productIds.Contains(p.Id), cancellationToken)).ToDictionary(p => p.Id);
 
-        // Varyantlı satırlarda stok düşer; Ev tarafında varyant olmadığı için stok tutulmaz.
-        var shortages = new List<string>();
-        var reserved = new List<(ProductVariant Variant, int Quantity)>();
-        foreach (var item in items.Where(i => i.VariantId is not null))
-        {
-            var variant = await _variantDal.GetTrackedAsync(v => v.Id == item.VariantId, cancellationToken);
-            if (variant is null || variant.Stock < item.Quantity)
-            {
-                shortages.Add(products.TryGetValue(item.ProductId, out var missing) ? missing.Name : "Ürün");
-                continue;
-            }
-
-            reserved.Add((variant, item.Quantity));
-        }
-
-        if (shortages.Count > 0)
-        {
-            return (HttpStatusCode.Conflict, new ErrorDataResult<Order>(
-                $"Stok yetersiz: {string.Join(", ", shortages.Distinct())}. Sepetteki adedi azaltın."));
-        }
-
         var now = _clock.GetUtcNow().UtcDateTime;
         var subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
         var order = new Order
@@ -108,41 +87,60 @@ public class OrderManager : IOrderService
             CreatedAt = now
         };
 
-        await _unitOfWork.InTransactionAsync(async () =>
+        try
         {
-            await _orderDal.AddAsync(order, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            foreach (var item in items)
+            await _unitOfWork.InTransactionAsync(async () =>
             {
-                var product = products.GetValueOrDefault(item.ProductId);
-                var variant = item.VariantId is { } variantId
-                    ? await _variantDal.GetAsync(v => v.Id == variantId, cancellationToken)
-                    : null;
-
-                await _orderItemDal.AddAsync(new OrderItem
+                // Stok kontrolü ve düşümü tek koşullu UPDATE; aynı işlem içinde olduğu için
+                // yetersiz kalan satırda önceki düşümler de geri alınır.
+                var shortages = new List<string>();
+                foreach (var item in items.Where(i => i.VariantId is not null))
                 {
-                    OrderId = order.Id,
-                    ProductName = product?.Name ?? "Ürün",
-                    Sku = variant?.Sku ?? product?.Slug ?? string.Empty,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice
-                }, cancellationToken);
-
-                var tracked = await _cartItemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken);
-                if (tracked is not null)
-                {
-                    _cartItemDal.Delete(tracked);
+                    if (await _variantDal.TryDecrementStockAsync(item.VariantId!.Value, item.Quantity, cancellationToken) == 0)
+                    {
+                        shortages.Add(products.TryGetValue(item.ProductId, out var missing) ? missing.Name : "Ürün");
+                    }
                 }
-            }
 
-            foreach (var (variant, quantity) in reserved)
-            {
-                variant.Stock -= quantity;
-            }
+                if (shortages.Count > 0)
+                {
+                    throw new StockShortageException(shortages.Distinct().ToList());
+                }
 
-            return await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }, cancellationToken);
+                await _orderDal.AddAsync(order, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                foreach (var item in items)
+                {
+                    var product = products.GetValueOrDefault(item.ProductId);
+                    var variant = item.VariantId is { } variantId
+                        ? await _variantDal.GetAsync(v => v.Id == variantId, cancellationToken)
+                        : null;
+
+                    await _orderItemDal.AddAsync(new OrderItem
+                    {
+                        OrderId = order.Id,
+                        ProductName = product?.Name ?? "Ürün",
+                        Sku = variant?.Sku ?? product?.Slug ?? string.Empty,
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice
+                    }, cancellationToken);
+
+                    var tracked = await _cartItemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken);
+                    if (tracked is not null)
+                    {
+                        _cartItemDal.Delete(tracked);
+                    }
+                }
+
+                return await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+        }
+        catch (StockShortageException shortage)
+        {
+            return (HttpStatusCode.Conflict, new ErrorDataResult<Order>(
+                $"Stok yetersiz: {string.Join(", ", shortage.ProductNames)}. Sepetteki adedi azaltın."));
+        }
 
         return (HttpStatusCode.Created, new SuccessDataResult<Order>(order, "Siparişiniz alındı."));
     }
@@ -202,10 +200,11 @@ public class OrderManager : IOrderService
     }
 
     private async Task<string> NextOrderNoAsync(DateTime moment, CancellationToken cancellationToken)
+        => OrderNo.Build(moment, await _orderDal.NextOrderSequenceAsync(cancellationToken));
+
+    /// <summary>Yetersiz stokta işlemi geri almak için; dışarı sızmaz, 409'a çevrilir.</summary>
+    private sealed class StockShortageException(IReadOnlyList<string> productNames) : Exception
     {
-        var prefix = OrderNo.PrefixFor(moment);
-        var last = await _orderDal.LastOrderNoOfDayAsync(prefix, cancellationToken);
-        var sequence = last is not null && int.TryParse(last[prefix.Length..], out var parsed) ? parsed + 1 : 1;
-        return OrderNo.Build(moment, sequence);
+        public IReadOnlyList<string> ProductNames { get; } = productNames;
     }
 }

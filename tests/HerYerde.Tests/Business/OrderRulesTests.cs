@@ -44,8 +44,16 @@ public sealed class OrderNoTests
         => Assert.Equal("HY-20260910-0001", OrderNo.Build(new DateTime(2026, 9, 10), 1));
 
     [Fact]
-    public void Gunluk_sira_dort_haneye_tamamlanir()
+    public void Sira_dort_haneye_tamamlanir()
         => Assert.Equal("HY-20260910-0042", OrderNo.Build(new DateTime(2026, 9, 10), 42));
+
+    [Fact]
+    public void Sira_dort_haneyi_asinca_kirpilmaz()
+        => Assert.Equal("HY-20260910-12345", OrderNo.Build(new DateTime(2026, 9, 10), 12345));
+
+    [Fact]
+    public void Sira_genel_oldugu_icin_tarih_degisince_sifirlanmaz()
+        => Assert.Equal("HY-20260911-0007", OrderNo.Build(new DateTime(2026, 9, 11), 7));
 
     [Fact]
     public void Gunun_onekinden_o_gune_ait_numaralar_ayirt_edilir()

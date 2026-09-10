@@ -12,11 +12,12 @@ public class EfOrderDal : EfEntityRepositoryBase<Order, HerYerdeContext>, IOrder
     {
     }
 
-    public Task<string?> LastOrderNoOfDayAsync(string prefix, CancellationToken cancellationToken = default)
-        => Context.Orders
-            .AsNoTracking()
-            .Where(o => o.OrderNo.StartsWith(prefix))
-            .OrderByDescending(o => o.OrderNo)
-            .Select(o => o.OrderNo)
-            .FirstOrDefaultAsync(cancellationToken);
+    public async Task<long> NextOrderSequenceAsync(CancellationToken cancellationToken = default)
+    {
+        var rows = await Context.Database
+            .SqlQueryRaw<long>("SELECT NEXT VALUE FOR order_no_seq AS Value")
+            .ToListAsync(cancellationToken);
+
+        return rows[0];
+    }
 }

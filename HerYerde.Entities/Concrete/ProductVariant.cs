@@ -11,4 +11,7 @@ public class ProductVariant : IEntity
     public string? Color { get; set; }
     public string Sku { get; set; } = string.Empty;
     public int Stock { get; set; }
+
+    /// <summary>SQL Server rowversion; yönetici stok kaydı ile satıştaki düşümün çakışmasını yakalar.</summary>
+    public byte[] RowVersion { get; set; } = [];
 }

@@ -20,4 +20,7 @@ public interface ICartService
 
     /// <summary>Başlıktaki rozet için toplam adet.</summary>
     Task<int> CountAsync(Guid? cartId, CancellationToken cancellationToken = default);
+
+    /// <summary>Verilen süredir dokunulmamış anonim sepetleri satırlarıyla siler; silinen sepet sayısını döner.</summary>
+    Task<int> PurgeStaleAsync(TimeSpan age, CancellationToken cancellationToken = default);
 }

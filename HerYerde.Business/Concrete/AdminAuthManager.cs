@@ -14,6 +14,11 @@ public class AdminAuthManager : IAdminAuthService
     private static readonly TimeSpan LockDuration = TimeSpan.FromMinutes(15);
     private const string CredentialsMessage = "E-posta ya da parola hatalı.";
 
+    /// <summary>Bilinmeyen e-postada da doğrulanan sabit damga; böylece yanıt süresi hesabı ele vermez.</summary>
+    private static readonly AdminUser DecoyUser = new() { Email = "decoy@heryerde.invalid" };
+    private static readonly string DecoyHash = new PasswordHasher<AdminUser>()
+        .HashPassword(DecoyUser, "decoy-parola-dogrulama-icin");
+
     private readonly IAdminUserDal _adminUserDal;
     private readonly IUnitOfWork _unitOfWork;
     private readonly PasswordHasher<AdminUser> _passwordHasher = new();
@@ -29,12 +34,14 @@ public class AdminAuthManager : IAdminAuthService
         var admin = await _adminUserDal.GetTrackedAsync(a => a.Email == email, cancellationToken);
         if (admin is null)
         {
+            _passwordHasher.VerifyHashedPassword(DecoyUser, DecoyHash, password);
             return (HttpStatusCode.Unauthorized, new ErrorDataResult<AdminUser>(CredentialsMessage));
         }
 
         if (admin.LockedUntil is { } lockedUntil && lockedUntil > DateTime.UtcNow)
         {
-            return (HttpStatusCode.Locked, new ErrorDataResult<AdminUser>("Hesap 5 hatalı denemeden sonra 15 dakika kilitlendi."));
+            // Kilit durumu mesajla ele verilmez; ayırt edici bilgi yalnız durum kodunda kalır.
+            return (HttpStatusCode.Locked, new ErrorDataResult<AdminUser>(CredentialsMessage));
         }
 
         if (_passwordHasher.VerifyHashedPassword(admin, admin.PasswordHash, password) == PasswordVerificationResult.Failed)

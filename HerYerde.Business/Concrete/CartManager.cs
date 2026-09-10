@@ -19,6 +19,7 @@ public class CartManager : ICartService
     private readonly IProductImageDal _imageDal;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ShopSettings _shop;
+    private readonly TimeProvider _clock;
 
     public CartManager(
         ICartDal cartDal,
@@ -27,7 +28,8 @@ public class CartManager : ICartService
         IProductVariantDal variantDal,
         IProductImageDal imageDal,
         IUnitOfWork unitOfWork,
-        IOptions<ShopSettings> shop)
+        IOptions<ShopSettings> shop,
+        TimeProvider clock)
     {
         _cartDal = cartDal;
         _itemDal = itemDal;
@@ -36,6 +38,31 @@ public class CartManager : ICartService
         _imageDal = imageDal;
         _unitOfWork = unitOfWork;
         _shop = shop.Value;
+        _clock = clock;
+    }
+
+    public async Task<int> PurgeStaleAsync(TimeSpan age, CancellationToken cancellationToken = default)
+    {
+        var limit = _clock.GetUtcNow().UtcDateTime - age;
+        var stale = await _cartDal.GetListAsync(c => c.CreatedAt < limit, cancellationToken);
+        if (stale.Count == 0)
+        {
+            return 0;
+        }
+
+        var ids = stale.Select(c => c.Id).ToList();
+        foreach (var item in await _itemDal.GetListAsync(i => ids.Contains(i.CartId), cancellationToken))
+        {
+            _itemDal.Delete(item);
+        }
+
+        foreach (var cart in stale)
+        {
+            _cartDal.Delete(cart);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return stale.Count;
     }
 
     public async Task<(HttpStatusCode, IDataResult<Cart>)> GetOrCreateAsync(Guid? cartId, CancellationToken cancellationToken = default)

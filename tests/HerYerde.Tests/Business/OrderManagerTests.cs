@@ -25,7 +25,7 @@ public sealed class OrderManagerTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task Siparis_numarasi_gun_icinde_sirayla_artar()
+    public async Task Siparis_numarasi_genel_siradan_artar()
     {
         await using var context = TestDb.NewContext();
         var prefix = OrderNo.PrefixFor(TestClock.Now);
@@ -33,8 +33,11 @@ public sealed class OrderManagerTests : IAsyncLifetime
         var first = await PlaceAsync(context, quantity: 1);
         var second = await PlaceAsync(context, quantity: 1, name: "Cam Sürahi", slug: "cam-surahi");
 
-        Assert.Equal(prefix + "0001", first.OrderNo);
-        Assert.Equal(prefix + "0002", second.OrderNo);
+        Assert.StartsWith(prefix, first.OrderNo);
+        Assert.StartsWith(prefix, second.OrderNo);
+        Assert.True(
+            long.Parse(second.OrderNo[prefix.Length..]) > long.Parse(first.OrderNo[prefix.Length..]),
+            $"{second.OrderNo} numarası {first.OrderNo} numarasından büyük olmalı.");
     }
 
     [Fact]

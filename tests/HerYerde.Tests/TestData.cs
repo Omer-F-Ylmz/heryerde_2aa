@@ -40,14 +40,26 @@ public static class TestData
     public const decimal ShippingFee = 79.90m;
     public const string Iban = "TR00 0000 0000 0000 0000 0000 00";
 
-    public static CartManager NewCartManager(HerYerdeContext context) => new(
+    public static CartManager NewCartManager(HerYerdeContext context, TimeProvider? clock = null) => new(
         new EfCartDal(context),
         new EfCartItemDal(context),
         new EfProductDal(context),
         new EfProductVariantDal(context),
         new EfProductImageDal(context),
         new EfUnitOfWork(context),
-        Options.Create(new ShopSettings { ShippingFee = ShippingFee, Iban = Iban }));
+        Options.Create(new ShopSettings { ShippingFee = ShippingFee, Iban = Iban }),
+        clock ?? TestClock.Fixed);
+
+    public static AdminAuthManager NewAdminAuthManager(HerYerdeContext context) => new(
+        new EfAdminUserDal(context),
+        new EfUnitOfWork(context));
+
+    public static ProductManager NewProductManager(HerYerdeContext context) => new(
+        new EfProductDal(context),
+        new EfProductVariantDal(context),
+        new EfProductImageDal(context),
+        new EfCategoryDal(context),
+        new EfUnitOfWork(context));
 
     public static OrderManager NewOrderManager(HerYerdeContext context, TimeProvider? clock = null) => new(
         new EfOrderDal(context),

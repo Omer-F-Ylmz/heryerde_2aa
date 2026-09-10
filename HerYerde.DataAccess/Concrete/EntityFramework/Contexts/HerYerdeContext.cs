@@ -21,6 +21,9 @@ public class HerYerdeContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Sipariş numarasının sırası: eşzamanlı siparişlerde tekrar üretmesin diye veritabanı SEQUENCE'ı.
+        modelBuilder.HasSequence<long>("order_no_seq").StartsAt(1).IncrementsBy(1);
+
         modelBuilder.Entity<Category>(e =>
         {
             e.ToTable("category");
@@ -69,6 +72,7 @@ public class HerYerdeContext : DbContext
             e.Property(v => v.Color).HasColumnName("color").HasMaxLength(60);
             e.Property(v => v.Sku).HasColumnName("sku").HasMaxLength(60).IsRequired();
             e.Property(v => v.Stock).HasColumnName("stock");
+            e.Property(v => v.RowVersion).HasColumnName("row_version").IsRowVersion();
             e.HasIndex(v => v.Sku).IsUnique().HasDatabaseName("ux_product_variant_sku");
             e.HasOne<Product>().WithMany().HasForeignKey(v => v.ProductId).OnDelete(DeleteBehavior.Cascade);
         });

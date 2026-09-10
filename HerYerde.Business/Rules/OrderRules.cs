@@ -16,12 +16,13 @@ public static class OrderRules
     };
 }
 
-/// <summary>Sipariş numarası: "HY-yyyyMMdd-####", gün içinde sırayla artar.</summary>
+/// <summary>Sipariş numarası: "HY-yyyyMMdd-####". Sıra veritabanı SEQUENCE'ından gelir; geneldir,
+/// gün başında sıfırlanmaz ve dört haneyi aşarsa uzar.</summary>
 public static class OrderNo
 {
     public static string PrefixFor(DateTime moment) => $"HY-{moment:yyyyMMdd}-";
 
-    public static string Build(DateTime moment, int dailySequence) => PrefixFor(moment) + dailySequence.ToString("0000");
+    public static string Build(DateTime moment, long sequence) => PrefixFor(moment) + sequence.ToString("0000");
 }
 
 public static class PhoneRules

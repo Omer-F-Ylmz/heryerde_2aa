@@ -8,22 +8,31 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HerYerde.Tests.Web;
 
-public sealed class AdminWebFactory : WebApplicationFactory<Program>
+public class AdminWebFactory : WebApplicationFactory<Program>
 {
     public const string AdminEmail = "admin@heryerde.test";
     public const string AdminPassword = "HerYerde!Test1";
 
+    protected virtual string Environment => "Development";
+
+    /// <summary>Alt sınıflar üretim ayarı gibi farklılıkları buradan ekler.</summary>
+    protected virtual void Configure(Dictionary<string, string?> settings)
+    {
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Development");
-        builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(
-            new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:Default"] = TestDb.ConnectionString,
-                ["Admin:Email"] = AdminEmail,
-                ["Admin:Password"] = AdminPassword,
-                ["Seed:Catalog"] = "false"
-            }));
+        builder.UseEnvironment(Environment);
+        var settings = new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Default"] = TestDb.ConnectionString,
+            ["Admin:Email"] = AdminEmail,
+            ["Admin:Password"] = AdminPassword,
+            ["Seed:Catalog"] = "false"
+        };
+        Configure(settings);
+
+        builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(settings));
         builder.ConfigureTestServices(services => services.AddSingleton(TestClock.Fixed));
     }
 
@@ -43,6 +52,17 @@ public sealed class AdminWebFactory : WebApplicationFactory<Program>
         Assert.Equal(HttpStatusCode.Found, response.StatusCode);
         return client;
     }
+}
+
+/// <summary>Üretim ortamı davranışı: Secure çerez ve gerçek alan adı süzgeci.</summary>
+public sealed class ProductionFactory : AdminWebFactory
+{
+    public const string Host = "localhost";
+
+    protected override string Environment => "Production";
+
+    protected override void Configure(Dictionary<string, string?> settings)
+        => settings["AllowedHosts"] = Host;
 }
 
 public static class HtmlForm
