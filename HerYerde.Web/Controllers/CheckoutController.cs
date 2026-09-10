@@ -64,7 +64,9 @@ public class CheckoutController(
 
         if (status == HttpStatusCode.Created)
         {
-            return Redirect($"/siparis/{result.Data!.OrderNo}/tesekkur");
+            var placed = result.Data!;
+            LastOrderCookie.Write(HttpContext, placed.AccessToken);
+            return Redirect($"/siparis/{placed.OrderNo}/tesekkur?t={placed.AccessToken}");
         }
 
         // Stok yetersizse satırlar sepette işaretli görünsün diye güncel sepetle dönüyoruz.
@@ -73,8 +75,9 @@ public class CheckoutController(
         return Invalid(form, refreshed, result.Message, setStatus: false);
     }
 
+    /// <summary>Sipariş numarası tahmin edilebilir; sayfa yalnız ?t anahtarıyla veya son sipariş çereziyle açılır.</summary>
     [HttpGet("siparis/{orderNo}/tesekkur")]
-    public async Task<IActionResult> ThankYou(string orderNo, CancellationToken cancellationToken)
+    public async Task<IActionResult> ThankYou(string orderNo, [FromQuery(Name = "t")] string? t, CancellationToken cancellationToken)
     {
         var (status, result) = await orderService.GetByOrderNoAsync(orderNo, cancellationToken);
         if (status != HttpStatusCode.OK)
@@ -82,8 +85,14 @@ public class CheckoutController(
             return NotFound();
         }
 
+        var token = result.Data!.Order.AccessToken;
+        if (!(Guid.TryParse(t, out var supplied) && supplied == token) && LastOrderCookie.Read(HttpContext) != token)
+        {
+            return NotFound();
+        }
+
         var whatsAppBase = configuration["Shop:WhatsApp"] ?? "https://wa.me/";
-        var message = $"Merhaba, {result.Data!.Order.OrderNo} numaralı siparişimi bildirmek istiyorum.";
+        var message = $"Merhaba, {result.Data.Order.OrderNo} numaralı siparişimi bildirmek istiyorum.";
         return View(new ThankYouViewModel(result.Data, whatsAppBase + "?text=" + Uri.EscapeDataString(message), Shop.Iban));
     }
 

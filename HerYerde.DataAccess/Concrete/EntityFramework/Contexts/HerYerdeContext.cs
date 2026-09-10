@@ -127,6 +127,7 @@ public class HerYerdeContext : DbContext
             e.HasKey(o => o.Id);
             e.Property(o => o.Id).HasColumnName("id");
             e.Property(o => o.OrderNo).HasColumnName("order_no").HasMaxLength(20).IsRequired();
+            e.Property(o => o.AccessToken).HasColumnName("access_token");
             e.Property(o => o.Status).HasColumnName("status").HasConversion<int>();
             e.Property(o => o.PaymentMethod).HasColumnName("payment_method").HasConversion<int>();
             e.Property(o => o.Subtotal).HasColumnName("subtotal").HasPrecision(18, 2);
@@ -141,6 +142,7 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.Note).HasColumnName("note").HasMaxLength(500);
             e.Property(o => o.CreatedAt).HasColumnName("created_at");
             e.HasIndex(o => o.OrderNo).IsUnique().HasDatabaseName("ux_order_order_no");
+            e.HasIndex(o => o.AccessToken).IsUnique().HasDatabaseName("ux_order_access_token");
         });
 
         modelBuilder.Entity<OrderItem>(e =>

@@ -89,6 +89,7 @@ public class OrderManager : IOrderService
         var order = new Order
         {
             OrderNo = await NextOrderNoAsync(now, cancellationToken),
+            AccessToken = Guid.NewGuid(),
             Status = OrderStatus.Beklemede,
             PaymentMethod = draft.PaymentMethod,
             Subtotal = subtotal,

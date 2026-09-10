@@ -9,6 +9,9 @@ public class Order : IEntity
 
     /// <summary>"HY-yyyyMMdd-####"; gün içinde sıra numarası, tabloda tekil.</summary>
     public string OrderNo { get; set; } = string.Empty;
+
+    /// <summary>Teşekkür sayfasının anahtarı; sipariş numarası tahmin edilebilir olduğu için erişim buna bakar.</summary>
+    public Guid AccessToken { get; set; }
     public OrderStatus Status { get; set; }
     public PaymentMethod PaymentMethod { get; set; }
     public decimal Subtotal { get; set; }

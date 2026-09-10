@@ -71,8 +71,9 @@ public sealed class AdminOrderFlowTests : IAsyncLifetime
 
         var html = await (await client.GetAsync($"/admin/orders?ara={second.OrderNo}")).Content.ReadAsStringAsync();
 
-        Assert.Contains(second.OrderNo, html);
-        Assert.DoesNotContain(first.OrderNo, html);
+        // Süzgeç kutusunun örnek metni de sipariş numarası biçiminde; bu yüzden tablo satırına bakıyoruz.
+        Assert.Contains($"<span>{second.OrderNo}</span>", html);
+        Assert.DoesNotContain($"<span>{first.OrderNo}</span>", html);
     }
 
     private static async Task<Order> PlaceOrderAsync(

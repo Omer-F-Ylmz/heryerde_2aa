@@ -26,3 +26,4 @@ modelinde — varyantsız üründe `size`/`color` NULL kalır.
 7. UI'a (Razor/CSS/Tailwind) dokunan her işte `/frontend-craft` zorunlu; Bölüm 6 tur raporu
    olmadan kapanış yok. Marka kararı: `brand.md`.
 8. En basit çözüm, cerrahi değişiklik: istenmeyen özellik/soyutlama/konfigürasyon eklenmez.
+9. Kapanış raporu tek biçim: **commit · test sayısı · CI · sapmalar** (sapma yoksa "yok" yazılır).
