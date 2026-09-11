@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configuration>
+    <context>
+        <name>vitrin</name>
+        <desc>Vitrin rotalari; yonetim paneli (/admin) tarama disi.</desc>
+        <inscope>true</inscope>
+        <incregexes>http://localhost:8080.*</incregexes>
+        <excregexes>http://localhost:8080/admin.*</excregexes>
+    </context>
+</configuration>

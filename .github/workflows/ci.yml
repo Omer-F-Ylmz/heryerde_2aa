@@ -151,3 +151,45 @@ jobs:
         run: |
           npm ci --ignore-scripts
           npm audit --audit-level=high
+
+  zap-scan:
+    # DAST: prod imajı compose ile ayağa kalkar, ZAP baseline tarar; Medium+ bulguda kırmızı (bkz. docs/zap-1.md).
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    env:
+      HERYERDE_DB_PASSWORD: "HerYerde_Zap_P4ssw0rd!"
+      HERYERDE_CONNECTION_STRING: "Server=db;Database=HerYerde;User Id=sa;Password=HerYerde_Zap_P4ssw0rd!;TrustServerCertificate=True"
+      HERYERDE_ADMIN_EMAIL: "zap@heryerde.local"
+      HERYERDE_ADMIN_PASSWORD: "Zap-Tarama-Parola-2026"
+      HERYERDE_BASE_URL: "http://localhost:8080"
+      COMPOSE: docker compose -f docker-compose.prod.yml -f docker-compose.zap.yml
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start app (compose)
+        run: |
+          $COMPOSE up -d --build
+          for i in $(seq 1 60); do curl -fsS http://localhost:8080/health && exit 0; sleep 5; done
+          $COMPOSE logs web; exit 1
+
+      - name: ZAP baseline
+        # -a alfa pasif kurallar, -j ajax spider; uyarılar çıkış kodunu bozmaz, eşik bir sonraki adımda.
+        run: |
+          mkdir -p zap-out && chmod 777 zap-out
+          docker run --rm --network host -v "$PWD/zap-out:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://localhost:8080 -r zap-report.html -J zap.json -a -j -I
+
+      - name: Fail on Medium+
+        run: |
+          jq -r '.site[] | select(."@name" | startswith("http://localhost")) | .alerts[]
+            | select((.riskcode|tonumber) >= 2) | "::error::\(.riskdesc) \(.name) (\(.pluginid))"' zap-out/zap.json | tee medium.txt
+          test ! -s medium.txt
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: zap-out/

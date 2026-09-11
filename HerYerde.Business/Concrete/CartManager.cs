@@ -6,6 +6,7 @@ using HerYerde.Core.DataAccess;
 using HerYerde.Core.Utilities.Results;
 using HerYerde.DataAccess.Abstract;
 using HerYerde.Entities.Concrete;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace HerYerde.Business.Concrete;
@@ -221,7 +222,16 @@ public class CartManager : ICartService
             item.Quantity = quantity;
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Satır okunduktan sonra eş zamanlı başka bir istekle silindi (ör. azalt ve sil aynı anda).
+            return (HttpStatusCode.NotFound, new ErrorResult("Sepet satırı bulunamadı."));
+        }
+
         return (HttpStatusCode.OK, new SuccessResult("Sepet güncellendi."));
     }
 

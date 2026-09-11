@@ -37,6 +37,18 @@ public sealed class ErrorPageTests : IAsyncLifetime
         Assert.DoesNotContain(FailingProductionFactory.Message, html);
     }
 
+    /// <summary>ZAP 10038/10063: hata sayfası yanıtı da güvenlik başlıklarını taşır.</summary>
+    [Fact]
+    public async Task Uretimde_500_yaniti_guvenlik_basliklarini_tasir()
+    {
+        var response = await _factory.CreateNonRedirectingClient().GetAsync(FailingProductionFactory.FailingPath);
+
+        Assert.Equal(500, (int)response.StatusCode);
+        Assert.Contains("default-src 'self'", response.Headers.GetValues("Content-Security-Policy").Single());
+        Assert.Contains("camera=()", response.Headers.GetValues("Permissions-Policy").Single());
+        Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").Single());
+    }
+
     [Fact]
     public async Task Json_isteyen_istemci_ProblemDetails_alir()
     {

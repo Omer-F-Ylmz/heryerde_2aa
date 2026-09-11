@@ -1,6 +1,6 @@
 @using HerYerde.Web.Models
 @model PriceFilterVm
-<form class="filter" method="get" action="@Model.Action" role="search">
+<form class="filter" method="get" action="@Model.Action" role="search" data-no-csrf>
     @foreach (var hidden in Model.Hidden)
     {
         <input type="hidden" name="@hidden.Name" value="@hidden.Value" />

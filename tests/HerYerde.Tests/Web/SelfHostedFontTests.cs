@@ -27,6 +27,18 @@ public sealed class SelfHostedFontTests : IAsyncLifetime
         Assert.DoesNotContain("fonts.gstatic.com", html);
     }
 
+    /// <summary>ZAP 90003: yönetim sayfası da SRI'sız dış stil (Google Fonts) yüklemez.</summary>
+    [Fact]
+    public async Task Yonetim_giris_sayfasi_google_fonts_istegi_yapmaz()
+    {
+        var client = _factory.CreateNonRedirectingClient();
+
+        var html = await (await client.GetAsync("/admin/auth/login")).Content.ReadAsStringAsync();
+
+        Assert.DoesNotContain("fonts.googleapis.com", html);
+        Assert.DoesNotContain("fonts.gstatic.com", html);
+    }
+
     [Fact]
     public async Task Icerik_guvenlik_ilkesi_google_kaynaklarini_saymaz()
     {

@@ -10,4 +10,7 @@ public sealed class ShopSettings
 
     /// <summary>Canonical, OG, sitemap ve JSON-LD'deki mutlak adreslerin kökü (sonda / yok).</summary>
     public string BaseUrl { get; set; } = string.Empty;
+
+    /// <summary>Ürün görselinin gelebileceği dış kökenler (ör. https://placehold.co); CSP img-src'e eklenir.</summary>
+    public string[] ImageOrigins { get; set; } = [];
 }

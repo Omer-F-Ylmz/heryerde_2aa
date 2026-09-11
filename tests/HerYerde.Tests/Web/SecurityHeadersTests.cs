@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.RegularExpressions;
 
 namespace HerYerde.Tests.Web;
 
@@ -39,7 +40,33 @@ public sealed class SecurityHeadersTests : IAsyncLifetime
         Assert.Contains("script-src 'self'", csp);
         Assert.Contains("frame-ancestors 'none'", csp);
         Assert.Contains("form-action 'self'", csp);
-        Assert.Contains("img-src 'self' https: data:", csp);
+    }
+
+    /// <summary>ZAP 10055: img-src'de "https:" gibi şema-joker kaynak yok; dış görsel yalnız Shop:ImageOrigins'ten.</summary>
+    [Fact]
+    public async Task Csp_img_src_sema_joker_kaynak_tasimaz()
+    {
+        var client = _factory.CreateNonRedirectingClient();
+
+        var csp = Header(await client.GetAsync("/"), "Content-Security-Policy");
+
+        var imgSrc = csp.Split(';', StringSplitOptions.TrimEntries).Single(d => d.StartsWith("img-src "));
+        Assert.Equal("img-src 'self' data: https://placehold.co", imgSrc);
+    }
+
+    /// <summary>ZAP 90004: pencere ve kaynaklar başka kökenle paylaşılmaz.</summary>
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/sepet")]
+    [InlineData("/robots.txt")]
+    public async Task Capraz_koken_yalitim_basliklari_her_yanitta_vardir(string url)
+    {
+        var client = _factory.CreateNonRedirectingClient();
+
+        var response = await client.GetAsync(url);
+
+        Assert.Equal("same-origin", Header(response, "Cross-Origin-Opener-Policy"));
+        Assert.Equal("same-origin", Header(response, "Cross-Origin-Resource-Policy"));
     }
 
     [Fact]
@@ -61,6 +88,24 @@ public sealed class SecurityHeadersTests : IAsyncLifetime
             new Dictionary<string, string> { ["productId"] = "1", ["quantity"] = "1" }));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    /// <summary>ZAP 20012: token'sız form yalnız GET'tir ve data-no-csrf ile bilerek işaretlenmiştir.</summary>
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/ara?q=tencere")]
+    public async Task Tokensiz_form_yalniz_isaretli_get_formudur(string url)
+    {
+        var client = _factory.CreateNonRedirectingClient();
+
+        var html = await (await client.GetAsync(url)).Content.ReadAsStringAsync();
+
+        var forms = Regex.Matches(html, "<form[^>]*>.*?</form>", RegexOptions.Singleline);
+        Assert.NotEmpty(forms);
+        Assert.All(forms, form => Assert.True(
+            form.Value.Contains("__RequestVerificationToken")
+                || (form.Value.Contains("method=\"get\"") && form.Value.Contains("data-no-csrf")),
+            form.Value[..Math.Min(120, form.Value.Length)]));
     }
 
     [Fact]
