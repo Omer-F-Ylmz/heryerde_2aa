@@ -34,11 +34,18 @@ else
             @foreach (var entry in Model.Page.Items)
             {
                 <tr>
-                    <th scope="row"><span class="cell-mono">@entry.At.ToString("dd.MM.yyyy HH:mm:ss")</span></th>
-                    <td><span class="cell-mono">#@entry.AdminId</span></td>
-                    <td>@entry.Action</td>
-                    <td>@entry.Entity <span class="cell-mono">@(entry.EntityId is { } id ? "#" + id : "—")</span></td>
-                    <td><span class="cell-mono">@(entry.Ip ?? "—")</span></td>
+                    <th scope="row"><span class="cell-mono">@IstanbulTime.Format(entry.Log.At)</span></th>
+                    @if (entry.AdminEmail is null)
+                    {
+                        <td><span class="cell-mono">#@entry.Log.AdminId</span></td>
+                    }
+                    else
+                    {
+                        <td>@entry.AdminEmail</td>
+                    }
+                    <td>@entry.Log.Action</td>
+                    <td>@entry.Log.Entity <span class="cell-mono">@(entry.Log.EntityId is { } id ? "#" + id : "—")</span></td>
+                    <td><span class="cell-mono">@(entry.Log.Ip ?? "—")</span></td>
                 </tr>
             }
             </tbody>

@@ -87,6 +87,19 @@ public sealed class AdminOrderFlowTests : IAsyncLifetime
         Assert.Contains($"placeholder=\"{OrderNo.Build(TestClock.Now, 1)}\"", html);
     }
 
+    [Fact]
+    public async Task Siparis_listesi_saati_Istanbul_saatiyle_gosterir()
+    {
+        await using var context = TestDb.NewContext();
+        await PlaceOrderAsync(context);
+        var client = await _factory.CreateSignedInClientAsync();
+
+        var html = await (await client.GetAsync("/admin/orders")).Content.ReadAsStringAsync();
+
+        // TestClock.Now 09:30 UTC; İstanbul UTC+3.
+        Assert.Contains(">15.01.2026 12:30<", html);
+    }
+
     private static async Task<Order> PlaceOrderAsync(
         HerYerdeContext context,
         string name = "Çelik Tencere",

@@ -8,6 +8,7 @@ on:
   schedule:
     # Her pazartesi 06:00 UTC: yeni yayımlanan güvenlik açıkları için haftalık tarama.
     - cron: "0 6 * * 1"
+  workflow_dispatch:
 
 jobs:
   build-test:
@@ -55,7 +56,8 @@ jobs:
         run: dotnet build HerYerde.sln --no-restore -c Release -warnaserror
 
       - name: Test
-        run: dotnet test HerYerde.sln --no-build -c Release --logger "trx;LogFileName=results.trx"
+        # Tarayici testleri Chrome indirir; onlari browser-check job'u kosar.
+        run: dotnet test HerYerde.sln --no-build -c Release --filter "Category!=Browser" --logger "trx;LogFileName=results.trx"
 
       - name: Upload test results
         if: always()
@@ -64,6 +66,55 @@ jobs:
           name: test-results
           path: "**/TestResults/*.trx"
           if-no-files-found: ignore
+
+  browser-check:
+    # Chrome indirmesi yalniz burada: haftalik schedule ve elle tetik (Actions > CI > Run workflow).
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "HerYerde_Ci_P4ssw0rd!"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'HerYerde_Ci_P4ssw0rd!' -C -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      ConnectionStrings__Default: "Server=localhost,1433;Database=HerYerdeTest;User Id=sa;Password=HerYerde_Ci_P4ssw0rd!;TrustServerCertificate=True"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Restore
+        run: dotnet restore HerYerde.sln
+
+      - name: Build CSS
+        run: |
+          npm ci --ignore-scripts
+          npm run css:build
+
+      - name: Build
+        run: dotnet build HerYerde.sln --no-restore -c Release -warnaserror
+
+      - name: Browser tests
+        run: dotnet test HerYerde.sln --no-build -c Release --filter "Category=Browser"
 
   security-scan:
     runs-on: ubuntu-latest

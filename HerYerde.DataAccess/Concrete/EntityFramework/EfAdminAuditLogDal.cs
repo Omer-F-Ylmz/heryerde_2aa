@@ -12,11 +12,12 @@ public class EfAdminAuditLogDal : EfEntityRepositoryBase<AdminAuditLog, HerYerde
     {
     }
 
-    public Task<List<AdminAuditLog>> GetRecentAsync(int skip, int take, CancellationToken cancellationToken = default)
-        => Context.AdminAuditLogs
-            .AsNoTracking()
-            .OrderByDescending(a => a.At)
-            .ThenByDescending(a => a.Id)
+    public Task<List<AdminAuditRow>> GetRecentAsync(int skip, int take, CancellationToken cancellationToken = default)
+        => (from entry in Context.AdminAuditLogs.AsNoTracking()
+            join admin in Context.AdminUsers on entry.AdminId equals admin.Id into admins
+            from admin in admins.DefaultIfEmpty()
+            orderby entry.At descending, entry.Id descending
+            select new AdminAuditRow(entry, admin == null ? null : admin.Email))
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);

@@ -16,7 +16,7 @@
         }
     </a>
     <div class="line__body">
-        <h3 class="line__title"><a href="/urun/@line.Slug">@line.ProductName</a></h3>
+        <h3 class="line__title@(Model.Editable ? "" : " line__title--single")"><a href="/urun/@line.Slug">@line.ProductName</a></h3>
         @if (variant.Length > 0)
         {
             <p class="line__meta">@variant</p>

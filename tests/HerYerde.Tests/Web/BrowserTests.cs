@@ -5,8 +5,10 @@ using PuppeteerSharp;
 
 namespace HerYerde.Tests.Web;
 
-/// <summary>Gerçek tarayıcıda ölçülen davranışlar: 390px ödeme taşması, JSON-LD'nin CSP ile uyumu.</summary>
+/// <summary>Gerçek tarayıcıda ölçülen davranışlar: 390px ödeme taşması, JSON-LD'nin CSP ile uyumu.
+/// Chrome indirdiği için build-test'te süzülür; CI'da browser-check job'u haftalık ve elle koşar.</summary>
 [Collection(DatabaseCollection.Name)]
+[Trait("Category", "Browser")]
 public sealed class BrowserTests : IAsyncLifetime
 {
     private readonly AdminWebFactory _factory = new();

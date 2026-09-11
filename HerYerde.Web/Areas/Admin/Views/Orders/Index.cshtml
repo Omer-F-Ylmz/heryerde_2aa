@@ -57,7 +57,7 @@ else
                     <th scope="row">
                         <div class="cell-product">
                             <span>@order.OrderNo</span>
-                            <span class="cell-mono">@order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                            <span class="cell-mono">@IstanbulTime.Format(order.CreatedAt)</span>
                         </div>
                     </th>
                     <td>

@@ -103,6 +103,47 @@ public sealed class AdminAuditTests : IAsyncLifetime
         Assert.DoesNotContain(">#5<", last);
     }
 
+    [Fact]
+    public async Task Denetim_satirinda_yonetici_e_postasi_gorunur()
+    {
+        var client = await _factory.CreateSignedInClientAsync();
+        await using var context = TestDb.NewContext();
+        await AddEntryAsync(context, await AdminIdAsync(context), new DateTime(2026, 9, 1, 9, 30, 0, DateTimeKind.Utc));
+
+        var html = await (await client.GetAsync("/admin/denetim")).Content.ReadAsStringAsync();
+
+        // Yönetici e-postası panel başlığında da var; bu yüzden yalnız tablo gövdesine bakıyoruz.
+        var rows = html[html.IndexOf("<tbody>", StringComparison.Ordinal)..html.IndexOf("</tbody>", StringComparison.Ordinal)];
+        Assert.Contains($">{AdminWebFactory.AdminEmail}<", rows);
+    }
+
+    [Fact]
+    public async Task Denetim_saati_Istanbul_saatine_cevrilir()
+    {
+        var client = await _factory.CreateSignedInClientAsync();
+        await using var context = TestDb.NewContext();
+        await AddEntryAsync(context, await AdminIdAsync(context), new DateTime(2026, 9, 1, 9, 30, 0, DateTimeKind.Utc));
+
+        var html = await (await client.GetAsync("/admin/denetim")).Content.ReadAsStringAsync();
+
+        Assert.Contains(">01.09.2026 12:30<", html);
+        Assert.DoesNotContain("09:30", html);
+    }
+
+    private static async Task AddEntryAsync(HerYerde.DataAccess.Concrete.EntityFramework.Contexts.HerYerdeContext context, int adminId, DateTime at)
+    {
+        context.AdminAuditLogs.Add(new AdminAuditLog
+        {
+            AdminId = adminId,
+            Action = "güncelle",
+            Entity = "ürün",
+            EntityId = 7,
+            At = at,
+            Ip = "127.0.0.1"
+        });
+        await context.SaveChangesAsync();
+    }
+
     private static async Task<int> AdminIdAsync(HerYerde.DataAccess.Concrete.EntityFramework.Contexts.HerYerdeContext context)
         => (await new EfAdminUserDal(context).GetAsync(a => a.Email == AdminWebFactory.AdminEmail))!.Id;
 }

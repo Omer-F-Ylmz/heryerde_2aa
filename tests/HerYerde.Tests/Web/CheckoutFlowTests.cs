@@ -96,6 +96,24 @@ public sealed class CheckoutFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Odeme_ozet_satiri_ad_ve_fiyat_icin_tek_satir_sinifi_tasir()
+    {
+        await using var context = TestDb.NewContext();
+        var productId = await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere");
+        var client = _factory.CreateNonRedirectingClient();
+        await HtmlForm.PostAsync(client, "/urun/celik-tencere", "/sepet/ekle", new Dictionary<string, string>
+        {
+            ["productId"] = productId.ToString(),
+            ["quantity"] = "1"
+        });
+
+        var html = await (await client.GetAsync("/odeme")).Content.ReadAsStringAsync();
+
+        Assert.Contains("<div class=\"line line--static\">", html);
+        Assert.Contains("<h3 class=\"line__title line__title--single\">", html);
+    }
+
+    [Fact]
     public async Task Gecersiz_telefon_odeme_formunda_hata_ile_kalir()
     {
         await using var context = TestDb.NewContext();

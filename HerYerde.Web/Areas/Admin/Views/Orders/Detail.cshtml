@@ -10,7 +10,7 @@
     <div>
         <p class="eyebrow">Sipariş</p>
         <h1 class="display-2">@order.OrderNo</h1>
-        <p class="page-head__note">@order.CreatedAt.ToString("dd.MM.yyyy HH:mm") · <partial name="Components/_StatusPill" model="order.Status" /></p>
+        <p class="page-head__note">@IstanbulTime.Format(order.CreatedAt) · <partial name="Components/_StatusPill" model="order.Status" /></p>
     </div>
     <a class="btn btn--ghost" asp-area="Admin" asp-controller="Orders" asp-action="Index">Listeye dön</a>
 </div>

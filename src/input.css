@@ -2706,8 +2706,10 @@
       gap: 24px;
     }
 
+    /* .line'ın 768 alanları "foot" getirir; statik satırda tutar adla aynı satırda, sağda kalsın */
     .line--static {
       grid-template-columns: 72px 1fr auto;
+      grid-template-areas: "media body total";
     }
 
     .line__media {
@@ -2716,6 +2718,16 @@
 
     .line--static .line__media {
       width: 72px;
+    }
+
+    /* Ödeme özeti: uzun ad tek satırda kısalır (390'da sarar); kırpma bağlantıda ki odak halkası kesilmesin */
+    .line__title--single a {
+      display: inline-block;
+      max-width: 100%;
+      vertical-align: top;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .line__foot {
