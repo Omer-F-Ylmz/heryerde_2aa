@@ -18,6 +18,7 @@ public class HerYerdeContext : DbContext
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -184,6 +185,21 @@ public class HerYerdeContext : DbContext
             e.Property(i => i.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2);
             e.Property(i => i.IsGift).HasColumnName("is_gift");
             e.HasOne<Order>().WithMany().HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AdminAuditLog>(e =>
+        {
+            e.ToTable("admin_audit_log");
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).HasColumnName("id");
+            e.Property(a => a.AdminId).HasColumnName("admin_id");
+            e.Property(a => a.Action).HasColumnName("action").HasMaxLength(60).IsRequired();
+            e.Property(a => a.Entity).HasColumnName("entity").HasMaxLength(30).IsRequired();
+            e.Property(a => a.EntityId).HasColumnName("entity_id");
+            e.Property(a => a.At).HasColumnName("at");
+            e.Property(a => a.Ip).HasColumnName("ip").HasMaxLength(45);
+            // Denetim listesi: en yeniden eskiye.
+            e.HasIndex(a => a.At).IsDescending().HasDatabaseName("ix_admin_audit_log_at");
         });
     }
 }

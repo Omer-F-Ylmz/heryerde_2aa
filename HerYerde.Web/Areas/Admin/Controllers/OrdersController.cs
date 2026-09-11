@@ -3,6 +3,8 @@ using HerYerde.Business.Abstract;
 using HerYerde.Business.Rules;
 using HerYerde.Entities.Enums;
 using HerYerde.Web.Areas.Admin.Models;
+using HerYerde.Web.Infrastructure;
+using HerYerde.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,11 +16,13 @@ public class OrdersController : Controller
 {
     private readonly IOrderService _orderService;
     private readonly TimeProvider _clock;
+    private readonly IAdminAuditService _auditService;
 
-    public OrdersController(IOrderService orderService, TimeProvider clock)
+    public OrdersController(IOrderService orderService, TimeProvider clock, IAdminAuditService auditService)
     {
         _orderService = orderService;
         _clock = clock;
+        _auditService = auditService;
     }
 
     [HttpGet]
@@ -63,6 +67,7 @@ public class OrdersController : Controller
             return View("Detail", new OrderDetailViewModel { Detail = detail.Data!, ErrorMessage = result.Message });
         }
 
+        await _auditService.WriteAsync(HttpContext, "durum: " + OrderLabels.For(next), "sipariş", id);
         return RedirectToAction(nameof(Detail), new { id });
     }
 }

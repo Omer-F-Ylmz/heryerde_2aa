@@ -3,6 +3,7 @@ using HerYerde.Business.Abstract;
 using HerYerde.Business.Rules;
 using HerYerde.Entities.Concrete;
 using HerYerde.Web.Areas.Admin.Models;
+using HerYerde.Web.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,13 +13,17 @@ namespace HerYerde.Web.Areas.Admin.Controllers;
 [Authorize(Policy = AdminPolicy.Name)]
 public class ProductsController : Controller
 {
+    private const string Entity = "ürün";
+
     private readonly IProductService _productService;
     private readonly ICategoryService _categoryService;
+    private readonly IAdminAuditService _auditService;
 
-    public ProductsController(IProductService productService, ICategoryService categoryService)
+    public ProductsController(IProductService productService, ICategoryService categoryService, IAdminAuditService auditService)
     {
         _productService = productService;
         _categoryService = categoryService;
+        _auditService = auditService;
     }
 
     [HttpGet]
@@ -65,6 +70,7 @@ public class ProductsController : Controller
             return View(model);
         }
 
+        await _auditService.WriteAsync(HttpContext, "ekle", Entity, created.Data!.Id);
         return RedirectToAction(nameof(Edit), new { id = created.Data!.Id });
     }
 
@@ -88,6 +94,7 @@ public class ProductsController : Controller
         var (status, result) = await _productService.UpdateAsync(ToProduct(model), cancellationToken);
         if (status == HttpStatusCode.OK)
         {
+            await _auditService.WriteAsync(HttpContext, "güncelle", Entity, model.Id);
             return RedirectToAction(nameof(Index));
         }
 
@@ -106,7 +113,7 @@ public class ProductsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        await _productService.DeleteAsync(id, cancellationToken);
+        await AuditIfDoneAsync(await _productService.DeleteAsync(id, cancellationToken), "sil", id);
         return RedirectToAction(nameof(Index));
     }
 
@@ -128,9 +135,13 @@ public class ProductsController : Controller
             Stock = model.Stock
         }, cancellationToken);
 
-        return status == HttpStatusCode.Created
-            ? RedirectToAction(nameof(Edit), new { id = model.ProductId })
-            : await FormWithErrorAsync(model.ProductId, result.Message, cancellationToken, status);
+        if (status != HttpStatusCode.Created)
+        {
+            return await FormWithErrorAsync(model.ProductId, result.Message, cancellationToken, status);
+        }
+
+        await _auditService.WriteAsync(HttpContext, "varyant ekle", Entity, model.ProductId);
+        return RedirectToAction(nameof(Edit), new { id = model.ProductId });
     }
 
     [HttpPost]
@@ -138,17 +149,20 @@ public class ProductsController : Controller
     public async Task<IActionResult> UpdateStock(int productId, int variantId, int stock, CancellationToken cancellationToken)
     {
         var (status, result) = await _productService.UpdateStockAsync(variantId, stock, cancellationToken);
+        if (status != HttpStatusCode.OK)
+        {
+            return await FormWithErrorAsync(productId, result.Message, cancellationToken, status);
+        }
 
-        return status == HttpStatusCode.OK
-            ? RedirectToAction(nameof(Edit), new { id = productId })
-            : await FormWithErrorAsync(productId, result.Message, cancellationToken, status);
+        await _auditService.WriteAsync(HttpContext, "stok güncelle", Entity, productId);
+        return RedirectToAction(nameof(Edit), new { id = productId });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteVariant(int productId, int variantId, CancellationToken cancellationToken)
     {
-        await _productService.DeleteVariantAsync(variantId, cancellationToken);
+        await AuditIfDoneAsync(await _productService.DeleteVariantAsync(variantId, cancellationToken), "varyant sil", productId);
         return RedirectToAction(nameof(Edit), new { id = productId });
     }
 
@@ -161,7 +175,7 @@ public class ProductsController : Controller
             return await FormWithErrorAsync(model.ProductId, "Görsel alanlarını kontrol edin.", cancellationToken);
         }
 
-        await _productService.AddImageAsync(new ProductImage
+        var added = await _productService.AddImageAsync(new ProductImage
         {
             ProductId = model.ProductId,
             Url = model.Url,
@@ -169,6 +183,7 @@ public class ProductsController : Controller
             SortOrder = model.SortOrder
         }, cancellationToken);
 
+        await AuditIfDoneAsync(added, "görsel ekle", model.ProductId);
         return RedirectToAction(nameof(Edit), new { id = model.ProductId });
     }
 
@@ -176,7 +191,7 @@ public class ProductsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateImageSort(int productId, int imageId, int sortOrder, CancellationToken cancellationToken)
     {
-        await _productService.UpdateImageSortAsync(imageId, sortOrder, cancellationToken);
+        await AuditIfDoneAsync(await _productService.UpdateImageSortAsync(imageId, sortOrder, cancellationToken), "görsel sırası", productId);
         return RedirectToAction(nameof(Edit), new { id = productId });
     }
 
@@ -184,7 +199,7 @@ public class ProductsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SetPrimaryImage(int productId, int imageId, CancellationToken cancellationToken)
     {
-        await _productService.SetPrimaryImageAsync(imageId, cancellationToken);
+        await AuditIfDoneAsync(await _productService.SetPrimaryImageAsync(imageId, cancellationToken), "birincil görsel", productId);
         return RedirectToAction(nameof(Edit), new { id = productId });
     }
 
@@ -192,8 +207,17 @@ public class ProductsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteImage(int productId, int imageId, CancellationToken cancellationToken)
     {
-        await _productService.DeleteImageAsync(imageId, cancellationToken);
+        await AuditIfDoneAsync(await _productService.DeleteImageAsync(imageId, cancellationToken), "görsel sil", productId);
         return RedirectToAction(nameof(Edit), new { id = productId });
+    }
+
+    /// <summary>Sonucu sayfaya yansımayan işlemler: yalnız başarılıysa denetim izine düşer.</summary>
+    private async Task AuditIfDoneAsync((HttpStatusCode Status, HerYerde.Core.Utilities.Results.IResult) outcome, string action, int productId)
+    {
+        if (outcome.Status is HttpStatusCode.OK or HttpStatusCode.Created)
+        {
+            await _auditService.WriteAsync(HttpContext, action, Entity, productId);
+        }
     }
 
     private static Product ToProduct(ProductFormViewModel model) => new()

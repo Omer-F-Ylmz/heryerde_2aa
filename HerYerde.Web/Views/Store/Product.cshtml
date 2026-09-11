@@ -1,8 +1,19 @@
 @using HerYerde.Web.Models
 @model ProductPageVm
+@inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
 @{
-    ViewData["Title"] = Model.Product.Name;
     var product = Model.Product;
+    var price = Model.CampaignActive ? product.CampaignPrice!.Value : product.Price;
+    ViewData["Title"] = product.Name;
+    ViewData["Description"] = Seo.ProductDescription(product, price);
+    ViewData["Canonical"] = "/urun/" + product.Slug;
+    ViewData["OgType"] = "product";
+    ViewData["OgImage"] = Model.Images.Count > 0 ? Model.Images[0].Url : null;
+    ViewData["JsonLd"] = new[]
+    {
+        Seo.ProductJsonLd(Shop.Value.BaseUrl, product, price, Model.SoldOut, Model.Images.Select(i => i.Url)),
+        Seo.ProductBreadcrumbJsonLd(Shop.Value.BaseUrl, Model)
+    };
 }
 
 <div class="container section product-page">

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using HerYerde.Business.Abstract;
 using HerYerde.Entities.Concrete;
 using HerYerde.Web.Areas.Admin.Models;
+using HerYerde.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -15,10 +16,12 @@ namespace HerYerde.Web.Areas.Admin.Controllers;
 public class AuthController : Controller
 {
     private readonly IAdminAuthService _adminAuthService;
+    private readonly IAdminAuditService _auditService;
 
-    public AuthController(IAdminAuthService adminAuthService)
+    public AuthController(IAdminAuthService adminAuthService, IAdminAuditService auditService)
     {
         _adminAuthService = adminAuthService;
+        _auditService = auditService;
     }
 
     [HttpGet]
@@ -89,6 +92,7 @@ public class AuthController : Controller
 
         // Damga ilerledi: bu tarayıcı yeni damgayla yeniden imzalanır, diğerleri düşer.
         await SignInAsync(result.Data!);
+        await _auditService.WriteAsync(HttpContext, "parola değiştir", "yönetici", CurrentAdminId);
         return View(new ChangePasswordViewModel { Changed = true });
     }
 

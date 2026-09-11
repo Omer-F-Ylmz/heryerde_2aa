@@ -142,6 +142,41 @@ public static class TestData
         return (product.Id, variant.Id);
     }
 
+    /// <summary>Ev kökünün altında alt kategori; kök yoksa açılır.</summary>
+    public static async Task<int> AddChildCategoryAsync(HerYerdeContext context, string name, string slug)
+    {
+        var category = new Category
+        {
+            Name = name,
+            Slug = slug,
+            ParentId = await RootCategoryIdAsync(context, "Ev", "ev"),
+            SortOrder = 1,
+            IsActive = true
+        };
+        await new EfCategoryDal(context).AddAsync(category);
+        await new EfUnitOfWork(context).SaveChangesAsync();
+        return category.Id;
+    }
+
+    public static async Task AddImageAsync(HerYerdeContext context, int productId, string url)
+    {
+        await new EfProductImageDal(context).AddAsync(new ProductImage
+        {
+            ProductId = productId,
+            Url = url,
+            Alt = "Ürün görseli",
+            IsPrimary = true
+        });
+        await new EfUnitOfWork(context).SaveChangesAsync();
+    }
+
+    public static async Task SetDescriptionAsync(HerYerdeContext context, int productId, string description)
+    {
+        var product = (await new EfProductDal(context).GetTrackedAsync(p => p.Id == productId))!;
+        product.Description = description;
+        await new EfUnitOfWork(context).SaveChangesAsync();
+    }
+
     private static async Task<int> RootCategoryIdAsync(HerYerdeContext context, string name, string slug)
     {
         var dal = new EfCategoryDal(context);

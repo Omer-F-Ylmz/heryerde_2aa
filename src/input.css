@@ -2486,6 +2486,8 @@
   /* Ödeme: form geniş, özet dar */
   .checkout {
     display: grid;
+    /* minmax(0, 1fr): sütun içeriğin min-content genişliğine açılıp 390'da sayfayı taşırmasın */
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
     align-items: start;
   }

@@ -27,5 +27,7 @@ WORKDIR /app
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 COPY --from=build /app .
+# Serilog dosya sink'i /app/logs'a yazar; uygulama kullanıcısı root değil.
+RUN mkdir -p /app/logs && chown $APP_UID /app/logs
 USER $APP_UID
 ENTRYPOINT ["dotnet", "HerYerde.Web.dll"]

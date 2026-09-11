@@ -1,0 +1,48 @@
+@using HerYerde.Web.Models
+@model AuditListViewModel
+@{
+    ViewData["Title"] = "Denetim";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Güvenlik</p>
+        <h1 class="display-2">Denetim</h1>
+        <p class="page-head__note">Son 200 yönetici işlemi, en yeniden eskiye. Kayıtlar panelden değiştirilemez.</p>
+    </div>
+</div>
+
+@if (Model.Page.Items.Count == 0)
+{
+    <p class="empty surface-elevated">Henüz kayıtlı yönetici işlemi yok.</p>
+}
+else
+{
+    <div class="table-wrap surface-elevated">
+        <table class="table">
+            <caption class="visually-hidden">Yönetici işlemleri: zaman, yönetici, işlem, kayıt ve IP</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Zaman</th>
+                    <th scope="col">Yönetici</th>
+                    <th scope="col">İşlem</th>
+                    <th scope="col">Kayıt</th>
+                    <th scope="col">IP</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var entry in Model.Page.Items)
+            {
+                <tr>
+                    <th scope="row"><span class="cell-mono">@entry.At.ToString("dd.MM.yyyy HH:mm:ss")</span></th>
+                    <td><span class="cell-mono">#@entry.AdminId</span></td>
+                    <td>@entry.Action</td>
+                    <td>@entry.Entity <span class="cell-mono">@(entry.EntityId is { } id ? "#" + id : "—")</span></td>
+                    <td><span class="cell-mono">@(entry.Ip ?? "—")</span></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <partial name="Components/_Pagination" model='new PaginationVm(Model.Page.Page, Model.Page.TotalPages, "/admin/denetim")' />
+}

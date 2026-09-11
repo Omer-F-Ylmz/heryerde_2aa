@@ -12,6 +12,7 @@ public class AdminWebFactory : WebApplicationFactory<Program>
 {
     public const string AdminEmail = "admin@heryerde.test";
     public const string AdminPassword = "HerYerde!Test1";
+    public const string BaseUrl = "https://heryerde.test";
 
     protected virtual string Environment => "Development";
 
@@ -28,7 +29,8 @@ public class AdminWebFactory : WebApplicationFactory<Program>
             ["ConnectionStrings:Default"] = TestDb.ConnectionString,
             ["Admin:Email"] = AdminEmail,
             ["Admin:Password"] = AdminPassword,
-            ["Seed:Catalog"] = "false"
+            ["Seed:Catalog"] = "false",
+            ["Shop:BaseUrl"] = BaseUrl
         };
         Configure(settings);
 

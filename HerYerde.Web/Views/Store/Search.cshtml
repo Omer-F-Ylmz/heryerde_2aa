@@ -2,6 +2,7 @@
 @model SearchPageVm
 @{
     ViewData["Title"] = Model.Query.Length > 0 ? "\"" + Model.Query + "\" araması" : "Arama";
+    ViewData["Robots"] = "noindex, follow";
 }
 
 <div class="container section">

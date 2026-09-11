@@ -212,3 +212,8 @@ public sealed class OrderDetailViewModel
 
     public bool CanCancel => Detail.Order.Status == OrderStatus.Beklemede;
 }
+
+public sealed class AuditListViewModel
+{
+    public AdminAuditPage Page { get; set; } = null!;
+}

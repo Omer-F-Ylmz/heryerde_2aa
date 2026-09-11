@@ -1,7 +1,11 @@
 @using HerYerde.Web.Models
 @model HomeVm
+@inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
 @{
     ViewData["Title"] = "Çeyizden mutfağa ev ürünleri";
+    ViewData["Canonical"] = "/";
+    ViewData["OgImage"] = Model.HeroImage;
+    ViewData["JsonLd"] = new[] { Seo.OrganizationJsonLd(Shop.Value.BaseUrl) };
 }
 
 <section class="hero" aria-labelledby="hero-title">

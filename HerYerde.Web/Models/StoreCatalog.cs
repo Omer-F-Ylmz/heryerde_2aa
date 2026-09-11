@@ -159,7 +159,8 @@ public sealed record CategoryPageVm(
     SortTabsVm Sort,
     PriceFilterVm Filter,
     IReadOnlyList<ProductCardVm> Cards,
-    PaginationVm Pagination);
+    PaginationVm Pagination,
+    int Total);
 
 /// <summary>Arama sonucu. Message doluysa (kısa terim) liste hiç sorgulanmaz.</summary>
 public sealed record SearchPageVm(

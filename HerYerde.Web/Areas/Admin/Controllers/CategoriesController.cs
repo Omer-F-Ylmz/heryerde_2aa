@@ -3,6 +3,7 @@ using HerYerde.Business.Abstract;
 using HerYerde.Business.Rules;
 using HerYerde.Entities.Concrete;
 using HerYerde.Web.Areas.Admin.Models;
+using HerYerde.Web.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,13 +13,17 @@ namespace HerYerde.Web.Areas.Admin.Controllers;
 [Authorize(Policy = AdminPolicy.Name)]
 public class CategoriesController : Controller
 {
+    private const string Entity = "kategori";
+
     private readonly ICategoryService _categoryService;
     private readonly IProductService _productService;
+    private readonly IAdminAuditService _auditService;
 
-    public CategoriesController(ICategoryService categoryService, IProductService productService)
+    public CategoriesController(ICategoryService categoryService, IProductService productService, IAdminAuditService auditService)
     {
         _categoryService = categoryService;
         _productService = productService;
+        _auditService = auditService;
     }
 
     [HttpGet]
@@ -39,16 +44,18 @@ public class CategoriesController : Controller
             return View("Form", model);
         }
 
-        var (status, result) = await _categoryService.AddAsync(new Category
+        var category = new Category
         {
             Name = model.Name,
             ParentId = model.ParentId,
             SortOrder = model.SortOrder,
             IsActive = model.IsActive
-        }, cancellationToken);
+        };
+        var (status, result) = await _categoryService.AddAsync(category, cancellationToken);
 
         if (status == HttpStatusCode.Created)
         {
+            await _auditService.WriteAsync(HttpContext, "ekle", Entity, category.Id);
             return RedirectToAction(nameof(Index));
         }
 
@@ -102,6 +109,7 @@ public class CategoriesController : Controller
 
         if (status == HttpStatusCode.OK)
         {
+            await _auditService.WriteAsync(HttpContext, "güncelle", Entity, model.Id);
             return RedirectToAction(nameof(Index));
         }
 
@@ -118,6 +126,7 @@ public class CategoriesController : Controller
         var (status, result) = await _categoryService.DeleteAsync(id, cancellationToken);
         if (status == HttpStatusCode.OK)
         {
+            await _auditService.WriteAsync(HttpContext, "sil", Entity, id);
             return RedirectToAction(nameof(Index));
         }
 

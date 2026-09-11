@@ -20,11 +20,29 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Primitives;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 builder.Host.ConfigureContainer<ContainerBuilder>(container => container.RegisterModule(new AutofacBusinessModule()));
+
+// Konsol + 14 gün tutulan günlük dosya; telefon/e-posta/adres PiiMaskEnricher ile maskelenir.
+// DI'daki ek sink'ler (testlerin bellek sink'i) ReadFrom.Services ile bağlanır; DI'a sonradan eklenen
+// ILoggerProvider'lar (testlerin sorgu sayacı) writeToProviders ile beslenir. Varsayılan konsol sağlayıcısı
+// Serilog konsoluyla çift yazmasın diye temizlenir.
+builder.Logging.ClearProviders();
+builder.Services.AddSerilog((services, logger) => logger
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.With<PiiMaskEnricher>()
+    .WriteTo.Console()
+    .WriteTo.File("logs/heryerde-.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
+    .ReadFrom.Services(services),
+    preserveStaticLogger: true,
+    writeToProviders: true);
 
 builder.Services.AddControllersWithViews(options =>
 {
@@ -67,6 +85,8 @@ builder.Services.AddResponseCompression(options =>
         "text/xml"
     ];
 });
+
+builder.Services.AddOutputCache();
 
 builder.Services.AddDbContext<HerYerdeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
@@ -118,6 +138,10 @@ builder.Services.AddAuthorizationBuilder()
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.UseMiddleware<CorrelationIdMiddleware>();
+// Tek satır istek logu: yöntem, yol (sorgu dizesi yok), durum, süre. Statik Log.Logger kullanılmadığından
+// logger DI'dan verilir.
+app.UseSerilogRequestLogging(options => options.Logger = app.Services.GetRequiredService<Serilog.ILogger>());
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
 if (!app.Environment.IsDevelopment())
@@ -146,6 +170,7 @@ app.UseStaticFiles(new StaticFileOptions
 });
 app.UseRouting();
 app.UseRateLimiter();
+app.UseOutputCache();
 app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -101,7 +101,8 @@ public class StoreController(IProductService productService, ICategoryService ca
                 baseUrl,
                 ("sirala", byPrice ? "fiyat" : null),
                 ("min", StoreCatalog.Amount(low)),
-                ("max", StoreCatalog.Amount(high))))));
+                ("max", StoreCatalog.Amount(high)))),
+            total));
     }
 
     [HttpGet("ara")]

@@ -2,6 +2,10 @@
 @model CategoryPageVm
 @{
     ViewData["Title"] = Model.Title;
+    ViewData["Description"] = $"{Model.Title} kategorisinde {Model.Total} ürün — kapıda ödeme, WhatsApp'tan sipariş.";
+    // Süzgeç/sıralama sorgusu canonical'a girmez; 2. sayfa ve sonrası kendini gösterir.
+    var path = Model.Tabs.First(t => t.Current).Url;
+    ViewData["Canonical"] = Model.Pagination.Page > 1 ? $"{path}?sayfa={Model.Pagination.Page}" : path;
 }
 
 <div class="container section">
