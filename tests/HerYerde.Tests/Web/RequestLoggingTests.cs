@@ -48,7 +48,8 @@ public sealed class RequestLoggingTests : IAsyncLifetime
             ["Address"] = Address,
             ["City"] = "İstanbul",
             ["District"] = "Kadıköy",
-            ["PaymentMethod"] = ((int)PaymentMethod.KapidaOdeme).ToString()
+            ["PaymentMethod"] = ((int)PaymentMethod.KapidaOdeme).ToString(),
+            ["LegalConsent"] = "true"
         });
         await placed.Content.ReadAsStringAsync();
         await (await client.GetAsync("/ara?q=" + Uri.EscapeDataString(Email))).Content.ReadAsStringAsync();

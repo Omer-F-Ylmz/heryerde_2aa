@@ -74,7 +74,8 @@ public sealed class CheckoutRevalueTests : IAsyncLifetime
             ["Address"] = "Cumhuriyet Mah. 12/3",
             ["City"] = "İstanbul",
             ["District"] = "Kadıköy",
-            ["PaymentMethod"] = "1"
+            ["PaymentMethod"] = "1",
+            ["LegalConsent"] = "true"
         });
 
         Assert.Equal(HttpStatusCode.Found, response.StatusCode);

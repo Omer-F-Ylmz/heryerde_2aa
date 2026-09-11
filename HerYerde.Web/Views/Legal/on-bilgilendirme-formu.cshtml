@@ -1,0 +1,50 @@
+@using HerYerde.Web.Models
+@inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
+@model LegalPage
+@{
+    Layout = "_LegalLayout";
+}
+@section Toc {
+    <li><a class="legal__toc-link" href="#satici">Satıcı bilgileri</a></li>
+    <li><a class="legal__toc-link" href="#urun-bilgileri">Ürünün temel nitelikleri</a></li>
+    <li><a class="legal__toc-link" href="#fiyat-odeme">Fiyat ve ödeme</a></li>
+    <li><a class="legal__toc-link" href="#teslimat">Teslimat</a></li>
+    <li><a class="legal__toc-link" href="#cayma">Cayma hakkı</a></li>
+    <li><a class="legal__toc-link" href="#sikayet">Şikâyet ve itiraz</a></li>
+}
+
+<p>Bu form, 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği uyarınca sipariş vermeden önce bilmeniz gerekenleri özetler.</p>
+
+<section id="satici">
+    <h2>Satıcı bilgileri</h2>
+    <partial name="_Satici" />
+</section>
+
+<section id="urun-bilgileri">
+    <h2>Ürünün temel nitelikleri</h2>
+    <p>Ürünün adı, açıklaması, varsa beden ve renk seçenekleri ürün sayfasında; seçtiğiniz ürünler ve adetler ödeme adımındaki sipariş özetinde yer alır.</p>
+</section>
+
+<section id="fiyat-odeme">
+    <h2>Fiyat ve ödeme</h2>
+    <ul>
+        <li>Fiyatlar Türk lirasıdır ve vergiler dahildir.</li>
+        <li>Kargo ücreti alıcıya aittir (şu an @Money.Tl(Shop.Value.ShippingFee)); toplam tutar ödeme adımında gösterilir.</li>
+        <li>Ödeme kapıda (nakit ya da kart) veya havale/EFT ile yapılır. Kart bilgisi internet üzerinden alınmaz.</li>
+    </ul>
+</section>
+
+<section id="teslimat">
+    <h2>Teslimat</h2>
+    <p>Sipariş telefonla teyit edilir ve bildirdiğiniz adrese kargoyla gönderilir; teslim en geç 30 gün içinde yapılır.</p>
+</section>
+
+<section id="cayma">
+    <h2>Cayma hakkı</h2>
+    <p>Teslimden itibaren 14 gün içinde gerekçe göstermeden cayabilirsiniz. Bildirimi WhatsApp, e-posta ya da KEP ile yaparsınız; ödediğiniz tutar bildirimden itibaren 14 gün içinde iade edilir. İstisnalar <a href="/yasal/mesafeli-satis-sozlesmesi#cayma-istisnalari">mesafeli satış sözleşmesinde</a>, iade adımları <a href="/yasal/teslimat-ve-iade#iade-sureci">teslimat ve iade</a> sayfasındadır.</p>
+</section>
+
+<section id="sikayet">
+    <h2>Şikâyet ve itiraz</h2>
+    <p>Şikâyetlerinizi [MÜŞTERİ: e-posta adresi] ya da [MÜŞTERİ: telefon] üzerinden iletebilirsiniz. Uyuşmazlıkta tüketici hakem heyetlerine veya tüketici mahkemelerine başvurabilirsiniz.</p>
+</section>

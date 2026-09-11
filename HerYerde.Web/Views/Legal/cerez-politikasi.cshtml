@@ -1,0 +1,70 @@
+@model HerYerde.Web.Models.LegalPage
+@{
+    Layout = "_LegalLayout";
+}
+@section Toc {
+    <li><a class="legal__toc-link" href="#cerez-nedir">Çerez nedir</a></li>
+    <li><a class="legal__toc-link" href="#kullandigimiz-cerezler">Kullandığımız çerezler</a></li>
+    <li><a class="legal__toc-link" href="#ucuncu-taraf">Üçüncü taraf ve izleme</a></li>
+    <li><a class="legal__toc-link" href="#onay-bandi">Neden onay bandı yok</a></li>
+    <li><a class="legal__toc-link" href="#yonetme">Çerezleri yönetmek</a></li>
+}
+
+<section id="cerez-nedir">
+    <h2>Çerez nedir</h2>
+    <p>Çerez, bir sitenin tarayıcınıza bıraktığı küçük bir metin dosyasıdır. Biz çerezleri yalnız sitenin çalışması için kullanırız: sepetinizi hatırlamak ve formların sizin tarafınızdan gönderildiğini doğrulamak.</p>
+</section>
+
+<section id="kullandigimiz-cerezler">
+    <h2>Kullandığımız çerezler</h2>
+    <p>Hepsi zorunlu ve birinci taraf çerezidir; yalnız bu site okur.</p>
+    <div class="table-wrap">
+        <table class="table">
+            <caption class="visually-hidden">Zorunlu çerezler</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Çerez</th>
+                    <th scope="col">Ne işe yarar</th>
+                    <th scope="col">Süre</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th scope="row"><span class="cell-mono">heryerde.cart</span></th>
+                    <td>Sepetinizi üyelik açmadan hatırlar.</td>
+                    <td>30 gün</td>
+                </tr>
+                <tr>
+                    <th scope="row"><span class="cell-mono">.AspNetCore.Antiforgery.*</span></th>
+                    <td>Formların sizin tarafınızdan gönderildiğini doğrular (sahte istek koruması).</td>
+                    <td>Tarayıcı kapanınca</td>
+                </tr>
+                <tr>
+                    <th scope="row"><span class="cell-mono">heryerde.lastorder</span></th>
+                    <td>Son siparişinizin teşekkür sayfasını açar.</td>
+                    <td>30 gün</td>
+                </tr>
+                <tr>
+                    <th scope="row"><span class="cell-mono">heryerde.admin</span></th>
+                    <td>Yalnız yönetim paneline giriş yapan yöneticinin oturumu; ziyaretçiye bırakılmaz.</td>
+                    <td>8 saat</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section id="ucuncu-taraf">
+    <h2>Üçüncü taraf ve izleme</h2>
+    <p>Sitede üçüncü taraf, analitik, reklam ya da izleme çerezi yoktur. Yazı tipleri de kendi sunucumuzdan gelir; sayfalar başka bir siteye istek yapmaz.</p>
+</section>
+
+<section id="onay-bandi">
+    <h2>Neden onay bandı yok</h2>
+    <p>Yukarıdaki çerezler sitenin çalışması için zorunludur ve bunlar için onay gerekmez. Başka çerez kullanmadığımız için sayfaların altında çerez onay bandı göstermiyoruz. İleride isteğe bağlı bir çerez eklersek önce onayınızı isteyeceğiz ve bu metni güncelleyeceğiz.</p>
+</section>
+
+<section id="yonetme">
+    <h2>Çerezleri yönetmek</h2>
+    <p>Tarayıcınızın ayarlarından çerezleri silebilir ya da engelleyebilirsiniz. Engellerseniz sepet ve ödeme adımı çalışmaz.</p>
+</section>

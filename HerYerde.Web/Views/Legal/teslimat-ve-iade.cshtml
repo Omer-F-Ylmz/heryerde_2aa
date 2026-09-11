@@ -1,0 +1,59 @@
+@using HerYerde.Web.Models
+@inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@model LegalPage
+@{
+    Layout = "_LegalLayout";
+}
+@section Toc {
+    <li><a class="legal__toc-link" href="#kargo">Kargo ücreti</a></li>
+    <li><a class="legal__toc-link" href="#odeme">Ödeme yöntemleri</a></li>
+    <li><a class="legal__toc-link" href="#teslim-suresi">Teslim süresi</a></li>
+    <li><a class="legal__toc-link" href="#cayma">Cayma hakkı (14 gün)</a></li>
+    <li><a class="legal__toc-link" href="#iade-sureci">İade süreci</a></li>
+    <li><a class="legal__toc-link" href="#hasarli-urun">Hasarlı ya da eksik ürün</a></li>
+    <li><a class="legal__toc-link" href="#geri-odeme">Geri ödeme</a></li>
+}
+
+<section id="kargo">
+    <h2>Kargo ücreti</h2>
+    <p>Kargo ücreti alıcıya aittir ve ödeme adımında toplam tutara eklenir: şu an @Money.Tl(Shop.Value.ShippingFee).</p>
+</section>
+
+<section id="odeme">
+    <h2>Ödeme yöntemleri</h2>
+    <ul>
+        <li><strong>Kapıda ödeme:</strong> kurye geldiğinde nakit ya da kartla ödersiniz.</li>
+        <li><strong>Havale / EFT:</strong> sipariş sonrası gösterilen IBAN'a ödersiniz; açıklamaya sipariş numaranızı yazın. Ödeme hesaba geçince kargoya veririz.</li>
+    </ul>
+</section>
+
+<section id="teslim-suresi">
+    <h2>Teslim süresi</h2>
+    <p>Siparişi telefonla teyit edip kargoya veririz ve takip bilgisini paylaşırız. Teslim en geç 30 gün içinde yapılır.</p>
+</section>
+
+<section id="cayma">
+    <h2>Cayma hakkı (14 gün)</h2>
+    <p>Ürünü teslim aldığınız günden itibaren 14 gün içinde gerekçe göstermeden iade edebilirsiniz. Cayma hakkının kullanılamadığı haller <a href="/yasal/mesafeli-satis-sozlesmesi#cayma-istisnalari">mesafeli satış sözleşmesinde</a> yazılıdır.</p>
+</section>
+
+<section id="iade-sureci">
+    <h2>İade süreci</h2>
+    <ol>
+        <li><a href="@Config["Shop:WhatsApp"]" rel="noopener">WhatsApp'tan</a> sipariş numaranızla iade isteğinizi yazın.</li>
+        <li>İade için kullanılacak kargo şirketini ve gönderi bilgisini size bildiririz.</li>
+        <li>Ürünü, bildiriminizden itibaren 10 gün içinde faturası ve mümkünse orijinal ambalajıyla gönderin.</li>
+        <li>Ürün bize ulaşınca kontrol eder, ödemenizi iade ederiz.</li>
+    </ol>
+</section>
+
+<section id="hasarli-urun">
+    <h2>Hasarlı ya da eksik ürün</h2>
+    <p>Paket hasarlıysa kurye yanında tutanak tutturun ve fotoğrafıyla birlikte WhatsApp'tan bize yazın; ürünü değiştirir ya da bedelini iade ederiz.</p>
+</section>
+
+<section id="geri-odeme">
+    <h2>Geri ödeme</h2>
+    <p>Cayma bildiriminiz bize ulaştıktan sonra en geç 14 gün içinde ürün bedeli ve teslimat masrafı IBAN'ınıza havale/EFT ile iade edilir. Bildirdiğimiz kargo şirketiyle gönderdiğiniz iadenin kargo bedeli bize aittir.</p>
+</section>

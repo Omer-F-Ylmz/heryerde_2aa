@@ -61,6 +61,18 @@
                 @Html.ValidationMessage("PaymentMethod", null, new { @class = "field__error" })
             </fieldset>
 
+            <div class="field">
+                <label class="switch">
+                    <input type="checkbox" name="LegalConsent" value="true" required checked="@Model.Form.LegalConsent" />
+                    <span>
+                        <a href="/yasal/on-bilgilendirme-formu" target="_blank" rel="noopener">Ön bilgilendirme formunu</a> ve
+                        <a href="/yasal/mesafeli-satis-sozlesmesi" target="_blank" rel="noopener">mesafeli satış sözleşmesini</a>
+                        okudum, kabul ediyorum.
+                    </span>
+                </label>
+                @Html.ValidationMessage("LegalConsent", null, new { @class = "field__error" })
+            </div>
+
             <div class="form-card__foot">
                 <a class="btn btn--ghost" href="/sepet">Sepete dön</a>
                 <button class="btn btn--cta btn--lg" type="submit">Siparişi tamamla</button>

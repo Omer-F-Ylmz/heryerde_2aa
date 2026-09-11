@@ -27,4 +27,10 @@ public class Order : IEntity
     public string? Note { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>Ödeme adımında ön bilgilendirme formu ve mesafeli satış sözleşmesinin onaylandığı an.</summary>
+    public DateTime? ConsentAt { get; set; }
+
+    /// <summary>Onaylanan yasal metinlerin sürümü; bu alan eklenmeden önceki siparişte boş.</summary>
+    public string? LegalVersion { get; set; }
 }

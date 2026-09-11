@@ -211,6 +211,9 @@ public sealed class OrderDetailViewModel
     };
 
     public bool CanCancel => Detail.Order.Status == OrderStatus.Beklemede;
+
+    /// <summary>Kişisel veri yalnız kapanmış (teslim/iptal) siparişte anonimleştirilir.</summary>
+    public bool CanAnonymize => HerYerde.Business.Rules.OrderRules.CanAnonymize(Detail.Order.Status);
 }
 
 public sealed class AuditListViewModel

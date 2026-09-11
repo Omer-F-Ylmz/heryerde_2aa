@@ -23,6 +23,12 @@ using Microsoft.Extensions.Primitives;
 using Serilog;
 using Serilog.Events;
 
+// Konteyner sağlık denetimi (docker-compose.prod.yml): uygulama kurulmadan tek istek atıp çıkar.
+if (args.Contains(HealthProbe.Argument))
+{
+    Environment.Exit(await HealthProbe.RunAsync());
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
@@ -115,6 +121,7 @@ builder.Services.Configure<CookiePolicyOptions>(options => options.Secure = buil
     : CookieSecurePolicy.Always);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHostedService<CartCleanupHostedService>();
+builder.Services.AddHostedService<AuditLogCleanupHostedService>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

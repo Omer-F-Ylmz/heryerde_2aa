@@ -83,7 +83,8 @@ public sealed class CheckoutFlowTests : IAsyncLifetime
             ["Address"] = "Cumhuriyet Mah. 12/3",
             ["City"] = "İstanbul",
             ["District"] = "Kadıköy",
-            ["PaymentMethod"] = ((int)PaymentMethod.KapidaOdeme).ToString()
+            ["PaymentMethod"] = ((int)PaymentMethod.KapidaOdeme).ToString(),
+            ["LegalConsent"] = "true"
         });
 
         Assert.Equal(HttpStatusCode.Found, placed.StatusCode);
@@ -133,7 +134,8 @@ public sealed class CheckoutFlowTests : IAsyncLifetime
             ["Address"] = "Cumhuriyet Mah. 12/3",
             ["City"] = "İstanbul",
             ["District"] = "Kadıköy",
-            ["PaymentMethod"] = ((int)PaymentMethod.KapidaOdeme).ToString()
+            ["PaymentMethod"] = ((int)PaymentMethod.KapidaOdeme).ToString(),
+            ["LegalConsent"] = "true"
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -232,7 +234,8 @@ public sealed class CheckoutFlowTests : IAsyncLifetime
             ["Address"] = "Cumhuriyet Mah. 12/3",
             ["City"] = "İstanbul",
             ["District"] = "Kadıköy",
-            ["PaymentMethod"] = ((int)PaymentMethod.KapidaOdeme).ToString()
+            ["PaymentMethod"] = ((int)PaymentMethod.KapidaOdeme).ToString(),
+            ["LegalConsent"] = "true"
         });
 
         Assert.Equal(HttpStatusCode.Found, placed.StatusCode);

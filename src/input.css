@@ -1861,6 +1861,167 @@
     min-height: 44px;
   }
 
+  .store-footer__title {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-brand-700);
+  }
+
+  .store-footer__list {
+    display: grid;
+    gap: 0 24px;
+  }
+
+  .store-footer__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  @media (min-width: 768px) {
+    /* Yasal sütun sağda iki satırı kaplar; sosyal bağlantılar ve telif solda alt alta */
+    .store-footer__legal {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: start;
+    }
+
+    .store-footer__list {
+      grid-template-columns: repeat(2, auto);
+    }
+  }
+
+  /* Yasal metinler */
+  .legal__meta {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .legal {
+    display: grid;
+    gap: 32px;
+    margin-top: 32px;
+  }
+
+  .legal__toc {
+    align-self: start;
+    padding: 16px 24px;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: var(--r-card);
+    background: var(--c-neutral-50);
+  }
+
+  .legal__toc-title {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-brand-700);
+  }
+
+  .legal__toc ol {
+    margin: 0;
+    padding-left: 24px;
+    list-style: decimal;
+    font-size: 14px;
+  }
+
+  .legal__toc-link {
+    display: inline-block;
+    padding-block: 8px;
+    color: var(--c-neutral-900);
+    transition: color 240ms var(--ease);
+  }
+
+  .legal__toc-link:hover {
+    color: var(--c-brand-700);
+  }
+
+  .legal__toc-link:focus-visible,
+  .legal__body a:focus-visible,
+  .switch a:focus-visible,
+  .summary__note a:focus-visible,
+  .order-facts dd a:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .legal__body {
+    max-width: 72ch;
+  }
+
+  .legal__body section {
+    scroll-margin-top: 24px;
+  }
+
+  .legal__body h2 {
+    margin: 32px 0 8px;
+    font-family: var(--font-display);
+    font-size: 24px;
+    line-height: 1.3;
+    color: var(--c-brand-900);
+  }
+
+  .legal__body section:first-child h2 {
+    margin-top: 0;
+  }
+
+  .legal__body p,
+  .legal__body ul,
+  .legal__body ol,
+  .legal__body .order-facts,
+  .legal__body .table-wrap {
+    margin: 0 0 16px;
+  }
+
+  .legal__body ul {
+    padding-left: 24px;
+    list-style: disc;
+  }
+
+  .legal__body ol {
+    padding-left: 24px;
+    list-style: decimal;
+  }
+
+  .legal__body li + li {
+    margin-top: 8px;
+  }
+
+  /* Metin içi bağlantı: yasal metin, ödeme onayı, teşekkür notu ve sipariş detayındaki sözleşme */
+  .legal__body a,
+  .switch a,
+  .summary__note a,
+  .order-facts dd a {
+    color: var(--c-brand-700);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .legal__body a:hover,
+  .switch a:hover,
+  .summary__note a:hover,
+  .order-facts dd a:hover {
+    color: var(--c-brand-900);
+  }
+
+  @media (min-width: 1024px) {
+    .legal {
+      grid-template-columns: 256px minmax(0, 1fr);
+      gap: 48px;
+    }
+
+    .legal__toc {
+      position: sticky;
+      top: 24px;
+    }
+  }
+
   /* 404 */
   .oops {
     max-width: 640px;

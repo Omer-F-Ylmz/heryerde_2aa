@@ -14,6 +14,10 @@ public static class OrderRules
         (OrderStatus.Beklemede, OrderStatus.IptalEdildi) => true,
         _ => false
     };
+
+    /// <summary>Kişisel veri yalnız sipariş kapandıktan sonra (teslim ya da iptal) anonimleştirilir; açık siparişte
+    /// teyit ve teslimat için gerekir.</summary>
+    public static bool CanAnonymize(OrderStatus status) => status is OrderStatus.TeslimEdildi or OrderStatus.IptalEdildi;
 }
 
 /// <summary>Sipariş numarası: "HY-yyyyMMdd-####". Sıra veritabanı SEQUENCE'ından gelir; geneldir,

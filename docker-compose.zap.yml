@@ -1,10 +1,10 @@
 # ZAP taraması için docker-compose.prod.yml'e ek (CI zap-scan job'u ve docs/zap-1.md taraması):
 #   docker compose -f docker-compose.prod.yml -f docker-compose.zap.yml up -d --build
-# Tarayıcı localhost'tan gelir; hız sınırı tarayıcının isteklerini 429 sayfasına çevirmesin diye yükseltilir.
+# Alan adı süzgeci HERYERDE_ALLOWED_HOSTS=localhost ile gelir; hız sınırı tarayıcının isteklerini 429 sayfasına
+# çevirmesin diye yükseltilir.
 services:
   web:
     environment:
-      AllowedHosts: localhost
       RateLimit__GeneralPerMinute: "100000"
       RateLimit__CartPerMinute: "100000"
       RateLimit__CheckoutPerMinute: "100000"

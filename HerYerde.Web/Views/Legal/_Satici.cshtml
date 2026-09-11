@@ -1,0 +1,35 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+<dl class="order-facts">
+    <div>
+        <dt>Unvan</dt>
+        <dd>[MÜŞTERİ: ticari unvan]</dd>
+    </div>
+    <div>
+        <dt>Adres</dt>
+        <dd>[MÜŞTERİ: açık adres]</dd>
+    </div>
+    <div>
+        <dt>MERSİS no</dt>
+        <dd>[MÜŞTERİ: MERSİS numarası]</dd>
+    </div>
+    <div>
+        <dt>Vergi dairesi / no</dt>
+        <dd>[MÜŞTERİ: vergi dairesi ve numarası]</dd>
+    </div>
+    <div>
+        <dt>E-posta</dt>
+        <dd>[MÜŞTERİ: e-posta adresi]</dd>
+    </div>
+    <div>
+        <dt>Telefon</dt>
+        <dd>[MÜŞTERİ: telefon]</dd>
+    </div>
+    <div>
+        <dt>KEP</dt>
+        <dd>[MÜŞTERİ: KEP adresi]</dd>
+    </div>
+    <div>
+        <dt>WhatsApp</dt>
+        <dd><a href="@Config["Shop:WhatsApp"]" rel="noopener">Mesaj gönder</a></dd>
+    </div>
+</dl>

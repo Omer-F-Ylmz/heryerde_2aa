@@ -1,0 +1,31 @@
+@using System.Globalization
+@using HerYerde.Business
+@model HerYerde.Web.Models.LegalPage
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = Model.Title;
+    ViewData["Description"] = Model.Description;
+    ViewData["Canonical"] = "/yasal/" + Model.Slug;
+}
+
+<div class="container section">
+    <header>
+        <p class="eyebrow">Yasal</p>
+        <h1 class="display-2 h-mark">@Model.Title</h1>
+        <p class="legal__meta">
+            Son güncelleme: @LegalDocs.UpdatedAt.ToString("d MMMM yyyy", CultureInfo.GetCultureInfo("tr-TR")) · Sürüm @LegalDocs.Version
+        </p>
+    </header>
+
+    <div class="legal">
+        <nav class="legal__toc" aria-labelledby="legal-toc-title">
+            <h2 class="legal__toc-title" id="legal-toc-title">İçindekiler</h2>
+            <ol>
+                @RenderSection("Toc")
+            </ol>
+        </nav>
+        <article class="legal__body">
+            @RenderBody()
+        </article>
+    </div>
+</div>

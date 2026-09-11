@@ -1,6 +1,7 @@
 # Prod şablonu. Gizli değerler ortamdan gelir (.env dosyası veya CI secret):
 #   HERYERDE_DB_PASSWORD, HERYERDE_CONNECTION_STRING, HERYERDE_ADMIN_EMAIL, HERYERDE_ADMIN_PASSWORD,
 #   HERYERDE_BASE_URL (canonical/OG/sitemap kökü, ör. https://alanadi.com)
+#   HERYERDE_ALLOWED_HOSTS (Host başlığı süzgeci, ör. alanadi.com;www.alanadi.com)
 services:
   web:
     build:
@@ -16,11 +17,13 @@ services:
       Admin__Email: ${HERYERDE_ADMIN_EMAIL:?HERYERDE_ADMIN_EMAIL gerekli}
       Admin__Password: ${HERYERDE_ADMIN_PASSWORD:?HERYERDE_ADMIN_PASSWORD gerekli}
       Shop__BaseUrl: ${HERYERDE_BASE_URL:?HERYERDE_BASE_URL gerekli}
+      AllowedHosts: ${HERYERDE_ALLOWED_HOSTS:?HERYERDE_ALLOWED_HOSTS gerekli}
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      # İmajda komut satırı HTTP aracı yok (aspnet:10.0, Ubuntu 24.04); aynı dll /health'e tek istek atıp çıkar.
+      test: ["CMD", "dotnet", "HerYerde.Web.dll", "--healthcheck"]
       interval: 30s
       timeout: 5s
       retries: 3

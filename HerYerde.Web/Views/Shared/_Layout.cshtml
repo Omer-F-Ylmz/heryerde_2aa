@@ -91,6 +91,15 @@
                 @@heryerde_2aa
             </a>
         </div>
+        <nav class="store-footer__legal" aria-label="Yasal">
+            <h2 class="store-footer__title">Yasal</h2>
+            <ul class="store-footer__list">
+                @foreach (var legal in LegalPages.All)
+                {
+                    <li><a class="footer-link" href="/yasal/@legal.Slug">@legal.Title</a></li>
+                }
+            </ul>
+        </nav>
         <span>HerYerde, @DateTime.UtcNow.Year · <span class="site-footer__note">Kapıda ödeme &amp; havale/EFT</span></span>
     </footer>
     <script src="~/js/site.js" asp-append-version="true" defer></script>

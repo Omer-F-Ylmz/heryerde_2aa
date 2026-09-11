@@ -163,16 +163,17 @@ jobs:
       HERYERDE_ADMIN_EMAIL: "zap@heryerde.local"
       HERYERDE_ADMIN_PASSWORD: "Zap-Tarama-Parola-2026"
       HERYERDE_BASE_URL: "http://localhost:8080"
+      HERYERDE_ALLOWED_HOSTS: "localhost"
       COMPOSE: docker compose -f docker-compose.prod.yml -f docker-compose.zap.yml
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Start app (compose)
+        # --wait web konteynerinin sağlık denetimini (dotnet --healthcheck) de bekler; sağlıksızsa kırmızı.
         run: |
-          $COMPOSE up -d --build
-          for i in $(seq 1 60); do curl -fsS http://localhost:8080/health && exit 0; sleep 5; done
-          $COMPOSE logs web; exit 1
+          $COMPOSE up -d --build --wait --wait-timeout 300 || { $COMPOSE logs web; exit 1; }
+          curl -fsS http://localhost:8080/health
 
       - name: ZAP baseline
         # -a alfa pasif kurallar, -j ajax spider; uyarılar çıkış kodunu bozmaz, eşik bir sonraki adımda.

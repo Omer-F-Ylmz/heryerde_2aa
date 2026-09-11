@@ -165,6 +165,8 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.District).HasColumnName("district").HasMaxLength(60).IsRequired();
             e.Property(o => o.Note).HasColumnName("note").HasMaxLength(500);
             e.Property(o => o.CreatedAt).HasColumnName("created_at");
+            e.Property(o => o.ConsentAt).HasColumnName("consent_at");
+            e.Property(o => o.LegalVersion).HasColumnName("legal_version").HasMaxLength(20);
             e.HasIndex(o => o.OrderNo).IsUnique().HasDatabaseName("ux_order_order_no");
             e.HasIndex(o => o.AccessToken).IsUnique().HasDatabaseName("ux_order_access_token");
             // Yönetim sipariş listesi: duruma göre süzüp en yeniden eskiye.

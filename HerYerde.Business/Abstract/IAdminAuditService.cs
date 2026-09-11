@@ -12,4 +12,7 @@ public interface IAdminAuditService
 
     /// <summary>Son 200 kayıt, en yeniden eskiye, 50'lik sayfalarla; aralık dışı sayfa sınıra çekilir.</summary>
     Task<(HttpStatusCode, IDataResult<AdminAuditPage>)> GetRecentAsync(int page, CancellationToken cancellationToken = default);
+
+    /// <summary>Verilen yaştan eski kayıtları siler (saklama süresi, bkz. docs/veri-envanteri.md); silinen sayısını döner.</summary>
+    Task<int> PurgeOlderThanAsync(TimeSpan age, CancellationToken cancellationToken = default);
 }

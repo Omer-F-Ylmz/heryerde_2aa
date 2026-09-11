@@ -70,6 +70,13 @@
                     WhatsApp'tan siparişimi bildir
                 </a>
             </p>
+            @if (order.LegalVersion is { } version)
+            {
+                <p class="summary__note">
+                    Siparişiniz <a href="/yasal/on-bilgilendirme-formu">ön bilgilendirme formu</a> ve
+                    <a href="/yasal/mesafeli-satis-sozlesmesi">mesafeli satış sözleşmesi</a> (sürüm @version) kapsamındadır.
+                </p>
+            }
         </div>
     </div>
 </div>

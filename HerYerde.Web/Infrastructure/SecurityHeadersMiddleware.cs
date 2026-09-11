@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 namespace HerYerde.Web.Infrastructure;
 
 /// <summary>Her yanıta güvenlik başlıklarını koyar. Sayfalarda satır içi script/style yok, bu yüzden
-/// CSP'de nonce'a gerek kalmıyor; yazı tipleri Google Fonts'tan geldiği için yalnız o kaynak açık.
+/// CSP'de nonce'a gerek kalmıyor; yazı tipleri de kendi sunucumuzdan geldiği için font-src yalnız 'self'.
 /// Başlıklar yanıt başlarken yazılır: hata sayfası (UseExceptionHandler yanıtı temizler) da onları taşır.</summary>
 public sealed class SecurityHeadersMiddleware
 {

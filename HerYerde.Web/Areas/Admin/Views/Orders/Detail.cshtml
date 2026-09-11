@@ -38,6 +38,20 @@
             <dt>Not</dt>
             <dd>@(order.Note ?? "—")</dd>
         </div>
+        <div>
+            <dt>Sözleşme</dt>
+            <dd>
+                @if (order.LegalVersion is { } version)
+                {
+                    <a href="/yasal/mesafeli-satis-sozlesmesi">Mesafeli satış sözleşmesi</a><br />
+                    <span>Sürüm @version · onay @IstanbulTime.Format(order.ConsentAt ?? order.CreatedAt)</span>
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </dd>
+        </div>
     </dl>
 
     <div class="table-wrap">
@@ -98,6 +112,12 @@
         @if (Model.NextStatus is null && !Model.CanCancel)
         {
             <p class="side-card__note">Bu sipariş kapandı; durumu değişmez.</p>
+        }
+        @if (Model.CanAnonymize)
+        {
+            <form asp-area="Admin" asp-controller="Orders" asp-action="Anonymize" asp-route-id="@order.Id" method="post">
+                <button class="btn btn--danger" type="submit">Kişisel veriyi anonimleştir</button>
+            </form>
         }
     </div>
 </div>

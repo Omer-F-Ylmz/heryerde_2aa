@@ -70,4 +70,25 @@ public class OrdersController : Controller
         await _auditService.WriteAsync(HttpContext, "durum: " + OrderLabels.For(next), "sipariş", id);
         return RedirectToAction(nameof(Detail), new { id });
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Anonymize(int id, CancellationToken cancellationToken)
+    {
+        var (status, result) = await _orderService.AnonymizeAsync(id, cancellationToken);
+        if (status == HttpStatusCode.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (status != HttpStatusCode.OK)
+        {
+            var (_, detail) = await _orderService.GetByIdAsync(id, cancellationToken);
+            Response.StatusCode = (int)status;
+            return View("Detail", new OrderDetailViewModel { Detail = detail.Data!, ErrorMessage = result.Message });
+        }
+
+        await _auditService.WriteAsync(HttpContext, "kişisel veri anonimleştirildi", "sipariş", id);
+        return RedirectToAction(nameof(Detail), new { id });
+    }
 }

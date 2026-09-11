@@ -1,0 +1,73 @@
+@using HerYerde.Web.Models
+@inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
+@model LegalPage
+@{
+    Layout = "_LegalLayout";
+}
+@section Toc {
+    <li><a class="legal__toc-link" href="#taraflar">Taraflar</a></li>
+    <li><a class="legal__toc-link" href="#konu">Konu</a></li>
+    <li><a class="legal__toc-link" href="#urun-fiyat-odeme">Ürün, fiyat ve ödeme</a></li>
+    <li><a class="legal__toc-link" href="#teslimat">Teslimat</a></li>
+    <li><a class="legal__toc-link" href="#cayma-hakki">Cayma hakkı</a></li>
+    <li><a class="legal__toc-link" href="#cayma-istisnalari">Cayma hakkının kullanılamayacağı haller</a></li>
+    <li><a class="legal__toc-link" href="#iade-geri-odeme">İade ve geri ödeme</a></li>
+    <li><a class="legal__toc-link" href="#uyusmazlik">Uyuşmazlık</a></li>
+    <li><a class="legal__toc-link" href="#yururluk">Yürürlük</a></li>
+}
+
+<section id="taraflar">
+    <h2>Taraflar</h2>
+    <p><strong>Satıcı</strong></p>
+    <partial name="_Satici" />
+    <p><strong>Alıcı:</strong> ödeme adımında adı, telefonu ve teslimat adresi yazılan kişi. Alıcı bilgileri sipariş kaydında ve teşekkür sayfasında yer alır.</p>
+</section>
+
+<section id="konu">
+    <h2>Konu</h2>
+    <p>Bu sözleşme, alıcının HerYerde sitesinden elektronik ortamda sipariş verdiği ürünlerin satışı ve teslimine ilişkin tarafların hak ve yükümlülüklerini 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümlerine göre düzenler.</p>
+</section>
+
+<section id="urun-fiyat-odeme">
+    <h2>Ürün, fiyat ve ödeme</h2>
+    <ul>
+        <li>Ürünlerin adı, adedi, varsa beden ve renk seçimi ile vergiler dahil satış fiyatı ödeme adımındaki sipariş özetinde ve teşekkür sayfasında gösterilir.</li>
+        <li>Kargo ücreti alıcıya aittir ve toplam tutara ayrıca eklenir (şu an @Money.Tl(Shop.Value.ShippingFee)).</li>
+        <li>Ödeme kapıda (nakit ya da kart) veya havale/EFT ile yapılır. Havale/EFT'de ürün, ödeme hesaba geçtikten sonra kargoya verilir.</li>
+        <li>Geçerli fiyat sipariş anındaki fiyattır. Sepetteki fiyat değiştiyse ödeme adımında yeni tutar gösterilir; alıcı onaylamadan sipariş oluşmaz.</li>
+    </ul>
+</section>
+
+<section id="teslimat">
+    <h2>Teslimat</h2>
+    <p>Ürün, sipariş telefonla teyit edildikten sonra alıcının bildirdiği adrese kargoyla gönderilir. Teslim, sipariş tarihinden itibaren en geç 30 gün içinde yapılır; bu süre aşılırsa satıcı alıcıyı bilgilendirir ve alıcı sözleşmeyi feshedebilir.</p>
+</section>
+
+<section id="cayma-hakki">
+    <h2>Cayma hakkı</h2>
+    <p>Alıcı, ürünü teslim aldığı günden itibaren 14 gün içinde hiçbir gerekçe göstermeden ve cezai şart ödemeden sözleşmeden cayabilir. Cayma bildirimi bu süre içinde WhatsApp, e-posta ([MÜŞTERİ: e-posta adresi]) ya da KEP ([MÜŞTERİ: KEP adresi]) ile yapılır. Alıcı, bildirimden itibaren 10 gün içinde ürünü satıcıya geri gönderir.</p>
+</section>
+
+<section id="cayma-istisnalari">
+    <h2>Cayma hakkının kullanılamayacağı haller</h2>
+    <ul>
+        <li>Alıcının istekleri veya kişisel ihtiyaçları doğrultusunda hazırlanan ürünler,</li>
+        <li>teslimden sonra ambalajı açılmış ve iadesi sağlık ya da hijyen açısından uygun olmayan ürünler,</li>
+        <li>Mesafeli Sözleşmeler Yönetmeliği m. 15'te sayılan diğer haller.</li>
+    </ul>
+</section>
+
+<section id="iade-geri-odeme">
+    <h2>İade ve geri ödeme</h2>
+    <p>Satıcı, cayma bildiriminin kendisine ulaştığı tarihten itibaren 14 gün içinde ürün bedelini ve varsa teslimat masrafını havale/EFT ile alıcıya iade eder. Satıcının bildirdiği kargo şirketiyle gönderilen iadenin kargo bedeli satıcıya aittir. Adım adım süreç <a href="/yasal/teslimat-ve-iade#iade-sureci">teslimat ve iade</a> sayfasındadır.</p>
+</section>
+
+<section id="uyusmazlik">
+    <h2>Uyuşmazlık</h2>
+    <p>Bu sözleşmeden doğan uyuşmazlıklarda Ticaret Bakanlığınca her yıl ilan edilen parasal sınırlar dahilinde alıcının yerleşim yerindeki ya da işlemin yapıldığı yerdeki tüketici hakem heyetleri, bu sınırları aşan durumlarda tüketici mahkemeleri yetkilidir.</p>
+</section>
+
+<section id="yururluk">
+    <h2>Yürürlük</h2>
+    <p>Alıcı, ödeme adımında bu sözleşmeyi ve <a href="/yasal/on-bilgilendirme-formu">ön bilgilendirme formunu</a> okuduğunu onaylayarak siparişi verdiğinde sözleşme kurulur. Onayın zamanı ve metnin sürümü sipariş kaydında saklanır.</p>
+</section>

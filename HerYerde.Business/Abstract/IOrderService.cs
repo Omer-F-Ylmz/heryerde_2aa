@@ -20,4 +20,7 @@ public interface IOrderService
 
     /// <summary>Yalnız <see cref="Rules.OrderRules.CanTransition"/> izin verirse; aksi halde 400.</summary>
     Task<(HttpStatusCode, IResult)> ChangeStatusAsync(int orderId, OrderStatus next, CancellationToken cancellationToken = default);
+
+    /// <summary>Kapanmış (teslim/iptal) siparişin ad, telefon, e-posta ve adresini maskeler, notu siler; açık siparişte 409.</summary>
+    Task<(HttpStatusCode, IResult)> AnonymizeAsync(int orderId, CancellationToken cancellationToken = default);
 }

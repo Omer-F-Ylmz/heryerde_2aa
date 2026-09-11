@@ -41,4 +41,22 @@ public class AdminAuditManager : IAdminAuditService
         var items = await _auditLogDal.GetRecentAsync(skip, Math.Min(PageSize, Window - skip), cancellationToken);
         return (HttpStatusCode.OK, new SuccessDataResult<AdminAuditPage>(new AdminAuditPage(items, current, totalPages)));
     }
+
+    public async Task<int> PurgeOlderThanAsync(TimeSpan age, CancellationToken cancellationToken = default)
+    {
+        var limit = _clock.GetUtcNow().UtcDateTime - age;
+        var stale = await _auditLogDal.GetListAsync(a => a.At < limit, cancellationToken);
+        if (stale.Count == 0)
+        {
+            return 0;
+        }
+
+        foreach (var entry in stale)
+        {
+            _auditLogDal.Delete(entry);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return stale.Count;
+    }
 }

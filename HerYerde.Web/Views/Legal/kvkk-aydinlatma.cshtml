@@ -1,0 +1,85 @@
+@model HerYerde.Web.Models.LegalPage
+@{
+    Layout = "_LegalLayout";
+}
+@section Toc {
+    <li><a class="legal__toc-link" href="#veri-sorumlusu">Veri sorumlusu</a></li>
+    <li><a class="legal__toc-link" href="#islenen-veriler">İşlenen kişisel veriler</a></li>
+    <li><a class="legal__toc-link" href="#amaclar">İşleme amaçları</a></li>
+    <li><a class="legal__toc-link" href="#hukuki-sebepler">Hukuki sebepler</a></li>
+    <li><a class="legal__toc-link" href="#aktarim">Aktarım</a></li>
+    <li><a class="legal__toc-link" href="#saklama">Saklama süreleri</a></li>
+    <li><a class="legal__toc-link" href="#haklar">Haklarınız</a></li>
+    <li><a class="legal__toc-link" href="#basvuru">Başvuru</a></li>
+}
+
+<section id="veri-sorumlusu">
+    <h2>Veri sorumlusu</h2>
+    <p>6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu, HerYerde markasıyla satış yapan aşağıdaki işletmedir.</p>
+    <partial name="_Satici" />
+</section>
+
+<section id="islenen-veriler">
+    <h2>İşlenen kişisel veriler</h2>
+    <p>Üyelik açmadan alışveriş yapılır; yalnız siparişi teslim etmek için gereken bilgileri alırız.</p>
+    <ul>
+        <li><strong>Kimlik ve iletişim:</strong> ad soyad, cep telefonu, isteğe bağlı e-posta.</li>
+        <li><strong>Teslimat:</strong> açık adres, il, ilçe ve sipariş notu.</li>
+        <li><strong>İşlem:</strong> sipariş numarası, ürünler, tutar, ödeme yöntemi (kapıda ödeme ya da havale/EFT), sözleşme onayının zamanı ve onaylanan metnin sürümü.</li>
+        <li><strong>İşlem güvenliği:</strong> sepetinizi ve formlarınızı tanıyan zorunlu çerezler. Uygulama kayıtlarında telefon, e-posta ve adres maskelenir.</li>
+    </ul>
+    <p>Kart bilgisi istemeyiz ve saklamayız.</p>
+</section>
+
+<section id="amaclar">
+    <h2>İşleme amaçları</h2>
+    <ul>
+        <li>Siparişin alınması, telefonla teyidi, kargoya verilmesi ve teslimi,</li>
+        <li>ödemenin takibi, fatura ve muhasebe kayıtlarının tutulması,</li>
+        <li>cayma, iade ve şikâyet başvurularının yürütülmesi,</li>
+        <li>yasal yükümlülüklerin yerine getirilmesi ve bilgi güvenliğinin sağlanması.</li>
+    </ul>
+    <p>Verilerinizi pazarlama, profil çıkarma ya da reklam amacıyla kullanmayız.</p>
+</section>
+
+<section id="hukuki-sebepler">
+    <h2>Hukuki sebepler</h2>
+    <p>Verileriniz ödeme formu ve zorunlu çerezler aracılığıyla otomatik yollarla toplanır ve KVKK m. 5/2 uyarınca şu sebeplere dayanılarak işlenir: (c) bir sözleşmenin kurulması veya ifası için gerekli olması, (ç) veri sorumlusunun hukuki yükümlülüğünü yerine getirmesi, (f) temel hak ve özgürlüklerinize zarar vermemek kaydıyla veri sorumlusunun meşru menfaati (işlem güvenliği).</p>
+</section>
+
+<section id="aktarim">
+    <h2>Aktarım</h2>
+    <p>Kişisel verileriniz yalnız aşağıdaki alıcılarla ve yalnız yanlarında yazan amaçla paylaşılır:</p>
+    <ul>
+        <li>ürünü teslim eden kargo şirketi: ad soyad, telefon ve adres (teslimat),</li>
+        <li>talep etmeleri halinde yetkili kamu kurum ve kuruluşları (hukuki yükümlülük),</li>
+        <li>muhasebe ve hukuk danışmanları (hukuki yükümlülük ve hakların korunması).</li>
+    </ul>
+</section>
+
+<section id="saklama">
+    <h2>Saklama süreleri</h2>
+    <ul>
+        <li>Sipariş ve teslimat bilgileri: 6502 sayılı Kanun ve vergi mevzuatı gereği 10 yıl.</li>
+        <li>Sepet: oluşturulduktan itibaren 30 gün.</li>
+        <li>Uygulama kayıtları: 14 gün, kişisel veri içermeyecek biçimde.</li>
+        <li>Yönetim işlem kayıtları: 1 yıl.</li>
+    </ul>
+    <p>Süre dolduğunda veriler silinir ya da anonim hale getirilir.</p>
+</section>
+
+<section id="haklar">
+    <h2>Haklarınız</h2>
+    <p>KVKK m. 11 uyarınca kişisel verinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, işlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme, aktarıldığı üçüncü kişileri bilme, eksik veya yanlış işlenmişse düzeltilmesini isteme, şartları oluşmuşsa silinmesini veya yok edilmesini isteme, bu işlemlerin verinin aktarıldığı üçüncü kişilere bildirilmesini isteme, münhasıran otomatik sistemlerle analiz edilmesi sonucu aleyhinize bir sonuç çıkmasına itiraz etme ve kanuna aykırı işleme nedeniyle zarara uğramanız halinde zararın giderilmesini talep etme haklarına sahipsiniz.</p>
+</section>
+
+<section id="basvuru">
+    <h2>Başvuru</h2>
+    <p>Başvurunuzu kimliğinizi doğrulayan bilgilerle birlikte şu kanallardan iletebilirsiniz:</p>
+    <ul>
+        <li>e-posta: [MÜŞTERİ: KVKK başvuru e-postası]</li>
+        <li>kayıtlı elektronik posta (KEP): [MÜŞTERİ: KEP adresi]</li>
+        <li>yazılı olarak: [MÜŞTERİ: açık adres]</li>
+    </ul>
+    <p>Başvurular en geç 30 gün içinde ücretsiz yanıtlanır; işlem ayrıca bir maliyet gerektirirse Kişisel Verileri Koruma Kurulunun belirlediği tarife uygulanır.</p>
+</section>

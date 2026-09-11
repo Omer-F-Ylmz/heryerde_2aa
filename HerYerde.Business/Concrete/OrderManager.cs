@@ -85,7 +85,10 @@ public class OrderManager : IOrderService
             City = draft.City.Trim(),
             District = draft.District.Trim(),
             Note = string.IsNullOrWhiteSpace(draft.Note) ? null : draft.Note.Trim(),
-            CreatedAt = now
+            CreatedAt = now,
+            // Ödeme adımı onay kutusunu zorunlu tuttuğu için sipariş anı onay anıdır.
+            ConsentAt = now,
+            LegalVersion = LegalDocs.Version
         };
 
         var granted = new List<GiftPlan>();
@@ -243,6 +246,29 @@ public class OrderManager : IOrderService
         order.Status = next;
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Sipariş durumu güncellendi."));
+    }
+
+    public async Task<(HttpStatusCode, IResult)> AnonymizeAsync(int orderId, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderDal.GetTrackedAsync(o => o.Id == orderId, cancellationToken);
+        if (order is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Sipariş bulunamadı."));
+        }
+
+        if (!OrderRules.CanAnonymize(order.Status))
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult(
+                "Kişisel veri yalnız teslim edilmiş ya da iptal edilmiş siparişte anonimleştirilir."));
+        }
+
+        order.FullName = PersonalDataMask.Name(order.FullName);
+        order.Phone = PersonalDataMask.Phone(order.Phone);
+        order.Email = order.Email is null ? null : PersonalDataMask.Email(order.Email);
+        order.Address = PersonalDataMask.Hidden;
+        order.Note = null;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (HttpStatusCode.OK, new SuccessResult("Kişisel veri anonimleştirildi."));
     }
 
     private async Task<(HttpStatusCode, IDataResult<OrderDetail>)> DetailAsync(Order? order, CancellationToken cancellationToken)

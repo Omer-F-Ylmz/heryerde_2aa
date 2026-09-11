@@ -42,6 +42,11 @@ public sealed class CheckoutFormViewModel
 
     [Display(Name = "Ödeme yöntemi")]
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.KapidaOdeme;
+
+    /// <summary>Ön bilgilendirme formu ve mesafeli satış sözleşmesi onayı; işaretsiz form sunucuda da reddedilir.</summary>
+    [Range(typeof(bool), "true", "true",
+        ErrorMessage = "Devam etmek için ön bilgilendirme formunu ve mesafeli satış sözleşmesini onaylayın.")]
+    public bool LegalConsent { get; set; }
 }
 
 /// <summary>Notice: hata değil, kullanıcıya söylenmesi gereken değişiklik (ör. fiyat güncellendi).</summary>

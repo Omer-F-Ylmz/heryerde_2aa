@@ -48,6 +48,7 @@ public class SeoController(
         }
 
         urls.AddRange(items.Select(i => ("/urun/" + i.Product.Slug, i.Product.UpdatedAt)));
+        urls.AddRange(LegalPages.All.Select(p => ("/yasal/" + p.Slug, LegalDocs.UpdatedAt)));
 
         var urlset = new XElement(Ns + "urlset", urls.Select(u => new XElement(Ns + "url",
             new XElement(Ns + "loc", Seo.Absolute(shop.Value.BaseUrl, u.Path)),
