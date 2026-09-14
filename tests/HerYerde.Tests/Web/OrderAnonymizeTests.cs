@@ -50,6 +50,28 @@ public sealed class OrderAnonymizeTests : IAsyncLifetime
         Assert.Equal("kişisel veri anonimleştirildi", audit.Action);
     }
 
+    /// <summary>KAPANIŞ-2 V-ANON: siparişin postaları (alıcı e-postası, ad, token'lı bağlantı) anonimleştirmede silinir;
+    /// başka siparişin postası kalır.</summary>
+    [Fact]
+    public async Task Anonimlestirme_siparisin_postalarini_da_siler()
+    {
+        await using var context = TestDb.NewContext();
+        var order = await PlaceOrderAsync(context, OrderStatus.TeslimEdildi);
+        var other = await PlaceOrderAsync(context, OrderStatus.Beklemede, "celik-tencere-2");
+        Assert.Equal(4, (await new EfOutboxMessageDal(context).GetListAsync()).Count);
+        var client = await _factory.CreateSignedInClientAsync();
+
+        await HtmlForm.PostAsync(
+            client,
+            $"/admin/orders/detail/{order.Id}",
+            $"/admin/orders/anonymize/{order.Id}",
+            new Dictionary<string, string>());
+
+        var left = await new EfOutboxMessageDal(context).GetListAsync();
+        Assert.Equal(2, left.Count);
+        Assert.All(left, m => Assert.EndsWith(other.OrderNo, m.Subject));
+    }
+
     [Theory]
     [InlineData(OrderStatus.Beklemede)]
     [InlineData(OrderStatus.Onaylandi)]
@@ -74,10 +96,10 @@ public sealed class OrderAnonymizeTests : IAsyncLifetime
     }
 
     /// <summary>Beklemede açılan siparişi istenen duruma doğrudan çeker; akış kuralları burada sınanmıyor.</summary>
-    private static async Task<Order> PlaceOrderAsync(HerYerdeContext context, OrderStatus status)
+    private static async Task<Order> PlaceOrderAsync(HerYerdeContext context, OrderStatus status, string slug = "celik-tencere")
     {
         var cartManager = TestData.NewCartManager(context);
-        var productId = await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere");
+        var productId = await TestData.AddHomeProductAsync(context, "Çelik Tencere", slug);
         var cartId = (await cartManager.GetOrCreateAsync(null)).Item2.Data!.Id;
         await cartManager.AddAsync(cartId, productId, variantId: null, quantity: 1);
 

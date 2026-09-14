@@ -66,4 +66,17 @@ public class ContactManager : IContactService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Mesaj silindi."));
     }
+
+    public async Task<int> PurgeOlderThanAsync(TimeSpan age, CancellationToken cancellationToken = default)
+    {
+        var limit = _clock.GetUtcNow().UtcDateTime - age;
+        var stale = await _messageDal.GetListAsync(m => m.CreatedAt < limit, cancellationToken);
+        foreach (var message in stale)
+        {
+            _messageDal.Delete(message);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return stale.Count;
+    }
 }

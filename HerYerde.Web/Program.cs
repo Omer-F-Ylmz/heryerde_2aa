@@ -101,10 +101,10 @@ builder.Services.AddDbContext<HerYerdeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddHealthChecks();
 
-// TLS'i sonlandıran vekil arkasında şema ve istemci IP'si başlıktan okunur.
+// TLS'i sonlandıran vekil arkasında şema ve istemci IP'si başlıktan okunur. Başlık yalnız tanımlı vekilden
+// gelirse geçerlidir: liste boşken middleware her kaynağa güvenirdi ve X-Forwarded-For ile hız sınırı atlatılırdı.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
     foreach (var network in builder.Configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [])
@@ -116,6 +116,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.KnownProxies.Add(IPAddress.Parse(proxy));
     }
+
+    options.ForwardedHeaders = options.KnownIPNetworks.Count + options.KnownProxies.Count > 0
+        ? ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+        : ForwardedHeaders.None;
 });
 
 // Üretimde çerezler her zaman Secure; geliştirmede http ile çalışılabilsin diye istekle aynı.
@@ -131,6 +135,7 @@ builder.Services.AddSingleton<IProductImageStorage>(services => new ProductImage
         : services.GetRequiredService<IWebHostEnvironment>().WebRootPath));
 builder.Services.AddHostedService<CartCleanupHostedService>();
 builder.Services.AddHostedService<AuditLogCleanupHostedService>();
+builder.Services.AddHostedService<PersonalDataCleanupHostedService>();
 builder.Services.AddSingleton<INotificationSender, SmtpNotificationSender>();
 builder.Services.AddHostedService<OutboxHostedService>();
 builder.Services.AddHttpClient<IPaymentProvider, IyzicoPaymentProvider>(client => client.Timeout = TimeSpan.FromSeconds(30));

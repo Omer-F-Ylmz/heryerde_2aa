@@ -15,4 +15,7 @@ public interface IContactService
     Task<(HttpStatusCode, IResult)> MarkReadAsync(int id, CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IResult)> DeleteAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>Saklama süresi dolan mesajları siler; silinen sayısını döner.</summary>
+    Task<int> PurgeOlderThanAsync(TimeSpan age, CancellationToken cancellationToken = default);
 }

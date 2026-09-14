@@ -78,7 +78,9 @@ public static class NotificationTemplates
         body.Append(Row("İletişim", Encode(message.Contact)));
         body.Append(Paragraph(Encode(message.Message).ReplaceLineEndings("<br />")));
         body.Append(Button(adminUrl, "Mesajları yönetimde aç"));
-        return ($"İletişim formu · {subject} · {message.Name}", Page(body.ToString()));
+        // Ad konu başlığına girer: satır sonu ve denetim karakterleri boşluğa çevrilir.
+        var name = string.Concat(message.Name.Select(c => char.IsControl(c) ? ' ' : c)).Replace("  ", " ");
+        return ($"İletişim formu · {subject} · {name}", Page(body.ToString()));
     }
 
     private static string Lines(IReadOnlyList<OrderItem> items, Order order)

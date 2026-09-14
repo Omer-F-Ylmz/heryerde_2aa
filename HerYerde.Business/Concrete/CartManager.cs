@@ -160,6 +160,11 @@ public class CartManager : ICartService
                 return (HttpStatusCode.NotFound, new ErrorResult("Seçilen varyant bulunamadı."));
             }
         }
+        else if (await _variantDal.GetAsync(v => v.ProductId == productId, cancellationToken) is not null)
+        {
+            // Varyantlı ürünün stoğu varyanttadır; seçimsiz satır siparişe beden/renksiz ve stok denetimsiz girerdi.
+            return (HttpStatusCode.BadRequest, new ErrorResult("Beden ya da renk seçin."));
+        }
 
         var existing = await _itemDal.GetTrackedAsync(
             i => i.CartId == cartId && i.ProductId == productId && i.VariantId == variantId,

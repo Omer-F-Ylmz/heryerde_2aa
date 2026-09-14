@@ -6,5 +6,6 @@
         <inscope>true</inscope>
         <incregexes>http://localhost:8080.*</incregexes>
         <excregexes>http://localhost:8080/admin.*</excregexes>
+        <excregexes>http://localhost:8080/odeme/3d-donus.*</excregexes>
     </context>
 </configuration>

@@ -41,6 +41,21 @@ public sealed class CartManagerTests : IAsyncLifetime
         Assert.Equal(5, Assert.Single(lines).Quantity);
     }
 
+    /// <summary>KAPANIŞ-2 F-VAR: varyantlı ürün beden/renk seçilmeden eklenirse sipariş varyantsız ve stok denetimsiz açılırdı.</summary>
+    [Fact]
+    public async Task Varyantli_urun_varyant_secilmeden_sepete_eklenemez()
+    {
+        await using var context = TestDb.NewContext();
+        var manager = TestData.NewCartManager(context);
+        var (productId, _) = await TestData.AddClothingProductAsync(context, "Şalvar", "salvar");
+        var cartId = (await manager.GetOrCreateAsync(null)).Item2.Data!.Id;
+
+        var (status, _) = await manager.AddAsync(cartId, productId, variantId: null, quantity: 1);
+
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Empty((await manager.GetAsync(cartId)).Item2.Data!.Lines);
+    }
+
     [Fact]
     public async Task Adet_sifira_cekilince_satir_silinir()
     {

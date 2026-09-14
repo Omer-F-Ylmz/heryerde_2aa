@@ -91,6 +91,45 @@ public sealed class ContactFormTests : IAsyncLifetime
         Assert.Contains("&lt;img src=x onerror=alert(1)&gt;", mail.Body);
     }
 
+    /// <summary>KAPANIŞ-2 S-CRLF: ad posta konusuna girer; satır sonu konuya taşınmaz (başlık enjeksiyonu yüzeyi).</summary>
+    [Fact]
+    public async Task Addaki_satir_sonu_posta_konusuna_girmez()
+    {
+        var client = _factory.CreateNonRedirectingClient();
+        var fields = Valid();
+        fields["Name"] = "Ali\r\nBcc: kurban@example.com";
+
+        await PostAsync(client, fields);
+
+        await using var context = TestDb.NewContext();
+        var mail = Assert.Single(await context.OutboxMessages.ToListAsync());
+        Assert.DoesNotContain('\r', mail.Subject);
+        Assert.DoesNotContain('\n', mail.Subject);
+        Assert.EndsWith("Ali Bcc: kurban@example.com", mail.Subject);
+    }
+
+    /// <summary>KAPANIŞ-2 V-RET: bir yılı dolan iletişim mesajı gece işinde silinir, dolmayan kalır.</summary>
+    [Fact]
+    public async Task Yili_dolan_iletisim_mesaji_silinir_dolmayan_kalir()
+    {
+        await using (var setup = TestDb.NewContext())
+        {
+            setup.ContactMessages.Add(new ContactMessage { Name = "Eski", Contact = "e@x", Message = "eski", CreatedAt = TestClock.Now.AddDays(-366) });
+            setup.ContactMessages.Add(new ContactMessage { Name = "Yeni", Contact = "y@x", Message = "yeni", CreatedAt = TestClock.Now.AddDays(-364) });
+            await setup.SaveChangesAsync();
+        }
+
+        int removed;
+        await using (var job = TestDb.NewContext())
+        {
+            removed = await TestData.NewContactManager(job).PurgeOlderThanAsync(TimeSpan.FromDays(365));
+        }
+
+        Assert.Equal(1, removed);
+        await using var check = TestDb.NewContext();
+        Assert.Equal("Yeni", (await check.ContactMessages.SingleAsync()).Name);
+    }
+
     [Fact]
     public async Task Ayni_IP_den_altinci_mesaj_429_alir()
     {

@@ -136,6 +136,33 @@ public class NotificationManager : INotificationService
         return new NotificationDispatch(sent, failed, 0);
     }
 
+    /// <summary>Gönderilmiş kayıtta süre SentAt'ten, başarısız kayıtta son denemenin bıraktığı NextTryAt'ten sayılır.</summary>
+    public async Task<int> PurgeOlderThanAsync(TimeSpan age, CancellationToken cancellationToken = default)
+    {
+        var limit = _clock.GetUtcNow().UtcDateTime - age;
+        var stale = await _outboxDal.GetListAsync(
+            m => (m.Status == OutboxStatus.Gonderildi && m.SentAt < limit)
+                 || (m.Status == OutboxStatus.Basarisiz && m.NextTryAt < limit),
+            cancellationToken);
+        foreach (var message in stale)
+        {
+            _outboxDal.Delete(message);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return stale.Count;
+    }
+
+    public async Task ForgetOrderAsync(Order order, CancellationToken cancellationToken = default)
+    {
+        // Sipariş postalarının konusu " · {sipariş no}" ile biter; tabloda sipariş kimliği tutulmaz.
+        var suffix = " · " + order.OrderNo;
+        foreach (var message in await _outboxDal.GetListAsync(m => m.Subject.EndsWith(suffix), cancellationToken))
+        {
+            _outboxDal.Delete(message);
+        }
+    }
+
     private Task QueueAsync(string type, string to, string subject, string body, CancellationToken cancellationToken)
         => _outboxDal.AddAsync(
             new OutboxMessage

@@ -4,6 +4,9 @@ using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Entities.Concrete;
 using HerYerde.Entities.Enums;
+using HerYerde.Tests.Web;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace HerYerde.Tests.Business;
 
@@ -126,6 +129,56 @@ public sealed class OutboxTests : IAsyncLifetime
         Assert.All(queued, m => Assert.Equal(OutboxStatus.Gonderildi, m.Status));
         Assert.All(queued, m => Assert.Equal(TestClock.Now, m.SentAt));
     }
+
+    /// <summary>KAPANIŞ-2 V-RET: gönderilmiş ya da vazgeçilmiş posta (alıcı, ad, token'lı bağlantı taşır) 30 gün sonra silinir;
+    /// kuyrukta bekleyen kayda dokunulmaz.</summary>
+    [Fact]
+    public async Task Otuz_gunu_dolan_gonderilmis_ve_basarisiz_posta_silinir_bekleyen_kalir()
+    {
+        await using (var setup = TestDb.NewContext())
+        {
+            var dal = new EfOutboxMessageDal(setup);
+            await dal.AddAsync(Mail(OutboxStatus.Gonderildi, sentAt: TestClock.Now.AddDays(-31)));
+            await dal.AddAsync(Mail(OutboxStatus.Basarisiz, nextTryAt: TestClock.Now.AddDays(-31)));
+            await dal.AddAsync(Mail(OutboxStatus.Gonderildi, sentAt: TestClock.Now.AddDays(-29)));
+            await dal.AddAsync(Mail(OutboxStatus.Bekliyor, nextTryAt: TestClock.Now.AddDays(-60)));
+            await new EfUnitOfWork(setup).SaveChangesAsync();
+        }
+
+        int removed;
+        await using (var job = TestDb.NewContext())
+        {
+            removed = await TestData.NewNotificationManager(job).PurgeOlderThanAsync(TimeSpan.FromDays(30));
+        }
+
+        Assert.Equal(2, removed);
+        await using var check = TestDb.NewContext();
+        var left = await new EfOutboxMessageDal(check).GetListAsync();
+        Assert.Equal(2, left.Count);
+        Assert.Contains(left, m => m.Status == OutboxStatus.Bekliyor);
+        Assert.Contains(left, m => m.SentAt == TestClock.Now.AddDays(-29));
+    }
+
+    [Fact]
+    public void Kisisel_veri_temizligi_gece_isi_olarak_kayitlidir()
+    {
+        using var factory = new AdminWebFactory();
+
+        var hosted = factory.Services.GetServices<IHostedService>().Select(s => s.GetType().Name);
+
+        Assert.Contains("PersonalDataCleanupHostedService", hosted);
+    }
+
+    private static OutboxMessage Mail(OutboxStatus status, DateTime? sentAt = null, DateTime? nextTryAt = null) => new()
+    {
+        Type = OutboxType.OrderPlaced,
+        To = "ayse@example.com",
+        Subject = "Siparişiniz alındı · HY-20260101-0001",
+        Body = "Ayşe",
+        Status = status,
+        SentAt = sentAt,
+        NextTryAt = nextTryAt
+    };
 
     private static async Task<Order> PlaceAsync(HerYerdeContext context, OrderDraft draft)
     {

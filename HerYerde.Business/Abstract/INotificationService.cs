@@ -22,6 +22,12 @@ public interface INotificationService
 
     /// <summary>Sırası gelen kayıtları gönderir; hata denemeyi artırır, üçüncüde kayıt başarısız olur.</summary>
     Task<NotificationDispatch> DispatchAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Gönderilmiş ya da vazgeçilmiş postaları saklama süresi dolunca siler; bekleyene dokunmaz.</summary>
+    Task<int> PurgeOlderThanAsync(TimeSpan age, CancellationToken cancellationToken = default);
+
+    /// <summary>Siparişin tüm postalarını (alıcı, ad, token'lı bağlantı) siler; anonimleştirmede kullanılır. Kaydetmez.</summary>
+    Task ForgetOrderAsync(Order order, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Bir dağıtım turunun sonucu; <see cref="Skipped"/> SMTP ayarsızken doludur.</summary>

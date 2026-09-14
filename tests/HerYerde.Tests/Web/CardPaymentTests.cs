@@ -182,6 +182,55 @@ public sealed class CardPaymentTests : IAsyncLifetime
         Assert.Equal(5, await TestData.ProductStockAsync(context, productId));
     }
 
+    /// <summary>KAPANIŞ-2 F-CARD: ödemesi tamamlanmamış kartlı siparişte stok hiç düşmemiştir; iptal stoğu şişirmez ve
+    /// sonradan gelen 3D dönüşü iptal edilmiş siparişten çekim yapmaz.</summary>
+    [Fact]
+    public async Task Odenmemis_kart_siparisi_iptal_edilince_stok_artmaz_ve_gec_donus_cekim_yapmaz()
+    {
+        await using var context = TestDb.NewContext();
+        var client = _factory.CreateNonRedirectingClient();
+        var productId = await FillCartAsync(context, client);
+        await PostCheckoutAsync(client, PaymentMethod.KrediKarti);
+        var payment = Assert.Single(await new EfPaymentDal(context).GetListAsync());
+        var admin = await _factory.CreateSignedInClientAsync();
+
+        var cancel = await HtmlForm.PostAsync(admin, $"/admin/orders/detail/{payment.OrderId}", "/admin/orders/changestatus", new Dictionary<string, string>
+        {
+            ["id"] = payment.OrderId.ToString(),
+            ["next"] = ((int)OrderStatus.IptalEdildi).ToString()
+        });
+        Assert.Equal(HttpStatusCode.Found, cancel.StatusCode);
+        Assert.Equal(5, await TestData.ProductStockAsync(context, productId));
+
+        var late = await PostCallbackAsync(_factory.CreateNonRedirectingClient(), payment);
+
+        Assert.Equal("/odeme", late.Headers.Location?.OriginalString);
+        Assert.Equal(0, _factory.Provider.AuthCalls);
+        Assert.Equal(PaymentStatus.Basarisiz, (await new EfPaymentDal(context).GetAsync(p => p.Id == payment.Id))!.Status);
+        Assert.Equal(5, await TestData.ProductStockAsync(context, productId));
+    }
+
+    /// <summary>KAPANIŞ-2 F-CARD: parası alınmamış kartlı sipariş onaylanıp kargoya verilemez.</summary>
+    [Fact]
+    public async Task Odenmemis_kart_siparisi_onaylanamaz()
+    {
+        await using var context = TestDb.NewContext();
+        var client = _factory.CreateNonRedirectingClient();
+        await FillCartAsync(context, client);
+        await PostCheckoutAsync(client, PaymentMethod.KrediKarti);
+        var payment = Assert.Single(await new EfPaymentDal(context).GetListAsync());
+        var admin = await _factory.CreateSignedInClientAsync();
+
+        var approve = await HtmlForm.PostAsync(admin, $"/admin/orders/detail/{payment.OrderId}", "/admin/orders/changestatus", new Dictionary<string, string>
+        {
+            ["id"] = payment.OrderId.ToString(),
+            ["next"] = ((int)OrderStatus.Onaylandi).ToString()
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, approve.StatusCode);
+        Assert.Equal(OrderStatus.Beklemede, Assert.Single(await new EfOrderDal(context).GetListAsync()).Status);
+    }
+
     [Fact]
     public async Task Bilinmeyen_conversation_id_404_alir()
     {

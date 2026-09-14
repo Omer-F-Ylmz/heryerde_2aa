@@ -263,6 +263,17 @@ public class OrderManager : IOrderService
                 $"'{order.Status}' durumundan '{next}' durumuna geçilemez; durum geri alınamaz."));
         }
 
+        // Kartlı siparişte stok ve para ödeme onayında gelir; onaylanmamış ödemede ikisi de yoktur.
+        var payment = order.PaymentMethod == PaymentMethod.KrediKarti
+            ? (await _paymentDal.GetListAsync(p => p.OrderId == order.Id, cancellationToken)).MaxBy(p => p.Id)
+            : null;
+        var unpaidCard = order.PaymentMethod == PaymentMethod.KrediKarti && payment?.Status != PaymentStatus.Basarili;
+
+        if (unpaidCard && next == OrderStatus.Onaylandi)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorResult("Kart ödemesi alınmamış sipariş onaylanamaz."));
+        }
+
         if (next == OrderStatus.Kargoda)
         {
             var firm = carrier?.Trim();
@@ -291,7 +302,16 @@ public class OrderManager : IOrderService
             // İade ve durum aynı işlemde: durum yazılamazsa stok da geri eklenmiş sayılmaz.
             await _unitOfWork.InTransactionAsync(async () =>
             {
-                foreach (var item in await _orderItemDal.GetListAsync(i => i.OrderId == order.Id, cancellationToken))
+                // Açık ödeme kaydı kapatılır: sonradan gelen 3D dönüşü iptal edilmiş siparişten çekim yapamaz.
+                // Kapatılamadıysa bir dönüş kaydı az önce kapatmıştır; çekim geçtiyse stok düşmüştür ve iade edilir.
+                var stockTaken = !unpaidCard;
+                if (unpaidCard && payment is not null
+                    && await _paymentDal.TryCloseAsync(payment.Id, PaymentStatus.Basarisiz, _clock.GetUtcNow().UtcDateTime, cancellationToken) == 0)
+                {
+                    stockTaken = (await _paymentDal.GetAsync(p => p.Id == payment.Id, cancellationToken))!.Status == PaymentStatus.Basarili;
+                }
+
+                foreach (var item in stockTaken ? await _orderItemDal.GetListAsync(i => i.OrderId == order.Id, cancellationToken) : [])
                 {
                     // Stok kodu varyanta uymuyorsa satır varyantsız (Ev) üründür; iade ürünün stoğuna yazılır.
                     if (await _variantDal.IncrementStockBySkuAsync(item.Sku, item.Quantity, cancellationToken) == 0)
@@ -352,6 +372,7 @@ public class OrderManager : IOrderService
         order.Email = order.Email is null ? null : PersonalDataMask.Email(order.Email);
         order.Address = PersonalDataMask.Hidden;
         order.Note = null;
+        await _notifications.ForgetOrderAsync(order, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Kişisel veri anonimleştirildi."));
     }

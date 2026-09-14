@@ -9,3 +9,6 @@ services:
       RateLimit__CartPerMinute: "100000"
       RateLimit__CheckoutPerMinute: "100000"
       RateLimit__AdminLoginPerMinute: "100000"
+      RateLimit__ThreeDsCallbackPerMinute: "100000"
+      RateLimit__ContactPerMinute: "100000"
+      RateLimit__ReviewPerDay: "100000"

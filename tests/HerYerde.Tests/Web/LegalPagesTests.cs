@@ -40,7 +40,7 @@ public sealed class LegalPagesTests : IAsyncLifetime
         var html = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("noindex", html);
         Assert.Single(Regex.Matches(html, "<h1[ >]"));
-        Assert.Contains("Son güncelleme: 11 Eylül 2026", html);
+        Assert.Contains("Son güncelleme: 15 Eylül 2026", html);
         Assert.Contains($"<link rel=\"canonical\" href=\"{AdminWebFactory.BaseUrl}/yasal/{slug}\"", html);
 
         var toc = Regex.Matches(html, "<a class=\"legal__toc-link\" href=\"#(?<id>[a-z0-9-]+)\"")
@@ -78,6 +78,45 @@ public sealed class LegalPagesTests : IAsyncLifetime
         Assert.All(AllSlugs, slug => Assert.Contains($"href=\"/yasal/{slug}\"", nav.Value));
     }
 
+    /// <summary>KAPANIŞ-2 V-KVKK: D7 kartla ödeme (İyzico), D6 e-posta bildirimi, D9 iletişim formu ve yorum metinlerde
+    /// anlatılır; "kart bilgisi alınmaz" gibi artık yanlış cümle kalmaz.</summary>
+    [Fact]
+    public async Task Yasal_metinler_kart_odemesini_eposta_iletisim_ve_yorum_islemesini_anlatir()
+    {
+        var client = _factory.CreateNonRedirectingClient();
+        async Task<string> Page(string slug) => await (await client.GetAsync("/yasal/" + slug)).Content.ReadAsStringAsync();
+
+        var kvkk = await Page("kvkk-aydinlatma");
+        var privacy = await Page("gizlilik-politikasi");
+        var preInfo = await Page("on-bilgilendirme-formu");
+        var contract = await Page("mesafeli-satis-sozlesmesi");
+
+        Assert.All(new[] { kvkk, privacy, preInfo }, html =>
+        {
+            Assert.DoesNotContain("Kart bilgisi istemeyiz", html);
+            Assert.DoesNotContain("Kart bilgisi internet üzerinden alınmaz", html);
+        });
+        Assert.All(new[] { kvkk, privacy, preInfo, contract }, html => Assert.Contains("İyzico", html));
+        Assert.Contains("İletişim formu", kvkk);
+        Assert.Contains("Ürün yorumu", kvkk);
+        Assert.Contains("e-posta hizmet sağlayıcısı", kvkk);
+        Assert.Contains("İletişim formu mesajları: 1 yıl", kvkk);
+        Assert.Contains("E-posta bildirimleri: gönderimden sonra 30 gün", kvkk);
+    }
+
+    /// <summary>KAPANIŞ-2 V-ENV: D6-D9 tabloları, TempData çerezi ve temizlik işleri veri envanterinde yer alır.</summary>
+    [Fact]
+    public void Veri_envanteri_yeni_tablolari_cerezi_ve_temizlik_islerini_kapsar()
+    {
+        var inventory = RepoFile.ReadAllText("docs", "veri-envanteri.md");
+
+        Assert.Contains("`outbox_message`", inventory);
+        Assert.Contains("`payment`", inventory);
+        Assert.Contains("`.AspNetCore.Mvc.CookieTempDataProvider`", inventory);
+        Assert.Contains("PersonalDataCleanupHostedService", inventory);
+        Assert.DoesNotContain("[MÜŞTERİ: saklama süresi]", inventory);
+    }
+
     [Fact]
     public async Task Cerez_politikasi_yalniz_zorunlu_cerezleri_sayar_ve_ucuncu_taraf_olmadigini_soyler()
     {
@@ -87,6 +126,8 @@ public sealed class LegalPagesTests : IAsyncLifetime
         Assert.Contains(".AspNetCore.Antiforgery", html);
         Assert.Contains("heryerde.lastorder", html);
         Assert.Contains("heryerde.admin", html);
+        // KAPANIŞ-2 V-CEREZ: yorum ve ödeme hatası bildirimleri TempData çereziyle taşınır.
+        Assert.Contains(".AspNetCore.Mvc.CookieTempDataProvider", html);
         Assert.Contains("üçüncü taraf", html);
         Assert.Contains("onay bandı", html);
     }

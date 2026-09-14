@@ -80,6 +80,12 @@ public static class TestData
         Options.Create(NewShopSettings()),
         clock ?? TestClock.Fixed);
 
+    public static ContactManager NewContactManager(HerYerdeContext context) => new(
+        new EfContactMessageDal(context),
+        NewNotificationManager(context),
+        new EfUnitOfWork(context),
+        TestClock.Fixed);
+
     public static CartManager NewCartManager(
         HerYerdeContext context,
         TimeProvider? clock = null,
