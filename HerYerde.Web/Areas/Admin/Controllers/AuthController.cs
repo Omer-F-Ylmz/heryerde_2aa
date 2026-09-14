@@ -50,8 +50,9 @@ public class AuthController : Controller
 
         await SignInAsync(result.Data!);
 
-        return Url.IsLocalUrl(returnUrl)
-            ? Redirect(returnUrl!)
+        // Location başlığı yalnız yazdırılabilir ASCII taşır; aksi Kestrel'de 500 olurdu.
+        return Url.IsLocalUrl(returnUrl) && returnUrl!.All(c => c > ' ' && c < 127)
+            ? Redirect(returnUrl)
             : RedirectToAction("Index", "Products");
     }
 

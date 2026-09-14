@@ -17,6 +17,28 @@ public sealed class CartQuantityTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
+    /// <summary>KAPANIŞ-2 ZAP 90022: Location başlığı yalnız ASCII taşıyabilir; ASCII dışı dönüş adresi
+    /// Kestrel'de 500 üretiyordu, sepet sayfasına düşülür.</summary>
+    [Theory]
+    [InlineData("/ş")]
+    [InlineData("/sepet\u2028")]
+    public async Task Ascii_disi_donus_adresi_sepete_yonlenir(string donus)
+    {
+        await using var context = TestDb.NewContext();
+        var productId = await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere");
+        var client = _factory.CreateNonRedirectingClient();
+
+        var response = await HtmlForm.PostAsync(client, "/urun/celik-tencere", "/sepet/ekle", new Dictionary<string, string>
+        {
+            ["productId"] = productId.ToString(),
+            ["quantity"] = "1",
+            ["donus"] = donus
+        });
+
+        Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+        Assert.Equal("/sepet", response.Headers.Location?.OriginalString);
+    }
+
     [Theory]
     [InlineData("0")]
     [InlineData("-5")]

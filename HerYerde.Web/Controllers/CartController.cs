@@ -75,7 +75,8 @@ public class CartController(ICartService cartService) : Controller
         return View("Index", new CartPageViewModel(view.Data!, message));
     }
 
-    /// <summary>Açık yönlendirmeyi engeller: yalnız site içi adrese döner.</summary>
+    /// <summary>Açık yönlendirmeyi engeller: yalnız site içi adrese döner. Location başlığı yalnız yazdırılabilir ASCII
+    /// taşıyabilir; ASCII dışı ya da denetim karakterli adres Kestrel'de 500 üretirdi.</summary>
     private string LocalOr(string? url, string fallback)
-        => !string.IsNullOrWhiteSpace(url) && Url.IsLocalUrl(url) ? url : fallback;
+        => !string.IsNullOrWhiteSpace(url) && Url.IsLocalUrl(url) && url.All(c => c > ' ' && c < 127) ? url : fallback;
 }

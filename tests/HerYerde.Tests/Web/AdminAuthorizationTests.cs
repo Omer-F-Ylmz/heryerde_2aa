@@ -53,6 +53,22 @@ public sealed class AdminAuthorizationTests : IAsyncLifetime
         Assert.Equal("/admin/products", response.Headers.Location!.OriginalString);
     }
 
+    /// <summary>KAPANIŞ-2 ZAP 90022: ASCII dışı dönüş adresi Location başlığına yazılmaz (Kestrel'de 500), ürün listesine düşülür.</summary>
+    [Fact]
+    public async Task Ascii_disi_return_url_urun_listesine_yonlenir()
+    {
+        var client = _factory.CreateNonRedirectingClient();
+
+        var response = await HtmlForm.PostAsync(client, "/admin/auth/login", "/admin/auth/login?returnUrl=%2F%C5%9F", new Dictionary<string, string>
+        {
+            ["Email"] = AdminWebFactory.AdminEmail,
+            ["Password"] = AdminWebFactory.AdminPassword
+        });
+
+        Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+        Assert.Equal("/admin/products", response.Headers.Location!.OriginalString);
+    }
+
     [Fact]
     public async Task Hatali_parola_giris_sayfasinda_kalir_ve_cerez_vermez()
     {
