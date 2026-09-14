@@ -47,6 +47,31 @@ public sealed class StoreCatalogTests
         Assert.Equal(0, picker.Options.Single(o => o.Id == 12).Stock);
     }
 
+    [Theory]
+    [InlineData("esarp", "scarf")]
+    [InlineData("basortusu", "knot")]
+    [InlineData("sal", "shawl")]
+    [InlineData("namaz-ortusu", "prayer")]
+    [InlineData("bone-aksesuar", "bonnet")]
+    public void Ortu_alt_kategorisi_kiremit_cizgi_placeholder_ikonu_uretir(string slug, string icon)
+    {
+        Assert.Equal(icon, StoreCatalog.PlaceholderIcon(slug));
+        var css = RepoFile.ReadAllText("src", "input.css");
+        var rule = Assert.Single(CheckoutCssTests.Rules(css, $".ph--{icon}::after"));
+        Assert.Contains("url(\"data:image/svg+xml,", rule);
+        Assert.Contains("stroke='%23A8442A' stroke-width='1.5'", rule);
+    }
+
+    [Theory]
+    [InlineData("giyim")]
+    [InlineData("ortu")]
+    [InlineData("esarp-yeni")]
+    [InlineData(null)]
+    public void Bilinmeyen_slugda_placeholder_ikonu_cikmaz(string? slug)
+    {
+        Assert.Null(StoreCatalog.PlaceholderIcon(slug));
+    }
+
     [Fact]
     public void Whatsapp_linki_urun_adini_url_encoded_tasir()
     {

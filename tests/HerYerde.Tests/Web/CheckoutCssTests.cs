@@ -30,7 +30,7 @@ public sealed class CheckoutCssTests
     }
 
     /// <summary>Başlığı tam olarak <paramref name="header"/> olan blokların gövdeleri; iç içe bloklarda da arar.</summary>
-    private static IEnumerable<string> Rules(string css, string header)
+    internal static IEnumerable<string> Rules(string css, string header)
     {
         for (var open = css.IndexOf('{'); open > 0; open = css.IndexOf('{', open + 1))
         {

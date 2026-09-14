@@ -69,6 +69,11 @@ public static class StoreCatalog
         "saklama-duzenleme" => "box",
         "sepet-dekor" => "basket",
         "kucuk-ev-aletleri" => "fan",
+        "esarp" => "scarf",
+        "basortusu" => "knot",
+        "sal" => "shawl",
+        "namaz-ortusu" => "prayer",
+        "bone-aksesuar" => "bonnet",
         _ => null
     };
 
