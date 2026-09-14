@@ -1,5 +1,9 @@
 @using HerYerde.Web.Models
 @model ProductCardVm
+@{
+    var srcset = ProductImages.Srcset(Model.ImageUrl);
+    var secondSrcset = ProductImages.Srcset(Model.SecondImageUrl);
+}
 <article class="card">
     <a class="card__media" href="@Model.Url" tabindex="-1" aria-hidden="true">
         @if (Model.ImageUrl is null)
@@ -8,10 +12,10 @@
         }
         else
         {
-            <img src="@Model.ImageUrl" alt="" width="600" height="600" loading="@(Model.Lazy ? "lazy" : "eager")" />
+            <img src="@Model.ImageUrl" srcset="@srcset" sizes="@(srcset is null ? null : ProductImages.CardSizes)" alt="" width="600" height="600" loading="@(Model.Lazy ? "lazy" : "eager")" />
             @if (Model.SecondImageUrl is not null)
             {
-                <img class="card__alt" src="@Model.SecondImageUrl" alt="" width="600" height="600" loading="lazy" />
+                <img class="card__alt" src="@Model.SecondImageUrl" srcset="@secondSrcset" sizes="@(secondSrcset is null ? null : ProductImages.CardSizes)" alt="" width="600" height="600" loading="lazy" />
             }
         }
         @if (Model.Badge is not null)

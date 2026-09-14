@@ -33,6 +33,11 @@ public static class ProductRules
             && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps);
     }
 
+    /// <summary>İthalden gelen ürün fiyatsız kaydedilir (price=1); bu bayrakla yayına alınamaz.</summary>
+    public const decimal PriceMissingThreshold = 1m;
+
+    public static bool PriceMissing(Product product) => product.Price <= PriceMissingThreshold;
+
     /// <summary>Kampanya etiketi yalnız indirimli fiyat varken ve bitiş anı geçmemişken gösterilir.</summary>
     public static bool CampaignIsActive(Product product, DateTime now)
         => product.CampaignPrice is not null && (product.CampaignEndsAt is null || product.CampaignEndsAt > now);

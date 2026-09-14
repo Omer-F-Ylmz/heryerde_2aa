@@ -8,3 +8,5 @@ appsettings.Development.json
 TestResults/
 graphify-out/
 logs/
+brand_assets/
+HerYerde.Web/wwwroot/uploads/

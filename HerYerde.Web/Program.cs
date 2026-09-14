@@ -120,6 +120,12 @@ builder.Services.Configure<CookiePolicyOptions>(options => options.Secure = buil
     ? CookieSecurePolicy.SameAsRequest
     : CookieSecurePolicy.Always);
 builder.Services.AddSingleton(TimeProvider.System);
+
+// Yüklenen görseller varsayılan olarak wwwroot altına yazılır; testler Uploads:Root ile başka yere yönlendirir.
+builder.Services.AddSingleton<IProductImageStorage>(services => new ProductImageStorage(
+    builder.Configuration["Uploads:Root"] is { Length: > 0 } uploadsRoot
+        ? uploadsRoot
+        : services.GetRequiredService<IWebHostEnvironment>().WebRootPath));
 builder.Services.AddHostedService<CartCleanupHostedService>();
 builder.Services.AddHostedService<AuditLogCleanupHostedService>();
 
@@ -200,6 +206,17 @@ await DatabaseMigrator.ApplyAsync(
     app.Services.GetRequiredService<ILogger<Program>>());
 await SeedFirstAdminAsync(app);
 await SeedCatalogAsync(app);
+
+// Tek seferlik ithal: ürünleri ve görselleri kurup çıkar, sunucu açılmaz.
+if (ImportCommand.DirectoryFrom(args) is { } importDirectory)
+{
+    var repoRoot = RepoPath.Root(app.Environment.ContentRootPath);
+    await ImportCommand.RunAsync(
+        app.Services,
+        RepoPath.Resolve(repoRoot, importDirectory),
+        RepoPath.Resolve(repoRoot, Path.Combine("docs", "ithal-1.md")));
+    return;
+}
 
 app.Run();
 

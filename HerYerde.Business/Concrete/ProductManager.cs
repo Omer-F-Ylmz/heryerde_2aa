@@ -83,6 +83,11 @@ public class ProductManager : IProductService
             return (HttpStatusCode.BadRequest, new ErrorDataResult<Product>(VariantRequiredMessage));
         }
 
+        if (product.IsActive && ProductRules.PriceMissing(product))
+        {
+            return (HttpStatusCode.Conflict, new ErrorDataResult<Product>(PriceMissingMessage));
+        }
+
         if (StockProblem(product, root) is { } stockProblem)
         {
             return (HttpStatusCode.BadRequest, new ErrorDataResult<Product>(stockProblem));
@@ -121,6 +126,11 @@ public class ProductManager : IProductService
         if (product.IsActive && ProductRules.RequiresVariants(root) && !await HasVariantAsync(stored.Id, cancellationToken))
         {
             return (HttpStatusCode.BadRequest, new ErrorResult(VariantRequiredMessage));
+        }
+
+        if (product.IsActive && ProductRules.PriceMissing(product))
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult(PriceMissingMessage));
         }
 
         if (StockProblem(product, root) is { } stockProblem)
@@ -334,6 +344,8 @@ public class ProductManager : IProductService
     }
 
     private const string VariantRequiredMessage = "Giyim ürünü en az bir varyant olmadan yayına alınamaz.";
+
+    private const string PriceMissingMessage = "Fiyatı girilmemiş ürün yayına alınamaz.";
 
     /// <summary>Giyim'de stok varyantta durur; ürünün kendi stok alanı boş kalmak zorundadır.</summary>
     private static string? StockProblem(Product product, Category root)

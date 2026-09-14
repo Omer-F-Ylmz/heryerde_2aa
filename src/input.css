@@ -519,6 +519,11 @@
     margin-bottom: 24px;
   }
 
+  /* Süzgeç sekmeleri başlık bloğunun son satırı; listedeki 24px'lik alt boşluk burada düğmenin hizasını bozar. */
+  .page-head .tabs__list {
+    margin-bottom: 0;
+  }
+
   .page-head__note {
     max-width: 640px;
     margin: 0;
@@ -655,6 +660,29 @@
   .field__input--area {
     resize: vertical;
     line-height: 1.7;
+  }
+
+  /* Dosya seçici: tarayıcının düğmesi marka ikincil düğmesine benzetilir. */
+  .field__input--file {
+    padding: 8px;
+    cursor: pointer;
+  }
+
+  .field__input--file::file-selector-button {
+    font: inherit;
+    font-weight: 600;
+    margin-right: 16px;
+    padding: 8px 16px;
+    border: 1px solid var(--c-brand-300);
+    border-radius: 8px;
+    background: var(--c-brand-100);
+    color: var(--c-brand-900);
+    cursor: pointer;
+    transition: background-color 240ms var(--ease);
+  }
+
+  .field__input--file:hover::file-selector-button {
+    background: var(--c-brand-300);
   }
 
   .field__input--tiny {
@@ -1293,6 +1321,12 @@
     flex-direction: column;
     gap: 8px;
     padding: 16px;
+    /* Başlık iki ya da üç satır olabilir; fiyat satırdaki kartlarda aynı hizada kalsın. */
+    flex: 1;
+  }
+
+  .card__body .price-block {
+    margin-top: auto;
   }
 
   .card__title {

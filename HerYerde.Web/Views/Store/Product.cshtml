@@ -26,7 +26,8 @@
                 }
                 else
                 {
-                    <img src="@Model.Images[0].Url" alt="@Model.Images[0].Alt" width="600" height="600" />
+                    var mainSrcset = ProductImages.Srcset(Model.Images[0].Url);
+                    <img src="@Model.Images[0].Url" srcset="@mainSrcset" sizes="@(mainSrcset is null ? null : ProductImages.GallerySizes)" alt="@Model.Images[0].Alt" width="600" height="600" />
                 }
             </figure>
             @if (Model.Images.Count > 1)
@@ -34,7 +35,8 @@
                 <ul class="gallery__thumbs">
                     @foreach (var image in Model.Images.Skip(1))
                     {
-                        <li><img class="thumb" src="@image.Url" alt="@image.Alt" width="64" height="80" loading="lazy" /></li>
+                        var thumbSrcset = ProductImages.Srcset(image.Url);
+                        <li><img class="thumb" src="@image.Url" srcset="@thumbSrcset" sizes="@(thumbSrcset is null ? null : ProductImages.ThumbSizes)" alt="@image.Alt" width="80" height="80" loading="lazy" /></li>
                     }
                 </ul>
             }

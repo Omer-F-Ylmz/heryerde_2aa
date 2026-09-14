@@ -140,6 +140,9 @@ public sealed class ProductFormViewModel
 public sealed class ProductListViewModel
 {
     public List<Product> Products { get; set; } = [];
+
+    /// <summary>"Fiyat eksik" süzgeci açıkken yalnız ithalden gelen fiyatsız ürünler listelenir.</summary>
+    public bool PriceMissingOnly { get; set; }
     public Dictionary<int, string> CategoryNames { get; set; } = [];
     public Dictionary<int, int> StockTotals { get; set; } = [];
     public DateTime Now { get; set; }
@@ -171,10 +174,8 @@ public sealed class ImageFormViewModel
 {
     public int ProductId { get; set; }
 
-    [Required(ErrorMessage = "Görsel adresi gerekli.")]
-    [StringLength(500)]
-    [Display(Name = "Görsel adresi")]
-    public string Url { get; set; } = string.Empty;
+    /// <summary>Yüklenen dosyalar; adres kullanıcıdan alınmaz, sunucu üretir.</summary>
+    public List<IFormFile>? Files { get; set; }
 
     [Required(ErrorMessage = "Alternatif metin gerekli.")]
     [StringLength(200)]

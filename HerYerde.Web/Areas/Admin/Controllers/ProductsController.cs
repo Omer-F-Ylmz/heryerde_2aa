@@ -15,28 +15,42 @@ public class ProductsController : Controller
 {
     private const string Entity = "ürün";
 
+    /// <summary>Listede "Fiyat eksik" süzgecini açan sorgu değeri (/admin/products?fiyat=eksik).</summary>
+    private const string PriceMissingFilter = "eksik";
+
     private readonly IProductService _productService;
     private readonly ICategoryService _categoryService;
     private readonly IAdminAuditService _auditService;
+    private readonly IProductImageStorage _imageStorage;
 
-    public ProductsController(IProductService productService, ICategoryService categoryService, IAdminAuditService auditService)
+    public ProductsController(
+        IProductService productService,
+        ICategoryService categoryService,
+        IAdminAuditService auditService,
+        IProductImageStorage imageStorage)
     {
         _productService = productService;
         _categoryService = categoryService;
         _auditService = auditService;
+        _imageStorage = imageStorage;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(string? fiyat, CancellationToken cancellationToken)
     {
         var (_, products) = await _productService.GetAllAsync(cancellationToken);
         var (_, categories) = await _categoryService.GetAllAsync(cancellationToken);
 
         var (_, stockTotals) = await _productService.GetStockTotalsAsync(cancellationToken);
+        var priceMissingOnly = fiyat == PriceMissingFilter;
 
         return View(new ProductListViewModel
         {
-            Products = products.Data!.OrderByDescending(p => p.UpdatedAt).ToList(),
+            PriceMissingOnly = priceMissingOnly,
+            Products = products.Data!
+                .Where(p => !priceMissingOnly || ProductRules.PriceMissing(p))
+                .OrderByDescending(p => p.UpdatedAt)
+                .ToList(),
             CategoryNames = categories.Data!.ToDictionary(c => c.Id, c => c.Name),
             StockTotals = stockTotals.Data!,
             Now = DateTime.UtcNow
@@ -170,20 +184,35 @@ public class ProductsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddImage(ImageFormViewModel model, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
+        if (!ModelState.IsValid || model.Files is not { Count: > 0 })
         {
             return await FormWithErrorAsync(model.ProductId, "Görsel alanlarını kontrol edin.", cancellationToken);
         }
 
-        var added = await _productService.AddImageAsync(new ProductImage
+        // Hiçbir dosya işlenmeden önce hepsi denetlenir; yarım yüklenmiş küme kalmaz.
+        foreach (var file in model.Files)
         {
-            ProductId = model.ProductId,
-            Url = model.Url,
-            Alt = model.Alt,
-            SortOrder = model.SortOrder
-        }, cancellationToken);
+            if (await ImageFile.ProblemAsync(file, cancellationToken) is { } problem)
+            {
+                return await FormWithErrorAsync(model.ProductId, problem, cancellationToken);
+            }
+        }
 
-        await AuditIfDoneAsync(added, "görsel ekle", model.ProductId);
+        var sortOrder = model.SortOrder;
+        foreach (var file in model.Files)
+        {
+            await using var content = file.OpenReadStream();
+            var added = await _productService.AddImageAsync(new ProductImage
+            {
+                ProductId = model.ProductId,
+                Url = await _imageStorage.SaveAsync(model.ProductId, content, cancellationToken),
+                Alt = model.Alt,
+                SortOrder = sortOrder++
+            }, cancellationToken);
+
+            await AuditIfDoneAsync(added, "görsel ekle", model.ProductId);
+        }
+
         return RedirectToAction(nameof(Edit), new { id = model.ProductId });
     }
 
@@ -207,7 +236,16 @@ public class ProductsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteImage(int productId, int imageId, CancellationToken cancellationToken)
     {
-        await AuditIfDoneAsync(await _productService.DeleteImageAsync(imageId, cancellationToken), "görsel sil", productId);
+        var (_, images) = await _productService.GetImagesAsync(productId, cancellationToken);
+        var url = images.Data!.FirstOrDefault(i => i.Id == imageId)?.Url;
+
+        var outcome = await _productService.DeleteImageAsync(imageId, cancellationToken);
+        if (outcome.Item1 == HttpStatusCode.OK && url is not null)
+        {
+            _imageStorage.Delete(url);
+        }
+
+        await AuditIfDoneAsync(outcome, "görsel sil", productId);
         return RedirectToAction(nameof(Edit), new { id = productId });
     }
 

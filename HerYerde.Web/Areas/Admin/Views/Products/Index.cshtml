@@ -8,6 +8,12 @@
         <p class="eyebrow">Katalog</p>
         <h1 class="display-2">Ürünler</h1>
         <p class="page-head__note">Giyim ürünü varyantsız yayına alınamaz; Ev ürününde beden ve renk boş kalır.</p>
+        <nav class="tabs" aria-label="Ürün süzgeci">
+            <ul class="tabs__list">
+                <li><a class="tab" asp-area="Admin" asp-controller="Products" asp-action="Index" aria-current="@(Model.PriceMissingOnly ? null : "page")">Tümü</a></li>
+                <li><a class="tab" asp-area="Admin" asp-controller="Products" asp-action="Index" asp-route-fiyat="eksik" aria-current="@(Model.PriceMissingOnly ? "page" : null)">Fiyat eksik</a></li>
+            </ul>
+        </nav>
     </div>
     <a class="btn btn--primary" asp-area="Admin" asp-controller="Products" asp-action="Create">
         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -17,7 +23,11 @@
 
 @if (Model.Products.Count == 0)
 {
-    <p class="empty surface-elevated">Henüz ürün yok. İlk ürünü ekleyin; varyant ve görselleri kaydettikten sonra eklersiniz.</p>
+    <p class="empty surface-elevated">
+        @(Model.PriceMissingOnly
+            ? "Fiyatı eksik ürün yok."
+            : "Henüz ürün yok. İlk ürünü ekleyin; varyant ve görselleri kaydettikten sonra eklersiniz.")
+    </p>
 }
 else
 {
@@ -61,6 +71,10 @@ else
                     <td>
                         <div class="cell-status">
                         <span class="tag @(product.IsActive ? "tag--live" : "tag--draft")">@(product.IsActive ? "Yayında" : "Taslak")</span>
+                        @if (ProductRules.PriceMissing(product))
+                        {
+                            <span class="tag tag--expired">Fiyat eksik</span>
+                        }
                         @if (product.CampaignPrice is not null)
                         {
                             <span class="tag @(campaignLive ? "tag--campaign" : "tag--expired")">

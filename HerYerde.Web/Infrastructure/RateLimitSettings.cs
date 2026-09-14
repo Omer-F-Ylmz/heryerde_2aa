@@ -13,12 +13,15 @@ public sealed class RateLimitSettings
 
     public int CheckoutPerMinute { get; set; } = 5;
 
+    /// <summary>Görsel yükleme sunucuda işleme (yeniden boyutlama) demek; ayrı ve dar tutulur.</summary>
+    public int UploadPerMinute { get; set; } = 20;
+
     public int GeneralPerMinute { get; set; } = 300;
 }
 
 public static class RateLimitPolicy
 {
-    /// <summary>Yol ve yönteme göre tek bir bölüm seçer: yönetici girişi, sepet, ödeme ya da genel.
+    /// <summary>Yol ve yönteme göre tek bir bölüm seçer: yönetici girişi, görsel yükleme, sepet, ödeme ya da genel.
     /// Hata sayfası yeniden çalıştırıldığında sınır uygulanmaz, yoksa 429 sayfası da 429 olurdu.</summary>
     public static RateLimitPartition<string> Select(HttpContext context)
     {
@@ -34,11 +37,13 @@ public static class RateLimitPolicy
 
         var (bucket, permit) = path.StartsWithSegments("/admin/auth/login")
             ? ("admin-giris", settings.AdminLoginPerMinute)
-            : isPost && path.StartsWithSegments("/sepet")
-                ? ("sepet", settings.CartPerMinute)
-                : isPost && path.StartsWithSegments("/odeme")
-                    ? ("odeme", settings.CheckoutPerMinute)
-                    : ("genel", settings.GeneralPerMinute);
+            : isPost && path.StartsWithSegments("/admin/products/addimage")
+                ? ("yukleme", settings.UploadPerMinute)
+                : isPost && path.StartsWithSegments("/sepet")
+                    ? ("sepet", settings.CartPerMinute)
+                    : isPost && path.StartsWithSegments("/odeme")
+                        ? ("odeme", settings.CheckoutPerMinute)
+                        : ("genel", settings.GeneralPerMinute);
 
         return RateLimitPartition.GetFixedWindowLimiter($"{bucket}:{client}", _ => new FixedWindowRateLimiterOptions
         {
