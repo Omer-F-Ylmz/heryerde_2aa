@@ -7,10 +7,24 @@
 |---|---|---|---|
 | 1 | `KapidaOdeme` | Aktif | Kapıda nakit/kart. Instagram'dan gelen ilk alıcı için varsayılan güven yolu. |
 | 2 | `HavaleEft` | Aktif | Sipariş sonrası IBAN paylaşılır; ödeme görülünce kargolanır. |
-| 3 | `KrediKarti` | Hayır | Sanal POS anlaşması sonrası devreye alınacak. |
+| 3 | `KrediKarti` | Anahtar varsa | İyzico 3D Secure (D7). `Iyzico:ApiKey`/`SecretKey` boşken seçenek görünmez, POST 400. |
 
-Ödeme adımında (`/odeme`) yalnız ilk iki yöntem seçilebilir; `KrediKarti` gelen istekte 400 döner.
 Havale/EFT seçilince IBAN kutusu açılır (`Shop:Iban`).
+
+### Kartla ödeme (İyzico 3D Secure)
+1. `POST /odeme` kartla: sipariş `Beklemede`, `payment` satırı `Baslatildi` açılır. Stok düşmez, sepet
+   silinmez, müşteri postası gitmez (mağaza postası sipariş anında gider). Sağlayıcıya ödeme + 3DS
+   başlatma isteği atılır; dönen form bizim sayfamızda kurulup `site.js` ile bankaya gönderilir.
+2. `POST /odeme/3d-donus` (antiforgery yok, dakikada 30, GET 405): `conversation_id` ile eşleşir,
+   imza ve `mdStatus` doğrulanır. Kayıt tek koşullu UPDATE ile kapatılır; ikinci dönüş ilk sonucu alır.
+3. Aynı işlemde stok düşer, çekim yapılır (`/payment/3dsecure/auth`), çekim tutarı sipariş toplamıyla
+   birebir karşılaştırılır. Başarıda sepet silinir, müşteri postası kuyruğa girer, teşekkür sayfasına 303.
+4. Reddedilen/imzası tutmayan/tutarı uyuşmayan dönüşte işlem geri alınır: sipariş `IptalEdildi`,
+   ödeme `Basarisiz`, stok değişmez; `/odeme`'ye mesajla 303, sepet yerinde kalır.
+- Kart bilgisi yalnız istek belleğinde sağlayıcıya iletilir; `payment.raw_response` 4000 karakterde
+  kırpılır, 12-19 haneli sayılar ve `cvc` alanı maskelenir, 3DS HTML'i saklanmaz.
+- CSP `form-action` ve `frame-src` yalnız `/odeme*` yollarında `Iyzico:CspSources` kökenlerini alır.
+- Dönüş adresi `Shop:BaseUrl`'den kurulur (Host başlığından değil). İade (D8) ve taksit yok.
 
 ## Teslimat
 - Kargo ücreti **alıcıya** aittir: `appsettings` → `Shop:ShippingFee`, siparişe `order.shipping_fee`

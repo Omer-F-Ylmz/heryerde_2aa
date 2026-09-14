@@ -19,7 +19,9 @@ public class HomeController : Controller
         return View();
     }
 
-    /// <summary>UseStatusCodePagesWithReExecute hedefi: 404 ve 429 markalı sayfa, diğerleri Problem.</summary>
+    /// <summary>UseStatusCodePagesWithReExecute hedefi: 404 ve 429 markalı sayfa, diğerleri Problem.
+    /// 404 alan POST (ör. antiforgery taşımayan 3D dönüşü) burada POST olarak yürütülür; 400'e dönmesin diye doğrulama kapalı.</summary>
+    [IgnoreAntiforgeryToken]
     [Route("hata/{code:int}")]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Hata(int code)

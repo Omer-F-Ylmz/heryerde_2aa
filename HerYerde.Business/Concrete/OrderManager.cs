@@ -20,6 +20,7 @@ public class OrderManager : IOrderService
     private readonly IProductVariantDal _variantDal;
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notifications;
+    private readonly IPaymentDal _paymentDal;
     private readonly ShopSettings _shop;
     private readonly ShippingSettings _shipping;
     private readonly TimeProvider _clock;
@@ -32,6 +33,7 @@ public class OrderManager : IOrderService
         IProductVariantDal variantDal,
         IUnitOfWork unitOfWork,
         INotificationService notifications,
+        IPaymentDal paymentDal,
         IOptions<ShopSettings> shop,
         IOptions<ShippingSettings> shipping,
         TimeProvider clock)
@@ -43,6 +45,7 @@ public class OrderManager : IOrderService
         _variantDal = variantDal;
         _unitOfWork = unitOfWork;
         _notifications = notifications;
+        _paymentDal = paymentDal;
         _shop = shop.Value;
         _shipping = shipping.Value;
         _clock = clock;
@@ -98,6 +101,8 @@ public class OrderManager : IOrderService
             LegalVersion = LegalDocs.Version
         };
 
+        // Kartta stok, sepet ve müşteri postası ödeme onayına kalır; burada yalnız sipariş ve ödeme kaydı açılır.
+        var byCard = draft.PaymentMethod == PaymentMethod.KrediKarti;
         var granted = new List<GiftPlan>();
         var placedItems = new List<OrderItem>();
         try
@@ -107,7 +112,7 @@ public class OrderManager : IOrderService
                 // Stok kontrolü ve düşümü tek koşullu UPDATE; aynı işlem içinde olduğu için
                 // yetersiz kalan satırda önceki düşümler de geri alınır.
                 var shortages = new List<string>();
-                foreach (var item in items)
+                foreach (var item in byCard ? [] : items)
                 {
                     // Giyim'de stok varyantta, Ev'de ürünün kendisinde; stok tutmayan üründe düşüm yok.
                     var decremented = item.VariantId is { } variantId
@@ -130,7 +135,8 @@ public class OrderManager : IOrderService
                 // Hediye stoğu da düşer; bu sırada tükendiyse hediye satırı hiç açılmaz.
                 foreach (var gift in gifts.Where(g => g.Available))
                 {
-                    if (await _productDal.TryDecrementStockAsync(gift.ProductId, gift.Quantity, cancellationToken) > 0
+                    if (byCard
+                        || await _productDal.TryDecrementStockAsync(gift.ProductId, gift.Quantity, cancellationToken) > 0
                         || products.GetValueOrDefault(gift.ProductId)?.Stock is null)
                     {
                         granted.Add(gift);
@@ -158,7 +164,7 @@ public class OrderManager : IOrderService
                     placedItems.Add(line);
                     await _orderItemDal.AddAsync(line, cancellationToken);
 
-                    var cartLine = await _cartItemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken);
+                    var cartLine = byCard ? null : await _cartItemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken);
                     if (cartLine is not null)
                     {
                         _cartItemDal.Delete(cartLine);
@@ -181,7 +187,22 @@ public class OrderManager : IOrderService
                 }
 
                 // Bildirim siparişle aynı işlemde kuyruğa girer: sipariş yazıldıysa postası da kesin kuyruktadır.
-                await _notifications.QueueOrderPlacedAsync(order, placedItems, cancellationToken);
+                await _notifications.QueueOrderPlacedAsync(order, placedItems, customer: !byCard, cancellationToken: cancellationToken);
+
+                if (byCard)
+                {
+                    await _paymentDal.AddAsync(new Payment
+                    {
+                        OrderId = order.Id,
+                        CartId = cartId,
+                        Provider = PaymentManager.Provider,
+                        ConversationId = Guid.NewGuid().ToString("N"),
+                        Status = PaymentStatus.Baslatildi,
+                        Amount = order.Total,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    }, cancellationToken);
+                }
 
                 return await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
@@ -343,7 +364,10 @@ public class OrderManager : IOrderService
         }
 
         var items = await _orderItemDal.GetListAsync(i => i.OrderId == order.Id, cancellationToken);
-        return (HttpStatusCode.OK, new SuccessDataResult<OrderDetail>(new OrderDetail(order, items.OrderBy(i => i.Id).ToList())));
+        var payment = order.PaymentMethod == PaymentMethod.KrediKarti
+            ? (await _paymentDal.GetListAsync(p => p.OrderId == order.Id, cancellationToken)).MaxBy(p => p.Id)
+            : null;
+        return (HttpStatusCode.OK, new SuccessDataResult<OrderDetail>(new OrderDetail(order, items.OrderBy(i => i.Id).ToList(), payment)));
     }
 
     /// <summary>Hediye edilen başka ürünler de sözlüğe girsin; adı ve stoğu oradan okunur.</summary>

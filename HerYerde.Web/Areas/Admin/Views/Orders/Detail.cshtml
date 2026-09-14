@@ -38,7 +38,15 @@
         </div>
         <div>
             <dt>Ödeme</dt>
-            <dd>@(order.PaymentMethod == PaymentMethod.HavaleEft ? "Havale / EFT" : "Kapıda ödeme")</dd>
+            <dd>
+                @PaymentLabels.Method(order.PaymentMethod)
+                @if (Model.Detail.Payment is { } payment)
+                {
+                    <br />
+                    <span>@PaymentLabels.Status(payment.Status) · @payment.Provider</span><br />
+                    <span class="cell-mono">@(payment.PaymentId ?? "—")</span>
+                }
+            </dd>
         </div>
         <div>
             <dt>Not</dt>

@@ -9,6 +9,6 @@ public enum PaymentMethod
     /// <summary>Havale/EFT ile ön ödeme. Açılışta aktif.</summary>
     HavaleEft = 2,
 
-    /// <summary>Kredi kartı (sanal POS). Sonra devreye alınacak.</summary>
+    /// <summary>Kredi kartı: İyzico 3D Secure; anahtar tanımlıysa açık.</summary>
     KrediKarti = 3
 }

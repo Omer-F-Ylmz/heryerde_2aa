@@ -115,6 +115,7 @@ public static class TestData
         new EfProductVariantDal(context),
         new EfUnitOfWork(context),
         NewNotificationManager(context, clock: clock),
+        new EfPaymentDal(context),
         Options.Create(NewShopSettings(freeShippingOver)),
         Options.Create(NewShippingSettings()),
         clock ?? TestClock.Fixed);

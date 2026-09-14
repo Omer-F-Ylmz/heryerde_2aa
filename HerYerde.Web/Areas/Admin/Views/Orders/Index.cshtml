@@ -72,7 +72,7 @@ else
                             <span class="cell-mono">@order.Phone</span>
                         </div>
                     </td>
-                    <td>@(order.PaymentMethod == PaymentMethod.HavaleEft ? "Havale / EFT" : "Kapıda")</td>
+                    <td>@(order.PaymentMethod switch { PaymentMethod.HavaleEft => "Havale / EFT", PaymentMethod.KrediKarti => "Kart", _ => "Kapıda" })</td>
                     <td class="table__num"><span class="price">@Money.Tl(order.Total)</span></td>
                     <td><partial name="Components/_StatusPill" model="order.Status" /></td>
                     <td>

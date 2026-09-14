@@ -12,8 +12,9 @@ public sealed class SecurityHeadersMiddleware
 
     private readonly RequestDelegate _next;
     private readonly string _contentSecurityPolicy;
+    private readonly string _checkoutContentSecurityPolicy;
 
-    public SecurityHeadersMiddleware(RequestDelegate next, IOptions<ShopSettings> shop)
+    public SecurityHeadersMiddleware(RequestDelegate next, IOptions<ShopSettings> shop, IOptions<IyzicoSettings> iyzico)
     {
         _next = next;
         // Dış görsel yalnız Shop:ImageOrigins'teki kökenlerden; "https:" gibi şema-joker kaynak yok.
@@ -26,6 +27,12 @@ public sealed class SecurityHeadersMiddleware
             "font-src 'self'; " +
             "frame-ancestors 'none'; " +
             "form-action 'self'";
+
+        // 3D doğrulama formu bankaya/İyzico'ya gönderilir: yalnız ödeme sayfalarında o kökenlere izin verilir.
+        var paymentSources = string.Join(' ', iyzico.Value.CspSources);
+        _checkoutContentSecurityPolicy = paymentSources.Length == 0
+            ? _contentSecurityPolicy
+            : _contentSecurityPolicy + $" {paymentSources}; frame-src {paymentSources}";
     }
 
     public Task InvokeAsync(HttpContext context)
@@ -33,7 +40,9 @@ public sealed class SecurityHeadersMiddleware
         context.Response.OnStarting(() =>
         {
             var headers = context.Response.Headers;
-            headers["Content-Security-Policy"] = _contentSecurityPolicy;
+            headers["Content-Security-Policy"] = context.Request.Path.StartsWithSegments("/odeme")
+                ? _checkoutContentSecurityPolicy
+                : _contentSecurityPolicy;
             headers["X-Content-Type-Options"] = "nosniff";
             headers["X-Frame-Options"] = "DENY";
             headers["Referrer-Policy"] = "strict-origin-when-cross-origin";

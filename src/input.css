@@ -2770,6 +2770,49 @@
     line-height: 1.5;
   }
 
+  /* Kart alanları: yalnız kart seçiliyken açılır */
+  .card-box {
+    display: grid;
+    margin-top: 8px;
+    padding: 16px 16px 0;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: var(--r-card);
+    background: #ffffff;
+  }
+
+  .card-box[hidden] {
+    display: none;
+  }
+
+  .field__input--mono {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .card-box__note {
+    display: flex;
+    gap: 8px;
+    align-items: start;
+    margin: 0 0 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--c-neutral-700);
+  }
+
+  .card-box__note .icon {
+    flex: none;
+    margin-top: 2px;
+    color: var(--c-accent-deep);
+  }
+
+  .threeds {
+    max-width: 640px;
+  }
+
+  .threeds__form {
+    margin-top: 24px;
+  }
+
   /* IBAN kutusu: yalnız havale seçiliyken açılır */
   .iban {
     display: flex;

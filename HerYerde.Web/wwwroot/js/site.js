@@ -83,6 +83,27 @@ document.querySelectorAll(".tabs--scroll [aria-current=page]").forEach(function 
   sync();
 })();
 
+// Ödeme yöntemi: kart alanları yalnız kart seçiliyken görünür.
+(function () {
+  var box = document.querySelector("[data-pay] [data-card]");
+  if (!box) { return; }
+
+  var sync = function () {
+    var kart = document.getElementById("pay-kart");
+    box.hidden = !(kart && kart.checked);
+  };
+
+  document.querySelectorAll("[data-pay] input[name=PaymentMethod]").forEach(function (input) {
+    input.addEventListener("change", sync);
+  });
+  sync();
+})();
+
+// 3D Secure: bankaya giden form sayfa açılınca kendiliğinden gönderilir.
+document.querySelectorAll("form[data-autosubmit]").forEach(function (form) {
+  form.submit();
+});
+
 // IBAN kopyala: pano yoksa metin seçilir.
 document.querySelectorAll("[data-iban-copy]").forEach(function (button) {
   button.addEventListener("click", function () {

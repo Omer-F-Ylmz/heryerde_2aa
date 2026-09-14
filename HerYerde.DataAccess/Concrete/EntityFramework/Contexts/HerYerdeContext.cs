@@ -20,6 +20,7 @@ public class HerYerdeContext : DbContext
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<Payment> Payments => Set<Payment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -191,6 +192,26 @@ public class HerYerdeContext : DbContext
             e.Property(i => i.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2);
             e.Property(i => i.IsGift).HasColumnName("is_gift");
             e.HasOne<Order>().WithMany().HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Payment>(e =>
+        {
+            e.ToTable("payment");
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Id).HasColumnName("id");
+            e.Property(p => p.OrderId).HasColumnName("order_id");
+            e.Property(p => p.CartId).HasColumnName("cart_id");
+            e.Property(p => p.Provider).HasColumnName("provider").HasMaxLength(20).IsRequired();
+            e.Property(p => p.ConversationId).HasColumnName("conversation_id").HasMaxLength(64).IsRequired();
+            e.Property(p => p.PaymentId).HasColumnName("payment_id").HasMaxLength(64);
+            e.Property(p => p.Status).HasColumnName("status").HasConversion<int>();
+            e.Property(p => p.Amount).HasColumnName("amount").HasPrecision(18, 2);
+            e.Property(p => p.RawResponse).HasColumnName("raw_response").HasMaxLength(4000);
+            e.Property(p => p.CreatedAt).HasColumnName("created_at");
+            e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
+            e.HasIndex(p => p.ConversationId).IsUnique().HasDatabaseName("ux_payment_conversation_id");
+            e.HasIndex(p => p.OrderId).HasDatabaseName("ix_payment_order_id");
+            e.HasOne<Order>().WithMany().HasForeignKey(p => p.OrderId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<OutboxMessage>(e =>

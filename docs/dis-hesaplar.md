@@ -21,10 +21,17 @@ gönderimi "atlandı" olarak uyarı seviyesinde loglanır).
 | Kargo ücreti | [MÜŞTERİ] kargo anlaşması | `Shop:ShippingFee` | Evet |
 | Havale/EFT IBAN | [MÜŞTERİ] bankası | `Shop__Iban` (env) | Evet |
 | WhatsApp sipariş numarası | [MÜŞTERİ] | `Shop:WhatsApp` | Evet |
+| İyzico API anahtarı | [MÜŞTERİ] İyzico üye iş yeri paneli (sandbox: sandbox-merchant.iyzipay.com) | `Iyzico__ApiKey` (env) | Kartla ödeme açılacaksa |
+| İyzico gizli anahtarı | [MÜŞTERİ] İyzico üye iş yeri paneli | `Iyzico__SecretKey` (env) | Kartla ödeme açılacaksa |
+| İyzico API adresi | İyzico | `Iyzico:BaseUrl` (varsayılan `https://sandbox-api.iyzipay.com`; canlı `https://api.iyzipay.com`) | Canlıya geçerken |
+| 3D doğrulama formunun gideceği kökenler | İyzico / banka | `Iyzico:CspSources` (CSP `form-action`, `frame-src`; yalnız `/odeme*`) | Canlıya geçerken |
 
 ## Notlar
 - `Notifications:Host` ya da `Notifications__From` boşken gönderici "yapılandırılmamış" sayılır;
   kuyruktaki postalar silinmez, ayar geldiğinde ilk turda gönderilir.
 - `Notifications__StoreTo` boşsa mağaza bildirimi hiç kuyruğa girmez; müşteri postası etkilenmez.
+- `Iyzico__ApiKey` ya da `Iyzico__SecretKey` boşken ödeme sayfasında kart seçeneği hiç görünmez, kartla
+  gelen sipariş isteği 400 alır; uygulama açılır. Canlı anahtarlar gelince `Iyzico:BaseUrl` ve
+  `Iyzico:CspSources` canlı adrese çevrilir; bankanın 3DS sayfası farklı kökene yönlenirse o da listeye eklenir.
 - `Shipping:Carriers` listesinde olmayan bir kargo firmasıyla "Kargoda" durumuna geçilemez (400).
 - Takip adresi şablonu boş bırakılırsa teşekkür sayfasında bağlantı değil yalnız takip numarası çıkar.

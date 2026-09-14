@@ -21,6 +21,11 @@ public class AdminWebFactory : WebApplicationFactory<Program>
     {
     }
 
+    /// <summary>Alt sınıflar sahte servisleri buradan koyar.</summary>
+    protected virtual void ConfigureServices(IServiceCollection services)
+    {
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(Environment);
@@ -39,7 +44,11 @@ public class AdminWebFactory : WebApplicationFactory<Program>
         Configure(settings);
 
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(settings));
-        builder.ConfigureTestServices(services => services.AddSingleton(TestClock.Fixed));
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton(TestClock.Fixed);
+            ConfigureServices(services);
+        });
     }
 
     public HttpClient CreateNonRedirectingClient()

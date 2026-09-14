@@ -5,11 +5,14 @@
     ViewData["Title"] = "Ödeme";
     var cart = Model.Cart;
     var havale = Model.Form.PaymentMethod == PaymentMethod.HavaleEft;
+    var kart = Model.CardEnabled && Model.Form.PaymentMethod == PaymentMethod.KrediKarti;
 }
 
 <div class="container section">
     <h1 class="display-2 h-mark">Ödeme</h1>
-    <p class="lead">Kart bilgisi istemiyoruz: kapıda ödeyin ya da havale/EFT ile gönderin.</p>
+    <p class="lead">@(Model.CardEnabled
+        ? "Kartla 3D Secure ile ödeyin, kapıda ödeyin ya da havale/EFT ile gönderin."
+        : "Kart bilgisi istemiyoruz: kapıda ödeyin ya da havale/EFT ile gönderin.")</p>
 
     @if (Model.Notice is not null)
     {
@@ -31,7 +34,7 @@
                 <legend class="pay__legend">Ödeme yöntemi</legend>
 
                 <input class="pay__input" type="radio" id="pay-kapida" name="PaymentMethod"
-                       value="@((int)PaymentMethod.KapidaOdeme)" checked="@(!havale)" />
+                       value="@((int)PaymentMethod.KapidaOdeme)" checked="@(!havale && !kart)" />
                 <label class="pay__option" for="pay-kapida">
                     <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
                     <span>
@@ -49,6 +52,53 @@
                         <span class="pay__note">Ödemeniz hesaba geçtiğinde kargoya veriyoruz.</span>
                     </span>
                 </label>
+
+                @if (Model.CardEnabled)
+                {
+                    <input class="pay__input" type="radio" id="pay-kart" name="PaymentMethod"
+                           value="@((int)PaymentMethod.KrediKarti)" checked="@kart" />
+                    <label class="pay__option" for="pay-kart">
+                        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>
+                        <span>
+                            <span class="pay__title">Kredi / banka kartı</span>
+                            <span class="pay__note">Bankanızın 3D Secure onayıyla ödersiniz; e-posta gerekir, kart bilginiz bizde saklanmaz.</span>
+                        </span>
+                    </label>
+
+                    @* Kart alanları sayfaya geri yazılmaz: hata olursa boş gelir. required yok; gizliyken formu kilitlemesin. *@
+                    <div class="card-box" data-card hidden="@(!kart)">
+                        <div class="field">
+                            <label class="field__label" for="card-holder">Kart üzerindeki ad</label>
+                            <input class="field__input" id="card-holder" name="CardHolderName" autocomplete="cc-name" maxlength="100" />
+                            @Html.ValidationMessage("CardHolderName", null, new { @class = "field__error" })
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="card-number">Kart numarası</label>
+                            <input class="field__input field__input--mono" id="card-number" name="CardNumber" inputmode="numeric" autocomplete="cc-number" maxlength="23" placeholder="0000 0000 0000 0000" />
+                            @Html.ValidationMessage("CardNumber", null, new { @class = "field__error" })
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label class="field__label" for="card-month">Son kullanma ayı</label>
+                                <input class="field__input field__input--mono" id="card-month" name="CardExpireMonth" inputmode="numeric" autocomplete="cc-exp-month" maxlength="2" placeholder="AA" />
+                            </div>
+                            <div class="field">
+                                <label class="field__label" for="card-year">Yılı</label>
+                                <input class="field__input field__input--mono" id="card-year" name="CardExpireYear" inputmode="numeric" autocomplete="cc-exp-year" maxlength="4" placeholder="YY" />
+                            </div>
+                            <div class="field">
+                                <label class="field__label" for="card-cvc">Güvenlik kodu</label>
+                                <input class="field__input field__input--mono" id="card-cvc" name="CardCvc" inputmode="numeric" autocomplete="cc-csc" maxlength="4" placeholder="CVC" />
+                            </div>
+                        </div>
+                        @Html.ValidationMessage("CardExpireMonth", null, new { @class = "field__error" })
+                        @Html.ValidationMessage("CardCvc", null, new { @class = "field__error" })
+                        <p class="card-box__note">
+                            <svg class="icon icon--sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <span>Siparişi tamamlayınca bankanızın doğrulama sayfası açılır; çekim onaydan sonra yapılır.</span>
+                        </p>
+                    </div>
+                }
 
                 <div class="iban" data-iban hidden="@(!havale)">
                     <span class="iban__code" data-iban-value>@Model.Iban</span>

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text;
+using HerYerde.Business.Rules;
 using HerYerde.Entities.Concrete;
 using HerYerde.Entities.Enums;
 
@@ -28,7 +29,7 @@ public static class NotificationTemplates
         var body = new StringBuilder();
         body.Append(Heading("Siparişiniz alındı", $"Teşekkürler {Encode(order.FullName)}, {Encode(order.OrderNo)} numaralı siparişinizi aldık."));
         body.Append(Lines(items, order));
-        body.Append(Row("Ödeme", order.PaymentMethod == PaymentMethod.HavaleEft ? "Havale / EFT" : "Kapıda ödeme"));
+        body.Append(Row("Ödeme", PaymentLabels.Method(order.PaymentMethod)));
 
         if (order.PaymentMethod == PaymentMethod.HavaleEft && iban.Length > 0)
         {
@@ -62,7 +63,7 @@ public static class NotificationTemplates
         var body = new StringBuilder();
         body.Append(Heading("Yeni sipariş", $"{Encode(order.OrderNo)} · {Encode(order.FullName)}"));
         body.Append(Lines(items, order));
-        body.Append(Row("Ödeme", order.PaymentMethod == PaymentMethod.HavaleEft ? "Havale / EFT" : "Kapıda ödeme"));
+        body.Append(Row("Ödeme", PaymentLabels.Method(order.PaymentMethod)));
         body.Append(Row("Teslimat", Encode($"{order.District} / {order.City}")));
         body.Append(Button(adminUrl, "Siparişi yönetimde aç"));
         return ($"Yeni sipariş · {order.OrderNo}", Page(body.ToString()));

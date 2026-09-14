@@ -1,0 +1,21 @@
+@using HerYerde.Web.Models
+@model ThreeDsViewModel
+@{
+    ViewData["Title"] = "Banka doğrulaması";
+}
+
+<div class="container section">
+    <div class="threeds">
+        <h1 class="display-2 h-mark">Bankanıza yönlendiriyoruz</h1>
+        <p class="lead">3D Secure doğrulaması için bankanızın sayfası açılıyor. Onay verdiğinizde siparişinize geri dönersiniz.</p>
+
+        @* Sağlayıcının otomatik gönderilen formu; satır içi script yerine site.js gönderir, script kapalıysa düğmeye basılır. *@
+        <form class="threeds__form" method="post" action="@Model.Form.Action" data-autosubmit>
+            @foreach (var field in Model.Form.Fields)
+            {
+                <input type="hidden" name="@field.Key" value="@field.Value" />
+            }
+            <button class="btn btn--cta btn--lg" type="submit">Bankaya devam et</button>
+        </form>
+    </div>
+</div>

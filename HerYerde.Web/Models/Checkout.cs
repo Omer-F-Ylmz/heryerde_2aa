@@ -44,6 +44,17 @@ public sealed class CheckoutFormViewModel
     [Display(Name = "Ödeme yöntemi")]
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.KapidaOdeme;
 
+    // Kart alanları yalnız sağlayıcıya iletilir; sayfaya geri yazılmaz, loglanmaz, saklanmaz.
+    public string? CardHolderName { get; set; }
+
+    public string? CardNumber { get; set; }
+
+    public string? CardExpireMonth { get; set; }
+
+    public string? CardExpireYear { get; set; }
+
+    public string? CardCvc { get; set; }
+
     /// <summary>Ön bilgilendirme formu ve mesafeli satış sözleşmesi onayı; işaretsiz form sunucuda da reddedilir.</summary>
     [Range(typeof(bool), "true", "true",
         ErrorMessage = "Devam etmek için ön bilgilendirme formunu ve mesafeli satış sözleşmesini onaylayın.")]
@@ -56,7 +67,11 @@ public sealed record CheckoutPageViewModel(
     CartView Cart,
     string Iban,
     string? ErrorMessage,
-    string? Notice = null);
+    string? Notice = null,
+    bool CardEnabled = false);
+
+/// <summary>Bankanın 3D doğrulama sayfasına otomatik gönderilen form.</summary>
+public sealed record ThreeDsViewModel(ThreeDsForm Form);
 
 public sealed record ThankYouViewModel(OrderDetail Detail, string WhatsAppUrl, string Iban, string? TrackingUrl = null);
 

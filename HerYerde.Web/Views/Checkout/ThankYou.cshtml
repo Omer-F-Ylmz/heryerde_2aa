@@ -1,3 +1,4 @@
+@using HerYerde.Business.Rules
 @using HerYerde.Entities.Enums
 @using HerYerde.Web.Models
 @model ThankYouViewModel
@@ -37,7 +38,7 @@
             </p>
             <p class="summary__note">
                 <partial name="Components/_StatusPill" model="order.Status" />
-                @(havale ? "Havale / EFT" : "Kapıda ödeme") · @order.District, @order.City
+                @PaymentLabels.Method(order.PaymentMethod)@(Model.Detail.Payment is { } payment ? " · " + PaymentLabels.Status(payment.Status) : "") · @order.District, @order.City
             </p>
         </div>
 

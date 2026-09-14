@@ -5,8 +5,14 @@ namespace HerYerde.Business.Abstract;
 /// <summary>Sipariş e-postalarını kuyruğa yazar ve arka planda dağıtır.</summary>
 public interface INotificationService
 {
-    /// <summary>Sipariş alındı: müşteriye (e-postası varsa) ve mağazaya. Kaydetmez; çağıranın işlemine yazılır.</summary>
-    Task QueueOrderPlacedAsync(Order order, IReadOnlyList<OrderItem> items, CancellationToken cancellationToken = default);
+    /// <summary>Sipariş alındı: müşteriye (e-postası varsa) ve mağazaya. Kaydetmez; çağıranın işlemine yazılır.
+    /// Kartlı siparişte mağaza postası sipariş anında, müşteri postası ödeme onayında ayrı ayrı istenir.</summary>
+    Task QueueOrderPlacedAsync(
+        Order order,
+        IReadOnlyList<OrderItem> items,
+        bool customer = true,
+        bool store = true,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Sipariş kargoya verildi: yalnız müşteriye. Kaydetmez.</summary>
     Task QueueOrderShippedAsync(Order order, CancellationToken cancellationToken = default);

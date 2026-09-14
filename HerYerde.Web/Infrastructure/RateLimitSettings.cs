@@ -13,6 +13,9 @@ public sealed class RateLimitSettings
 
     public int CheckoutPerMinute { get; set; } = 5;
 
+    /// <summary>3D dönüşü: antiforgery taşımadığı için ayrı ve sınırlı.</summary>
+    public int ThreeDsCallbackPerMinute { get; set; } = 30;
+
     /// <summary>Görsel yükleme sunucuda işleme (yeniden boyutlama) demek; ayrı ve dar tutulur.</summary>
     public int UploadPerMinute { get; set; } = 20;
 
@@ -21,7 +24,7 @@ public sealed class RateLimitSettings
 
 public static class RateLimitPolicy
 {
-    /// <summary>Yol ve yönteme göre tek bir bölüm seçer: yönetici girişi, görsel yükleme, sepet, ödeme ya da genel.
+    /// <summary>Yol ve yönteme göre tek bir bölüm seçer: yönetici girişi, görsel yükleme, sepet, 3D dönüşü, ödeme ya da genel.
     /// Hata sayfası yeniden çalıştırıldığında sınır uygulanmaz, yoksa 429 sayfası da 429 olurdu.</summary>
     public static RateLimitPartition<string> Select(HttpContext context)
     {
@@ -41,9 +44,11 @@ public static class RateLimitPolicy
                 ? ("yukleme", settings.UploadPerMinute)
                 : isPost && path.StartsWithSegments("/sepet")
                     ? ("sepet", settings.CartPerMinute)
-                    : isPost && path.StartsWithSegments("/odeme")
-                        ? ("odeme", settings.CheckoutPerMinute)
-                        : ("genel", settings.GeneralPerMinute);
+                    : isPost && path.StartsWithSegments("/odeme/3d-donus")
+                        ? ("3d-donus", settings.ThreeDsCallbackPerMinute)
+                        : isPost && path.StartsWithSegments("/odeme")
+                            ? ("odeme", settings.CheckoutPerMinute)
+                            : ("genel", settings.GeneralPerMinute);
 
         return RateLimitPartition.GetFixedWindowLimiter($"{bucket}:{client}", _ => new FixedWindowRateLimiterOptions
         {

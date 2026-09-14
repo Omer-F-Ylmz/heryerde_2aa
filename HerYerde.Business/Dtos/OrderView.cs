@@ -14,4 +14,5 @@ public sealed record OrderDraft(
     string? Note,
     PaymentMethod PaymentMethod);
 
-public sealed record OrderDetail(Order Order, IReadOnlyList<OrderItem> Items);
+/// <summary>Payment yalnız kartla ödenen siparişte dolu.</summary>
+public sealed record OrderDetail(Order Order, IReadOnlyList<OrderItem> Items, Payment? Payment = null);

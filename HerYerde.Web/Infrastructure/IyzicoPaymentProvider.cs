@@ -1,0 +1,249 @@
+using System.Globalization;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using HerYerde.Business;
+using HerYerde.Business.Abstract;
+using HerYerde.Business.Dtos;
+using Microsoft.Extensions.Options;
+
+namespace HerYerde.Web.Infrastructure;
+
+/// <summary>İyzico 3D Secure (ödeme + 3DS başlat → dönüşte çekim). SDK yerine doğrudan HTTP: IYZWSv2 imzası.
+/// İstek gövdesi (kart bilgisi) hiçbir yere yazılmaz; hata olursa yalnız sağlayıcının mesajı döner.</summary>
+public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<IyzicoSettings> options) : IPaymentProvider
+{
+    private const string InitPath = "/payment/3dsecure/initialize";
+    private const string AuthPath = "/payment/3dsecure/auth";
+
+    private IyzicoSettings Settings => options.Value;
+
+    public string Name => "iyzico";
+
+    public async Task<PaymentInitResult> InitThreeDsAsync(PaymentInitRequest request, CancellationToken cancellationToken = default)
+    {
+        var order = request.Order;
+        var names = order.FullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        var address = new JsonObject
+        {
+            ["contactName"] = order.FullName,
+            ["city"] = order.City,
+            ["country"] = "Turkey",
+            ["address"] = $"{order.Address} {order.District}/{order.City}"
+        };
+
+        var basket = new JsonArray();
+        foreach (var item in request.Items.Where(i => i.UnitPrice * i.Quantity > 0m))
+        {
+            basket.Add(BasketItem(item.Id.ToString(CultureInfo.InvariantCulture), item.ProductName, item.UnitPrice * item.Quantity));
+        }
+
+        if (order.ShippingFee > 0m)
+        {
+            basket.Add(BasketItem("kargo", "Kargo", order.ShippingFee));
+        }
+
+        var body = new JsonObject
+        {
+            ["locale"] = "tr",
+            ["conversationId"] = request.ConversationId,
+            ["price"] = Price(order.Total),
+            ["paidPrice"] = Price(order.Total),
+            ["currency"] = "TRY",
+            ["installment"] = 1,
+            ["basketId"] = order.OrderNo,
+            ["paymentChannel"] = "WEB",
+            ["paymentGroup"] = "PRODUCT",
+            ["callbackUrl"] = request.CallbackUrl,
+            ["paymentCard"] = new JsonObject
+            {
+                ["cardHolderName"] = request.Card.HolderName,
+                ["cardNumber"] = request.Card.Number,
+                ["expireMonth"] = request.Card.ExpireMonth,
+                ["expireYear"] = request.Card.ExpireYear,
+                ["cvc"] = request.Card.Cvc,
+                ["registerCard"] = 0
+            },
+            ["buyer"] = new JsonObject
+            {
+                ["id"] = order.OrderNo,
+                ["name"] = names.FirstOrDefault() ?? order.FullName,
+                ["surname"] = names.Length > 1 ? names[1] : names.FirstOrDefault() ?? order.FullName,
+                ["gsmNumber"] = "+9" + order.Phone,
+                ["email"] = order.Email,
+                // TCKN toplanmıyor; İyzico bu durumda 11 haneli yer tutucuyu kabul eder.
+                ["identityNumber"] = "11111111111",
+                ["registrationAddress"] = $"{order.Address} {order.District}/{order.City}",
+                ["ip"] = request.BuyerIp,
+                ["city"] = order.City,
+                ["country"] = "Turkey"
+            },
+            ["shippingAddress"] = address.DeepClone(),
+            ["billingAddress"] = address,
+            ["basketItems"] = basket
+        };
+
+        var (json, raw) = await PostAsync(InitPath, body, cancellationToken);
+        if (json is null || Text(json, "status") != "success")
+        {
+            return new PaymentInitResult(false, null, null, ErrorMessage(json), raw);
+        }
+
+        var paymentId = Text(json, "paymentId");
+        if (Text(json, "signature") is { } signature && !Matches(signature, paymentId, Text(json, "conversationId")))
+        {
+            return new PaymentInitResult(false, paymentId, null, "Sağlayıcı yanıtının imzası doğrulanamadı.", raw);
+        }
+
+        var html = Text(json, "threeDSHtmlContent") is { } encoded
+            ? Encoding.UTF8.GetString(Convert.FromBase64String(encoded))
+            : string.Empty;
+        var form = ParseForm(html);
+        return form is null
+            ? new PaymentInitResult(false, paymentId, null, "3D doğrulama formu okunamadı.", raw)
+            // 3DS sayfası büyük ve kişisel veri taşıyabilir; saklanan yanıta girmez.
+            : new PaymentInitResult(true, paymentId, form, null, WithoutHtml(json));
+    }
+
+    public bool IsValidCallback(PaymentCallback callback)
+        => callback.Signature is { Length: > 0 } signature
+           && Matches(signature, callback.ConversationData, callback.ConversationId, callback.MdStatus, callback.PaymentId, callback.Status);
+
+    public async Task<PaymentAuthResult> CompleteThreeDsAsync(PaymentCallback callback, CancellationToken cancellationToken = default)
+    {
+        var body = new JsonObject
+        {
+            ["locale"] = "tr",
+            ["conversationId"] = callback.ConversationId,
+            ["paymentId"] = callback.PaymentId,
+            ["conversationData"] = callback.ConversationData
+        };
+
+        var (json, raw) = await PostAsync(AuthPath, body, cancellationToken);
+        if (json is null || Text(json, "status") != "success")
+        {
+            return new PaymentAuthResult(false, callback.PaymentId, 0m, ErrorMessage(json), raw);
+        }
+
+        var paidPrice = decimal.TryParse(Text(json, "paidPrice"), NumberStyles.Number, CultureInfo.InvariantCulture, out var paid) ? paid : -1m;
+        var signed = Text(json, "signature") is not { } signature || Matches(
+            signature,
+            Text(json, "paymentId"),
+            Text(json, "currency"),
+            Text(json, "basketId"),
+            Text(json, "conversationId"),
+            Trimmed(Text(json, "paidPrice")),
+            Trimmed(Text(json, "price")));
+
+        return signed
+            ? new PaymentAuthResult(true, Text(json, "paymentId"), paidPrice, null, raw)
+            : new PaymentAuthResult(false, Text(json, "paymentId"), 0m, "Sağlayıcı yanıtının imzası doğrulanamadı.", raw);
+    }
+
+    /// <summary>İyzico'nun döndürdüğü otomatik gönderilen form: action ve gizli alanlar. Satır içi script CSP'ye
+    /// takılacağı için form bizim sayfamızda yeniden kurulur, gönderimi site.js yapar.</summary>
+    public static ThreeDsForm? ParseForm(string html)
+    {
+        var form = FormPattern().Match(html);
+        if (!form.Success || !Uri.TryCreate(WebUtility.HtmlDecode(form.Groups["action"].Value), UriKind.Absolute, out var action)
+            || action.Scheme != Uri.UriSchemeHttps)
+        {
+            return null;
+        }
+
+        var fields = new Dictionary<string, string>();
+        foreach (Match input in InputPattern().Matches(html))
+        {
+            var attributes = AttributePattern().Matches(input.Value)
+                .ToDictionary(a => a.Groups["name"].Value.ToLowerInvariant(), a => WebUtility.HtmlDecode(a.Groups["value"].Value));
+            if (attributes.TryGetValue("name", out var name) && name.Length > 0)
+            {
+                fields[name] = attributes.GetValueOrDefault("value") ?? string.Empty;
+            }
+        }
+
+        return new ThreeDsForm(action.ToString(), fields);
+    }
+
+    private async Task<(JsonObject? Json, string Raw)> PostAsync(string path, JsonObject body, CancellationToken cancellationToken)
+    {
+        var payload = body.ToJsonString();
+        var randomKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture)
+                        + RandomNumberGenerator.GetHexString(8, lowercase: true);
+        var signature = Hex(HMACSHA256.HashData(
+            Encoding.UTF8.GetBytes(Settings.SecretKey),
+            Encoding.UTF8.GetBytes(randomKey + path + payload)));
+        var authorization = Convert.ToBase64String(Encoding.UTF8.GetBytes(
+            $"apiKey:{Settings.ApiKey}&randomKey:{randomKey}&signature:{signature}"));
+
+        using var message = new HttpRequestMessage(HttpMethod.Post, Settings.BaseUrl.TrimEnd('/') + path)
+        {
+            Content = new StringContent(payload, Encoding.UTF8, "application/json")
+        };
+        message.Headers.TryAddWithoutValidation("Authorization", "IYZWSv2 " + authorization);
+        message.Headers.TryAddWithoutValidation("x-iyzi-rnd", randomKey);
+
+        try
+        {
+            using var response = await http.SendAsync(message, cancellationToken);
+            var raw = await response.Content.ReadAsStringAsync(cancellationToken);
+            return (JsonNode.Parse(raw) as JsonObject, raw);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return (null, "{\"status\":\"failure\",\"errorMessage\":\"" + exception.GetType().Name + "\"}");
+        }
+    }
+
+    /// <summary>Yanıt imzası: alanlar ":" ile birleşir, gizli anahtarla HMAC-SHA256, küçük harf hex.</summary>
+    private bool Matches(string signature, params string?[] fields)
+    {
+        var expected = Hex(HMACSHA256.HashData(
+            Encoding.UTF8.GetBytes(Settings.SecretKey),
+            Encoding.UTF8.GetBytes(string.Join(':', fields.Select(f => f ?? string.Empty)))));
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.ASCII.GetBytes(expected),
+            Encoding.ASCII.GetBytes(signature.ToLowerInvariant()));
+    }
+
+    private static JsonObject BasketItem(string id, string name, decimal price) => new()
+    {
+        ["id"] = id,
+        ["name"] = name,
+        ["category1"] = "Genel",
+        ["itemType"] = "PHYSICAL",
+        ["price"] = Price(price)
+    };
+
+    private static string Price(decimal value) => value.ToString("0.00", CultureInfo.InvariantCulture);
+
+    /// <summary>İmzada tutarlar sondaki sıfırları atılmış yazılır ("10.50" → "10.5", "10.00" → "10").</summary>
+    private static string? Trimmed(string? value)
+        => value is null || !value.Contains('.') ? value : value.TrimEnd('0').TrimEnd('.');
+
+    private static string Hex(byte[] bytes) => Convert.ToHexString(bytes).ToLowerInvariant();
+
+    private static string? Text(JsonObject json, string key)
+        => json[key] is JsonValue value ? value.ToString() : null;
+
+    private static string ErrorMessage(JsonObject? json)
+        => json is not null && Text(json, "errorMessage") is { Length: > 0 } message ? message : "Sağlayıcıya ulaşılamadı.";
+
+    private static string WithoutHtml(JsonObject json)
+    {
+        json.Remove("threeDSHtmlContent");
+        return json.ToJsonString();
+    }
+
+    [GeneratedRegex("<form\\b[^>]*\\baction\\s*=\\s*[\"'](?<action>[^\"']+)[\"']", RegexOptions.IgnoreCase)]
+    private static partial Regex FormPattern();
+
+    [GeneratedRegex("<input\\b[^>]*>", RegexOptions.IgnoreCase)]
+    private static partial Regex InputPattern();
+
+    [GeneratedRegex("(?<name>[a-zA-Z-]+)\\s*=\\s*(?:\"(?<value>[^\"]*)\"|'(?<value>[^']*)')")]
+    private static partial Regex AttributePattern();
+}

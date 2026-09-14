@@ -44,9 +44,11 @@ public class NotificationManager : INotificationService
     public async Task QueueOrderPlacedAsync(
         Order order,
         IReadOnlyList<OrderItem> items,
+        bool customer = true,
+        bool store = true,
         CancellationToken cancellationToken = default)
     {
-        if (order.Email is { Length: > 0 } email)
+        if (customer && order.Email is { Length: > 0 } email)
         {
             var (subject, body) = NotificationTemplates.OrderPlaced(
                 order,
@@ -57,14 +59,14 @@ public class NotificationManager : INotificationService
             await QueueAsync(OutboxType.OrderPlaced, email, subject, body, cancellationToken);
         }
 
-        if (_notifications.StoreTo is { Length: > 0 } store)
+        if (store && _notifications.StoreTo is { Length: > 0 } storeTo)
         {
             var (subject, body) = NotificationTemplates.NewOrderForStore(
                 order,
                 items,
                 $"{_shop.BaseUrl}/admin/orders/detail/{order.Id}");
 
-            await QueueAsync(OutboxType.NewOrderForStore, store, subject, body, cancellationToken);
+            await QueueAsync(OutboxType.NewOrderForStore, storeTo, subject, body, cancellationToken);
         }
     }
 

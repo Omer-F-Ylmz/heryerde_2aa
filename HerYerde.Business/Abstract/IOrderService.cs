@@ -8,7 +8,8 @@ namespace HerYerde.Business.Abstract;
 
 public interface IOrderService
 {
-    /// <summary>Sepeti siparişe çevirir: stok düşer, sepet boşalır. Stok yetmezse 409 ile hiçbiri olmaz.</summary>
+    /// <summary>Sepeti siparişe çevirir: stok düşer, sepet boşalır. Stok yetmezse 409 ile hiçbiri olmaz.
+    /// Kartla ödemede stok ve sepet ödeme onayına (IPaymentService.CompleteAsync) kalır; Payment kaydı açılır.</summary>
     Task<(HttpStatusCode, IDataResult<Order>)> PlaceAsync(Guid cartId, OrderDraft draft, CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IDataResult<OrderDetail>)> GetByOrderNoAsync(string orderNo, CancellationToken cancellationToken = default);
