@@ -21,6 +21,8 @@ public class HerYerdeContext : DbContext
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
+    public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -230,6 +232,40 @@ public class HerYerdeContext : DbContext
             e.Property(m => m.SentAt).HasColumnName("sent_at");
             // Dağıtım turu: yalnız bekleyen ve sırası gelmiş kayıtlar okunur.
             e.HasIndex(m => new { m.Status, m.NextTryAt }).HasDatabaseName("ix_outbox_message_status_next_try_at");
+        });
+
+        modelBuilder.Entity<ContactMessage>(e =>
+        {
+            e.ToTable("contact_message");
+            e.HasKey(m => m.Id);
+            e.Property(m => m.Id).HasColumnName("id");
+            e.Property(m => m.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
+            e.Property(m => m.Contact).HasColumnName("contact").HasMaxLength(200).IsRequired();
+            e.Property(m => m.Subject).HasColumnName("subject").HasConversion<int>();
+            e.Property(m => m.Message).HasColumnName("message").HasMaxLength(2000).IsRequired();
+            e.Property(m => m.CreatedAt).HasColumnName("created_at");
+            e.Property(m => m.ReadAt).HasColumnName("read_at");
+            // Yönetim listesi: en yeniden eskiye.
+            e.HasIndex(m => m.CreatedAt).IsDescending().HasDatabaseName("ix_contact_message_created_at");
+        });
+
+        modelBuilder.Entity<ProductReview>(e =>
+        {
+            e.ToTable("product_review", t => t.HasCheckConstraint("ck_product_review_rating", "[rating] BETWEEN 1 AND 5"));
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id");
+            e.Property(r => r.ProductId).HasColumnName("product_id");
+            e.Property(r => r.Name).HasColumnName("name").HasMaxLength(60).IsRequired();
+            e.Property(r => r.Rating).HasColumnName("rating");
+            e.Property(r => r.Comment).HasColumnName("comment").HasMaxLength(1000).IsRequired();
+            e.Property(r => r.IsApproved).HasColumnName("is_approved");
+            e.Property(r => r.CreatedAt).HasColumnName("created_at");
+            e.Property(r => r.OrderNo).HasColumnName("order_no").HasMaxLength(20);
+            // Ürün sayfası: ürünün onaylı yorumları, en yeni önce.
+            e.HasIndex(r => new { r.ProductId, r.IsApproved, r.CreatedAt })
+                .IsDescending(false, false, true)
+                .HasDatabaseName("ix_product_review_product_id_is_approved_created_at");
+            e.HasOne<Product>().WithMany().HasForeignKey(r => r.ProductId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AdminAuditLog>(e =>

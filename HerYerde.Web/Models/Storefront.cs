@@ -40,7 +40,8 @@ public sealed class ProductCardVm
     public string Url => "/urun/" + Slug;
 }
 
-public sealed record TestimonialVm(string Name, string Quote);
+/// <summary>Via: alıntının kaynağı; sabit DM'lerde "Instagram DM", onaylı yorumda ürün adı.</summary>
+public sealed record TestimonialVm(string Name, string Quote, string Via = "Instagram DM");
 
 public sealed record VariantChipVm(string Label, int Stock);
 

@@ -1,0 +1,77 @@
+@using HerYerde.DataAccess.Abstract
+@using HerYerde.Web.Models
+@model List<ReviewRow>
+@{
+    ViewData["Title"] = "Yorumlar";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Müşteri</p>
+        <h1 class="display-2">Yorumlar</h1>
+        <p class="page-head__note">Onay bekleyenler önce. Onaylanan yorum ürün sayfasında yayınlanır; reddedilen kalıcı olarak silinir.</p>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <p class="empty surface-elevated">Henüz ürün yorumu yok.</p>
+}
+else
+{
+    <div class="table-wrap surface-elevated">
+        <table class="table">
+            <caption class="visually-hidden">Ürün yorumları: zaman, ürün, yorumcu, puan, yorum ve durum</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Zaman</th>
+                    <th scope="col">Ürün</th>
+                    <th scope="col">Yorumcu</th>
+                    <th scope="col" class="table__num">Puan</th>
+                    <th scope="col">Yorum</th>
+                    <th scope="col">Durum</th>
+                    <th scope="col"><span class="visually-hidden">İşlem</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var row in Model)
+            {
+                var review = row.Review;
+                <tr>
+                    <th scope="row"><span class="cell-mono">@IstanbulTime.Format(review.CreatedAt)</span></th>
+                    <td><a class="footer-link" href="/urun/@row.ProductSlug">@row.ProductName</a></td>
+                    <td>
+                        <div class="cell-product">
+                            <span>@review.Name</span>
+                            @if (review.OrderNo is { } orderNo)
+                            {
+                                <span class="cell-mono">Doğrulanmış alıcı · @orderNo</span>
+                            }
+                        </div>
+                    </td>
+                    <td class="table__num">@review.Rating / 5</td>
+                    <td class="cell-text">@review.Comment</td>
+                    <td>
+                        <span class="tag @(review.IsApproved ? "tag--live" : "tag--draft")">@(review.IsApproved ? "Yayında" : "Onay bekliyor")</span>
+                    </td>
+                    <td>
+                        <div class="table__actions">
+                            @if (!review.IsApproved)
+                            {
+                                <form action="/admin/yorumlar/@review.Id/onayla" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn btn--primary btn--sm" type="submit">Onayla</button>
+                                </form>
+                            }
+                            <form action="/admin/yorumlar/@review.Id/reddet" method="post">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn--danger btn--sm" type="submit">@(review.IsApproved ? "Kaldır" : "Reddet")</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

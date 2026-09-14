@@ -1,0 +1,70 @@
+@using HerYerde.Web.Models
+@model List<ContactMessage>
+@{
+    ViewData["Title"] = "Mesajlar";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Müşteri</p>
+        <h1 class="display-2">Mesajlar</h1>
+        <p class="page-head__note">İletişim formundan gelen son 200 mesaj, en yeniden eskiye. Her mesaj mağaza e-postasına da gider.</p>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <p class="empty surface-elevated">Henüz iletişim formundan mesaj gelmedi.</p>
+}
+else
+{
+    <div class="table-wrap surface-elevated">
+        <table class="table">
+            <caption class="visually-hidden">İletişim mesajları: zaman, gönderen, konu, mesaj ve durum</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Zaman</th>
+                    <th scope="col">Gönderen</th>
+                    <th scope="col">Konu</th>
+                    <th scope="col">Mesaj</th>
+                    <th scope="col">Durum</th>
+                    <th scope="col"><span class="visually-hidden">İşlem</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var message in Model)
+            {
+                <tr>
+                    <th scope="row"><span class="cell-mono">@IstanbulTime.Format(message.CreatedAt)</span></th>
+                    <td>
+                        <div class="cell-product">
+                            <span>@message.Name</span>
+                            <span class="cell-mono">@message.Contact</span>
+                        </div>
+                    </td>
+                    <td>@ContactLabels.Subject(message.Subject)</td>
+                    <td class="cell-text">@message.Message</td>
+                    <td>
+                        <span class="tag @(message.ReadAt is null ? "tag--live" : "tag--draft")">@(message.ReadAt is null ? "Yeni" : "Okundu")</span>
+                    </td>
+                    <td>
+                        <div class="table__actions">
+                            @if (message.ReadAt is null)
+                            {
+                                <form action="/admin/mesajlar/@message.Id/okundu" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn btn--ghost btn--sm" type="submit">Okundu</button>
+                                </form>
+                            }
+                            <form action="/admin/mesajlar/@message.Id/sil" method="post">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn--danger btn--sm" type="submit">Sil</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

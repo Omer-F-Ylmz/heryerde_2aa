@@ -17,6 +17,9 @@ public interface INotificationService
     /// <summary>Sipariş kargoya verildi: yalnız müşteriye. Kaydetmez.</summary>
     Task QueueOrderShippedAsync(Order order, CancellationToken cancellationToken = default);
 
+    /// <summary>İletişim formu mesajı: yalnız mağazaya; StoreTo boşsa atlanır. Kaydetmez.</summary>
+    Task QueueContactMessageAsync(ContactMessage message, CancellationToken cancellationToken = default);
+
     /// <summary>Sırası gelen kayıtları gönderir; hata denemeyi artırır, üçüncüde kayıt başarısız olur.</summary>
     Task<NotificationDispatch> DispatchAsync(CancellationToken cancellationToken = default);
 }

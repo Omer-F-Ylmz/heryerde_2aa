@@ -13,6 +13,8 @@ Son sipariş anahtarı | `heryerde.lastorder` çerezi | Teşekkür sayfasının 
 CSRF anahtarı | `.AspNetCore.Antiforgery.*` çerezi | Form güvenliği | Tarayıcı oturumu | Tarayıcı kapanınca
 Yönetici hesabı: e-posta, parola özeti, hatalı giriş/kilit | `admin_user` | Yönetim paneline erişim | Hesap süresince | Elle
 Yönetici oturumu | `heryerde.admin` çerezi | Yönetim oturumu | 8 saat (kayar) | Çıkışta / süre dolunca
+İletişim formu mesajı: ad soyad, e-posta ya da telefon, konu, mesaj | `contact_message` + mağazaya giden e-posta (`outbox_message`) | Müşteri sorusuna yanıt | [MÜŞTERİ: saklama süresi] | Yönetim → Mesajlar → "Sil"; denetim izi yazılır. IP saklanmaz; bot tuzağına takılan gönderim hiç kaydedilmez
+Ürün yorumu: görünen ad, puan, yorum, isteğe bağlı sipariş numarası | `product_review` | Ürün değerlendirmesinin yayını | Ürün kaydıyla birlikte | Yönetim → Yorumlar → "Reddet/Kaldır" kaydı siler; sipariş numarası yalnız o ürünü içeren gerçek siparişle eşleşirse yazılır. IP saklanmaz
 Denetim izi: yönetici, işlem, kayıt, IP, zaman | `admin_audit_log` | Yönetim işlemlerinde hesap verebilirlik | 1 yıl | `AuditLogCleanupHostedService` gecede bir 365 günden eskiyi siler
 Uygulama logu: yöntem, yol (sorgu dizesi yok), durum, süre, hata | `logs/heryerde-*.log` (konteynerde `/app/logs`) + konsol | İşletim ve hata ayıklama | 14 gün | Serilog `retainedFileCountLimit: 14`; `PiiMaskEnricher` telefon/e-posta/adresi maskeler — log PII'sız
 

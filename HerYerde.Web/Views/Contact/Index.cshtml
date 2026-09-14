@@ -1,0 +1,96 @@
+@using HerYerde.Business.Rules
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@model ContactPageVm
+@{
+    ViewData["Title"] = "İletişim";
+    ViewData["Description"] = "HerYerde'ye WhatsApp, Instagram ya da iletişim formuyla ulaşın: sipariş, ürün ve iade soruları.";
+    ViewData["Canonical"] = "/iletisim";
+    var form = Model.Form;
+}
+@* Metinler [ÖNERİ] taslaktır; [MÜŞTERİ: …] alanlarını mağaza sahibi doldurur. *@
+
+<div class="container section contact">
+    <header class="contact__head">
+        <p class="eyebrow">İletişim</p>
+        <h1 class="display-1 h-mark">Yazın, dönelim.</h1>
+        <p class="lead">En hızlı yol WhatsApp. Uzun bir sorunuz ya da iade talebiniz varsa formu doldurun; mesajınız doğrudan mağazaya düşer.</p>
+    </header>
+
+    <aside class="contact__channels surface-elevated" aria-labelledby="channels-title">
+        <h2 id="channels-title" class="heading-3">Bize ulaşın</h2>
+        <a class="btn btn--cta btn--block" href="@Model.WhatsAppUrl" rel="noopener">
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+            WhatsApp'tan yaz
+        </a>
+        <dl class="contact__list">
+            <div>
+                <dt>Instagram</dt>
+                <dd><a href="@Seo.InstagramUrl" rel="noopener">@@heryerde_2aa</a></dd>
+            </div>
+            <div>
+                <dt>E-posta</dt>
+                <dd>[MÜŞTERİ: e-posta adresi]</dd>
+            </div>
+            <div>
+                <dt>Çalışma saatleri</dt>
+                <dd>[MÜŞTERİ: çalışma saatleri]</dd>
+            </div>
+            <div>
+                <dt>Adres</dt>
+                <dd>[MÜŞTERİ: açık adres]</dd>
+            </div>
+        </dl>
+    </aside>
+
+    <section class="contact__form form-card surface-elevated" aria-labelledby="form-title">
+        <h2 id="form-title" class="heading-3">İletişim formu</h2>
+        @if (Model.Sent)
+        {
+            <p class="form-alert form-alert--notice" role="status">Mesajınız bize ulaştı. Yazdığınız e-posta ya da telefondan size döneceğiz.</p>
+            <a class="btn btn--outline" href="/iletisim">Yeni mesaj yaz</a>
+        }
+        else
+        {
+            <form method="post" action="/iletisim">
+                @Html.AntiForgeryToken()
+                <div class="field">
+                    <label class="field__label" for="Name">Ad soyad</label>
+                    <input class="field__input" id="Name" name="Name" value="@form.Name" maxlength="120" autocomplete="name" required
+                           aria-describedby="Name-error" aria-invalid="@(ViewData.ModelState["Name"]?.Errors.Count > 0 ? "true" : null)" />
+                    <span class="field__error" id="Name-error">@ViewData.ModelState["Name"]?.Errors.FirstOrDefault()?.ErrorMessage</span>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label class="field__label" for="Contact">E-posta ya da telefon</label>
+                        <input class="field__input" id="Contact" name="Contact" value="@form.Contact" maxlength="200" required
+                               aria-describedby="Contact-error" aria-invalid="@(ViewData.ModelState["Contact"]?.Errors.Count > 0 ? "true" : null)" />
+                        <span class="field__error" id="Contact-error">@ViewData.ModelState["Contact"]?.Errors.FirstOrDefault()?.ErrorMessage</span>
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="Subject">Konu</label>
+                        <select class="field__input" id="Subject" name="Subject">
+                            @foreach (var subject in Enum.GetValues<ContactSubject>())
+                            {
+                                <option value="@((int)subject)" selected="@(form.Subject == subject)">@ContactLabels.Subject(subject)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field__label" for="Message">Mesajınız</label>
+                    <textarea class="field__input field__input--area" id="Message" name="Message" rows="5" maxlength="2000" required
+                              aria-describedby="Message-error" aria-invalid="@(ViewData.ModelState["Message"]?.Errors.Count > 0 ? "true" : null)">@form.Message</textarea>
+                    <span class="field__error" id="Message-error">@ViewData.ModelState["Message"]?.Errors.FirstOrDefault()?.ErrorMessage</span>
+                </div>
+                @* Bot tuzağı: ekran dışında, sekmeyle ulaşılmaz; insan doldurmaz. *@
+                <div class="trap" aria-hidden="true">
+                    <label for="Website">Bu alanı boş bırakın</label>
+                    <input id="Website" name="Website" type="text" tabindex="-1" autocomplete="off" />
+                </div>
+                <p class="field__hint">Bilgilerinizi yalnız bu mesaja yanıt vermek için kullanırız. <a href="/yasal/kvkk-aydinlatma">KVKK aydınlatma metni</a></p>
+                <button class="btn btn--primary btn--lg" type="submit">Mesajı gönder</button>
+            </form>
+        }
+    </section>
+</div>

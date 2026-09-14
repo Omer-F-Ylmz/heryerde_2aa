@@ -1,0 +1,47 @@
+@using HerYerde.Web.Models
+@model IReadOnlyList<FaqGroup>
+@{
+    ViewData["Title"] = "Sık sorulan sorular";
+    ViewData["Description"] = "Sipariş, ödeme, kargo, iade ve ürünler hakkında sık sorulan sorular ve cevapları.";
+    ViewData["Canonical"] = "/sss";
+    ViewData["JsonLd"] = new[] { Seo.FaqJsonLd(Model) };
+    var anchors = Model.Select((group, index) => (Group: group, Id: "sss-" + (index + 1))).ToList();
+}
+
+<div class="container section">
+    <header>
+        <p class="eyebrow">Yardım</p>
+        <h1 class="display-2 h-mark">Sık sorulan sorular</h1>
+        <p class="lead faq__lead">Aradığınız cevap burada yoksa <a href="/iletisim">bize yazın</a>.</p>
+    </header>
+
+    <div class="faq">
+        <nav class="faq__nav" aria-labelledby="faq-nav-title">
+            <h2 class="legal__toc-title" id="faq-nav-title">Konular</h2>
+            <ol>
+                @foreach (var (group, id) in anchors)
+                {
+                    <li><a class="legal__toc-link" href="#@id">@group.Category</a></li>
+                }
+            </ol>
+        </nav>
+        <div class="faq__groups">
+            @foreach (var (group, id) in anchors)
+            {
+                <section class="faq__group" aria-labelledby="@id">
+                    <h2 class="faq__category" id="@id">@group.Category</h2>
+                    @foreach (var item in group.Items)
+                    {
+                        <details class="faq__item">
+                            <summary class="faq__question">
+                                <span>@item.Question</span>
+                                <svg class="icon faq__toggle" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                            </summary>
+                            <p class="faq__answer">@item.Answer</p>
+                        </details>
+                    }
+                </section>
+            }
+        </div>
+    </div>
+</div>

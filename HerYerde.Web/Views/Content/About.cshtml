@@ -1,0 +1,82 @@
+@using HerYerde.Web.Models
+@model AboutPageVm
+@{
+    ViewData["Title"] = "Hakkımızda";
+    ViewData["Description"] = "HerYerde'nin hikâyesi: Instagram'dan doğan ev ve sofra mağazası. Kapıda ödeme, kargo takibi ve 14 gün iade.";
+    ViewData["Canonical"] = "/hakkimizda";
+}
+@* Metinler [ÖNERİ] taslaktır; [MÜŞTERİ: …] alanlarını mağaza sahibi doldurup onaylar. *@
+
+<section class="container section about" aria-labelledby="about-title">
+    <div class="about__story">
+        <p class="eyebrow">Hakkımızda</p>
+        <h1 id="about-title" class="display-1 h-mark">Instagram'da başladı, sofranıza kadar geldi.</h1>
+        <p class="lead">HerYerde, Instagram'da paylaştığımız ev ve sofra ürünleriyle başladı. Takipçilerimiz mesajla sordukça raflarımız büyüdü; bugün mutfaktan dekora seçtiğimiz parçaları bu sitede de bir araya getiriyoruz.</p>
+        <p class="about__text">Her ürünü fotoğraflayıp tek tek paylaşıyor, sorularınızı yine aynı samimiyetle WhatsApp'tan yanıtlıyoruz. Sipariş verirken aklınıza takılan her şeyi bize yazabilirsiniz.</p>
+    </div>
+
+    <aside class="about__facts surface-elevated" aria-labelledby="facts-title">
+        <h2 id="facts-title" class="about__facts-title">Rakamlarla HerYerde</h2>
+        <dl class="about__figures">
+            <div>
+                <dt>Kuruluş</dt>
+                <dd>[MÜŞTERİ: kuruluş yılı]</dd>
+            </div>
+            <div>
+                <dt>Gönderilen sipariş</dt>
+                <dd>[MÜŞTERİ: sipariş sayısı]</dd>
+            </div>
+            <div>
+                <dt>Instagram takipçisi</dt>
+                <dd>[MÜŞTERİ: takipçi sayısı]</dd>
+            </div>
+        </dl>
+        <a class="footer-link" href="@Seo.InstagramUrl" rel="noopener">
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+            @@heryerde_2aa
+        </a>
+    </aside>
+</section>
+
+<section class="container about-trust" aria-labelledby="trust-title">
+    <h2 id="trust-title" class="display-2 h-mark">Neden gönül rahatlığıyla sipariş verebilirsiniz?</h2>
+    <ul class="about-trust__list">
+        <li class="about-trust__item">
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+            <div>
+                <h3 class="heading-3">Kapıda ödeme</h3>
+                <p>Ürün elinize geçmeden ödeme yapmazsınız: kurye geldiğinde nakit ya da kartla ödersiniz. İsterseniz havale/EFT de var.</p>
+            </div>
+        </li>
+        <li class="about-trust__item">
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+            <div>
+                <h3 class="heading-3">Takip edilebilir kargo</h3>
+                <p>Siparişinizi telefonla teyit edip kargoya veriyoruz; kargo firması ve takip numarası sipariş sayfanızda görünür.</p>
+            </div>
+        </li>
+        <li class="about-trust__item">
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            <div>
+                <h3 class="heading-3">14 gün iade</h3>
+                <p>Teslim aldığınız günden itibaren 14 gün içinde gerekçe göstermeden iade edebilirsiniz. <a href="/yasal/teslimat-ve-iade">Teslimat ve iade koşulları</a></p>
+            </div>
+        </li>
+    </ul>
+</section>
+
+<section class="container section" aria-labelledby="cta-title">
+    <div class="cta-band">
+        <div>
+            <h2 id="cta-title" class="display-2">Bir sorunuz mu var?</h2>
+            <p class="cta-band__text">Ürün, ölçü ya da sipariş; WhatsApp'tan yazın, aynı sohbetten yanıtlayalım.</p>
+        </div>
+        <div class="cta-band__actions">
+            <a class="btn btn--cta btn--lg" href="@Model.WhatsAppUrl" rel="noopener">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                WhatsApp'tan yaz
+            </a>
+            <a class="cta-band__link" href="/sss">Sık sorulan sorulara bakın</a>
+        </div>
+    </div>
+</section>

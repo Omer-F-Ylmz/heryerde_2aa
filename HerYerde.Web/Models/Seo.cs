@@ -47,7 +47,14 @@ public static class Seo
         ["sameAs"] = new[] { InstagramUrl }
     });
 
-    public static string ProductJsonLd(string baseUrl, Product product, decimal price, bool soldOut, IEnumerable<string> images)
+    /// <summary><paramref name="rating"/> yalnız onaylı yorum varsa verilir; yoksa aggregateRating yazılmaz.</summary>
+    public static string ProductJsonLd(
+        string baseUrl,
+        Product product,
+        decimal price,
+        bool soldOut,
+        IEnumerable<string> images,
+        RatingSummary? rating = null)
     {
         var url = Absolute(baseUrl, "/urun/" + product.Slug);
         var data = new Dictionary<string, object?>
@@ -74,8 +81,37 @@ public static class Seo
             ["url"] = url
         };
 
+        if (rating is { Count: > 0 })
+        {
+            data["aggregateRating"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "AggregateRating",
+                ["ratingValue"] = rating.Average,
+                ["reviewCount"] = rating.Count,
+                ["bestRating"] = 5,
+                ["worstRating"] = 1
+            };
+        }
+
         return Serialize(data);
     }
+
+    /// <summary>SSS sayfası: her soru bir Question, cevabı acceptedAnswer; sıra sayfadakiyle aynı.</summary>
+    public static string FaqJsonLd(IEnumerable<FaqGroup> groups) => Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "FAQPage",
+        ["mainEntity"] = groups.SelectMany(g => g.Items).Select(item => new Dictionary<string, object?>
+        {
+            ["@type"] = "Question",
+            ["name"] = item.Question,
+            ["acceptedAnswer"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "Answer",
+                ["text"] = item.Answer
+            }
+        }).ToList()
+    });
 
     /// <summary>Ana sayfa → alan → alt kategori → ürün; bağlantısı olmayan ara halka (giyim) atlanır.</summary>
     public static string ProductBreadcrumbJsonLd(string baseUrl, ProductPageVm page)

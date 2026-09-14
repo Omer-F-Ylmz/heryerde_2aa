@@ -91,6 +91,15 @@
                 @@heryerde_2aa
             </a>
         </div>
+        <nav class="store-footer__corporate" aria-label="Kurumsal">
+            <h2 class="store-footer__title">Kurumsal</h2>
+            <ul class="store-footer__list store-footer__list--single">
+                @foreach (var content in ContentPages.All)
+                {
+                    <li><a class="footer-link" href="@content.Path">@content.Title</a></li>
+                }
+            </ul>
+        </nav>
         <nav class="store-footer__legal" aria-label="Yasal">
             <h2 class="store-footer__title">Yasal</h2>
             <ul class="store-footer__list">

@@ -29,4 +29,5 @@ public static class OutboxType
     public const string OrderPlaced = "siparis-alindi";
     public const string OrderShipped = "siparis-kargoda";
     public const string NewOrderForStore = "yeni-siparis";
+    public const string ContactMessage = "iletisim-mesaji";
 }

@@ -23,9 +23,10 @@ public sealed class PerfQueryTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
+    /// <summary>Kampanya, yeni gelenler, görseller ve (D9) onaylı yorum alıntıları: dört sorgu.</summary>
     [Fact]
-    public async Task Ana_sayfa_en_cok_uc_sorgu_atar()
-        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/"), 1, 3);
+    public async Task Ana_sayfa_en_cok_dort_sorgu_atar()
+        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/"), 1, 4);
 
     [Fact]
     public async Task Ev_listesi_en_cok_uc_sorgu_atar()

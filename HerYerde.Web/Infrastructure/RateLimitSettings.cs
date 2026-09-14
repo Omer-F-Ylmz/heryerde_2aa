@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace HerYerde.Web.Infrastructure;
 
-/// <summary>Dakikalık istek üst sınırları; hepsi IP başına sayılır.</summary>
+/// <summary>İstek üst sınırları; hepsi IP başına sayılır. Yorum dışındakiler dakikalık.</summary>
 public sealed class RateLimitSettings
 {
     public int AdminLoginPerMinute { get; set; } = 10;
@@ -19,12 +19,18 @@ public sealed class RateLimitSettings
     /// <summary>Görsel yükleme sunucuda işleme (yeniden boyutlama) demek; ayrı ve dar tutulur.</summary>
     public int UploadPerMinute { get; set; } = 20;
 
+    /// <summary>İletişim formu gönderimi.</summary>
+    public int ContactPerMinute { get; set; } = 5;
+
+    /// <summary>Ürün yorumu gönderimi; günlük pencere.</summary>
+    public int ReviewPerDay { get; set; } = 3;
+
     public int GeneralPerMinute { get; set; } = 300;
 }
 
 public static class RateLimitPolicy
 {
-    /// <summary>Yol ve yönteme göre tek bir bölüm seçer: yönetici girişi, görsel yükleme, sepet, 3D dönüşü, ödeme ya da genel.
+    /// <summary>Yol ve yönteme göre tek bir bölüm seçer: yönetici girişi, görsel yükleme, sepet, 3D dönüşü, ödeme, iletişim, yorum ya da genel.
     /// Hata sayfası yeniden çalıştırıldığında sınır uygulanmaz, yoksa 429 sayfası da 429 olurdu.</summary>
     public static RateLimitPartition<string> Select(HttpContext context)
     {
@@ -48,13 +54,21 @@ public static class RateLimitPolicy
                         ? ("3d-donus", settings.ThreeDsCallbackPerMinute)
                         : isPost && path.StartsWithSegments("/odeme")
                             ? ("odeme", settings.CheckoutPerMinute)
-                            : ("genel", settings.GeneralPerMinute);
+                            : isPost && path.StartsWithSegments("/iletisim")
+                                ? ("iletisim", settings.ContactPerMinute)
+                                : isPost && IsReviewPost(path)
+                                    ? ("yorum", settings.ReviewPerDay)
+                                    : ("genel", settings.GeneralPerMinute);
 
         return RateLimitPartition.GetFixedWindowLimiter($"{bucket}:{client}", _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = permit,
-            Window = TimeSpan.FromMinutes(1),
+            Window = bucket == "yorum" ? TimeSpan.FromDays(1) : TimeSpan.FromMinutes(1),
             QueueLimit = 0
         });
     }
+
+    /// <summary>/urun/{slug}/yorum</summary>
+    private static bool IsReviewPost(PathString path)
+        => path.StartsWithSegments("/urun") && path.Value!.EndsWith("/yorum", StringComparison.OrdinalIgnoreCase);
 }

@@ -69,6 +69,18 @@ public static class NotificationTemplates
         return ($"Yeni sipariş · {order.OrderNo}", Page(body.ToString()));
     }
 
+    /// <summary>Müşterinin yazdığı her alan kaçışlanır; mesajdaki satır sonları korunur.</summary>
+    public static (string Subject, string Body) ContactMessage(ContactMessage message, string adminUrl)
+    {
+        var subject = ContactLabels.Subject(message.Subject);
+        var body = new StringBuilder();
+        body.Append(Heading("İletişim formu", $"{subject} · {Encode(message.Name)}"));
+        body.Append(Row("İletişim", Encode(message.Contact)));
+        body.Append(Paragraph(Encode(message.Message).ReplaceLineEndings("<br />")));
+        body.Append(Button(adminUrl, "Mesajları yönetimde aç"));
+        return ($"İletişim formu · {subject} · {message.Name}", Page(body.ToString()));
+    }
+
     private static string Lines(IReadOnlyList<OrderItem> items, Order order)
     {
         var rows = new StringBuilder();

@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <Content Include="..\docs\testimonials.json" Link="testimonials.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\docs\sss.md" Link="sss.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

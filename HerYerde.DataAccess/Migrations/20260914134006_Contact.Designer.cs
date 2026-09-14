@@ -4,6 +4,7 @@ using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HerYerde.DataAccess.Migrations
 {
     [DbContext(typeof(HerYerdeContext))]
-    partial class HerYerdeContextModelSnapshot : ModelSnapshot
+    [Migration("20260914134006_Contact")]
+    partial class Contact
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -711,60 +714,6 @@ namespace HerYerde.DataAccess.Migrations
                     b.ToTable("product_image", (string)null);
                 });
 
-            modelBuilder.Entity("HerYerde.Entities.Concrete.ProductReview", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Comment")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
-                        .HasColumnName("comment");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<bool>("IsApproved")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_approved");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("OrderNo")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("order_no");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int")
-                        .HasColumnName("product_id");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int")
-                        .HasColumnName("rating");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId", "IsApproved", "CreatedAt")
-                        .IsDescending(false, false, true)
-                        .HasDatabaseName("ix_product_review_product_id_is_approved_created_at");
-
-                    b.ToTable("product_review", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_product_review_rating", "[rating] BETWEEN 1 AND 5");
-                        });
-                });
-
             modelBuilder.Entity("HerYerde.Entities.Concrete.ProductVariant", b =>
                 {
                     b.Property<int>("Id")
@@ -880,15 +829,6 @@ namespace HerYerde.DataAccess.Migrations
                 });
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.ProductImage", b =>
-                {
-                    b.HasOne("HerYerde.Entities.Concrete.Product", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("HerYerde.Entities.Concrete.ProductReview", b =>
                 {
                     b.HasOne("HerYerde.Entities.Concrete.Product", null)
                         .WithMany()

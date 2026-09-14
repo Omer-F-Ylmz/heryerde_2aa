@@ -7,9 +7,18 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HerYerde.Web.Controllers;
 
-/// <summary>Vitrin: ana sayfa, /ev ve /ortu kategorileri, /ara, /urun/{slug}.</summary>
-public class StoreController(IProductService productService, ICategoryService categoryService, IConfiguration configuration) : Controller
+/// <summary>Vitrin: ana sayfa, /ev ve /ortu kategorileri, /ara, /urun/{slug} ve ürün yorumu gönderimi.</summary>
+public class StoreController(
+    IProductService productService,
+    ICategoryService categoryService,
+    IReviewService reviewService,
+    IConfiguration configuration) : Controller
 {
+    private const string ReviewNoticeKey = "YorumBildirimi";
+
+    /// <summary>Ana sayfadaki alıntı sayısı.</summary>
+    private const int TestimonialCount = 4;
+
     private string WhatsAppBase => configuration["Shop:WhatsApp"] ?? "https://wa.me/";
 
     [HttpGet("")]
@@ -31,13 +40,19 @@ public class StoreController(IProductService productService, ICategoryService ca
         var (_, images) = await productService.GetImagesForAsync(ids, cancellationToken);
         var heroImage = hero is null ? null : images.Data!.Where(i => i.ProductId == hero.Id).OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).FirstOrDefault()?.Url;
 
+        // Onaylı yorum varsa gerçek yorumlar, yoksa sabit DM alıntıları.
+        var (_, reviews) = await reviewService.GetLatestApprovedAsync(TestimonialCount, cancellationToken);
+        IReadOnlyList<TestimonialVm> testimonials = reviews.Data!.Count > 0
+            ? reviews.Data!.Select(r => new TestimonialVm(r.Review.Name, r.Review.Comment, r.ProductName + " yorumu")).ToList()
+            : TestimonialSource.Load();
+
         return View(new HomeVm(
             hero,
             heroImage,
             hero is null ? null : StoreCatalog.PlaceholderIcon(heroItem.Data!.CategorySlug),
             hero is null ? null : StoreCatalog.WhatsAppUrl(WhatsAppBase, hero.Name),
             Cards(arrivals.Data!.Items, images.Data!, now),
-            TestimonialSource.Load()));
+            testimonials));
     }
 
     [HttpGet("ev")]
@@ -204,7 +219,20 @@ public class StoreController(IProductService productService, ICategoryService ca
     [HttpGet("urun/{slug}")]
     public async Task<IActionResult> Product(string slug, CancellationToken cancellationToken)
     {
-        var now = DateTime.UtcNow;
+        var (status, found) = await productService.GetActiveBySlugAsync(slug, cancellationToken);
+        if (status != System.Net.HttpStatusCode.OK)
+        {
+            return NotFound();
+        }
+
+        return await ProductViewAsync(found.Data!, new ReviewFormViewModel(), TempData[ReviewNoticeKey] as string, cancellationToken);
+    }
+
+    /// <summary>Yorum onaysız kaydedilir; başarıda 303 ile ürün sayfasına bildirimle dönülür, hatalı formda sayfa 400 ile
+    /// alan hatalarını gösterir.</summary>
+    [HttpPost("urun/{slug}/yorum")]
+    public async Task<IActionResult> Review(string slug, ReviewFormViewModel form, CancellationToken cancellationToken)
+    {
         var (status, found) = await productService.GetActiveBySlugAsync(slug, cancellationToken);
         if (status != System.Net.HttpStatusCode.OK)
         {
@@ -212,6 +240,38 @@ public class StoreController(IProductService productService, ICategoryService ca
         }
 
         var product = found.Data!;
+        if (ModelState.IsValid)
+        {
+            var (added, result) = await reviewService.AddAsync(new ProductReview
+            {
+                ProductId = product.Id,
+                Name = form.Name.Trim(),
+                Rating = form.Rating,
+                Comment = form.Comment.Trim(),
+                OrderNo = form.OrderNo
+            }, cancellationToken);
+
+            if (added == System.Net.HttpStatusCode.Created)
+            {
+                TempData[ReviewNoticeKey] = result.Message;
+                Response.Headers.Location = $"/urun/{product.Slug}#yorumlar";
+                return StatusCode(StatusCodes.Status303SeeOther);
+            }
+
+            ModelState.AddModelError(nameof(form.Rating), result.Message);
+        }
+
+        Response.StatusCode = StatusCodes.Status400BadRequest;
+        return await ProductViewAsync(product, form, null, cancellationToken);
+    }
+
+    private async Task<IActionResult> ProductViewAsync(
+        Product product,
+        ReviewFormViewModel reviewForm,
+        string? reviewNotice,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
         var (_, categories) = await categoryService.GetAllAsync(cancellationToken);
         var category = categories.Data!.FirstOrDefault(c => c.Id == product.CategoryId);
         var root = category?.ParentId is { } parentId ? categories.Data!.FirstOrDefault(c => c.Id == parentId) : category;
@@ -243,7 +303,9 @@ public class StoreController(IProductService productService, ICategoryService ca
             ? variants.Count > 0 && variants.All(v => v.Stock == 0)
             : product.Stock == 0;
 
-        return View(new ProductPageVm(
+        var (_, reviews) = await reviewService.GetApprovedAsync(product.Id, cancellationToken);
+
+        return View("Product", new ProductPageVm(
             product,
             rootName,
             rootUrl,
@@ -256,7 +318,8 @@ public class StoreController(IProductService productService, ICategoryService ca
             isClothing ? StoreCatalog.Picker(variants) : new VariantPickerVm([], []),
             StoreCatalog.IsCampaignActive(product, now),
             StoreCatalog.WhatsAppUrl(WhatsAppBase, product.Name),
-            Cards(similar.Data!.Items, images.Data!, now)));
+            Cards(similar.Data!.Items, images.Data!, now),
+            new ReviewSectionVm(product.Slug, reviews.Data!, RatingSummary.From(reviews.Data!), reviewForm, reviewNotice)));
     }
 
     private static int TotalPages(int total)

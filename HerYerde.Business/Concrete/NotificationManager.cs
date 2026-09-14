@@ -84,6 +84,17 @@ public class NotificationManager : INotificationService
         await QueueAsync(OutboxType.OrderShipped, email, subject, body, cancellationToken);
     }
 
+    public async Task QueueContactMessageAsync(ContactMessage message, CancellationToken cancellationToken = default)
+    {
+        if (_notifications.StoreTo is not { Length: > 0 } storeTo)
+        {
+            return;
+        }
+
+        var (subject, body) = NotificationTemplates.ContactMessage(message, $"{_shop.BaseUrl}/admin/mesajlar");
+        await QueueAsync(OutboxType.ContactMessage, storeTo, subject, body, cancellationToken);
+    }
+
     public async Task<NotificationDispatch> DispatchAsync(CancellationToken cancellationToken = default)
     {
         var now = _clock.GetUtcNow().UtcDateTime;

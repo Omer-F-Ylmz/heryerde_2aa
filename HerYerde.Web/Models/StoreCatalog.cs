@@ -46,7 +46,10 @@ public static class StoreCatalog
         => IsCampaignActive(product, now) ? product.CampaignPrice!.Value : product.Price;
 
     public static string WhatsAppUrl(string baseUrl, string productName)
-        => baseUrl + "?text=" + Uri.EscapeDataString($"Merhaba, {productName} için sipariş vermek istiyorum.");
+        => WhatsAppMessageUrl(baseUrl, $"Merhaba, {productName} için sipariş vermek istiyorum.");
+
+    public static string WhatsAppMessageUrl(string baseUrl, string message)
+        => baseUrl + "?text=" + Uri.EscapeDataString(message);
 
     /// <summary>Kırıntının kökü: vitrindeki ad ve bağlantı. Giyim kökünün veritabanı slug'ı "giyim" kalır,
     /// vitrinde "Örtü &amp; Eşarp" adıyla /ortu yolunda gezilir.</summary>
@@ -200,7 +203,8 @@ public sealed record ProductPageVm(
     VariantPickerVm Picker,
     bool CampaignActive,
     string WhatsAppUrl,
-    IReadOnlyList<ProductCardVm> Similar)
+    IReadOnlyList<ProductCardVm> Similar,
+    ReviewSectionVm Reviews)
 {
     public string? PlaceholderIcon => StoreCatalog.PlaceholderIcon(CategorySlug);
 

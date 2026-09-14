@@ -1989,11 +1989,19 @@
   }
 
   @media (min-width: 768px) {
-    /* Yasal sütun sağda iki satırı kaplar; sosyal bağlantılar ve telif solda alt alta */
+    /* Kurumsal ve Yasal sütunları sağda iki satırı kaplar; sosyal bağlantılar ve telif solda alt alta */
+    .store-footer__corporate,
     .store-footer__legal {
-      grid-column: 2;
       grid-row: 1 / span 2;
       align-self: start;
+    }
+
+    .store-footer__corporate {
+      grid-column: 2;
+    }
+
+    .store-footer__legal {
+      grid-column: 3;
     }
 
     .store-footer__list {
@@ -2213,7 +2221,8 @@
     }
 
     .store-footer {
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
+      column-gap: 48px;
       align-items: center;
       padding: 32px;
     }
@@ -3215,6 +3224,551 @@
     .shipment {
       grid-template-columns: 1fr 1fr auto;
       align-items: end;
+    }
+  }
+}
+
+@layer components {
+  /* --- D9: kurumsal sayfalar (Hakkımızda, İletişim, SSS) ve ürün yorumları --- */
+
+  /* Altbilgi Kurumsal sütunu tek kolon kalır */
+  .store-footer__list--single,
+  .store-footer__corporate .store-footer__list {
+    grid-template-columns: 1fr;
+  }
+
+  /* Metin içi bağlantı: kurumsal sayfalar ve ürün sayfası yardım satırı */
+  .about-trust a,
+  .faq__lead a,
+  .contact .field__hint a,
+  .product__help a,
+  .cta-band__link {
+    color: var(--c-brand-700);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 240ms var(--ease);
+  }
+
+  .about-trust a:hover,
+  .faq__lead a:hover,
+  .contact .field__hint a:hover,
+  .product__help a:hover,
+  .cta-band__link:hover {
+    color: var(--c-brand-900);
+  }
+
+  .about-trust a:focus-visible,
+  .faq__lead a:focus-visible,
+  .contact .field__hint a:focus-visible,
+  .product__help a:focus-visible,
+  .cta-band__link:focus-visible,
+  .contact__list a:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .about-trust a:active,
+  .faq__lead a:active,
+  .contact .field__hint a:active,
+  .product__help a:active,
+  .cta-band__link:active,
+  .contact__list a:active {
+    color: var(--c-accent-deep);
+  }
+
+  /* Hakkımızda: hikâye geniş, rakam kartı dar ve bir kademe aşağıda (kırık simetri) */
+  .about {
+    display: grid;
+    gap: 32px;
+  }
+
+  .about__text {
+    max-width: 64ch;
+    margin: 24px 0 0;
+  }
+
+  .about__facts {
+    align-self: start;
+    padding: 24px;
+    border-radius: 16px;
+  }
+
+  .about__facts-title {
+    margin: 0 0 16px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-brand-700);
+  }
+
+  .about__figures {
+    display: grid;
+    gap: 16px;
+    margin: 0 0 16px;
+  }
+
+  .about__figures div {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--c-neutral-200);
+  }
+
+  .about__figures dt {
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .about__figures dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--c-brand-900);
+  }
+
+  .about__facts .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+  }
+
+  .about-trust__list {
+    display: grid;
+    gap: 24px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .about-trust__item {
+    display: flex;
+    gap: 16px;
+    padding: 24px 0 0;
+    border-top: 2px solid var(--c-brand-100);
+  }
+
+  .about-trust__item .icon {
+    align-self: flex-start;
+    margin-top: 4px;
+  }
+
+  .about-trust__item p {
+    margin: 0;
+    max-width: 48ch;
+  }
+
+  /* Soru bandı: kiremit açık zemin, metin solda, eylem sağda */
+  .cta-band {
+    display: grid;
+    gap: 24px;
+    padding: 32px 24px;
+    border-radius: 16px;
+    background: var(--c-brand-100);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .cta-band .display-2 {
+    margin: 0 0 8px;
+  }
+
+  .cta-band__text {
+    margin: 0;
+    color: var(--c-neutral-900);
+  }
+
+  .cta-band__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 24px;
+  }
+
+  .cta-band__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* İletişim: başlık üstte; kanallar dar sütun, form geniş */
+  .contact {
+    display: grid;
+    gap: 32px;
+  }
+
+  .contact__head {
+    max-width: 720px;
+  }
+
+  .contact__head .display-1 {
+    margin-bottom: 16px;
+  }
+
+  .contact__channels {
+    align-self: start;
+    display: grid;
+    gap: 16px;
+    padding: 24px;
+    border-radius: 16px;
+  }
+
+  .contact__channels .heading-3 {
+    margin: 0;
+  }
+
+  .contact__list {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+  }
+
+  .contact__list dt {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-brand-700);
+  }
+
+  .contact__list dd {
+    margin: 0;
+  }
+
+  .contact__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--c-accent-deep);
+    font-weight: 600;
+    text-underline-offset: 4px;
+    transition: color 240ms var(--ease);
+  }
+
+  .contact__list a:hover {
+    color: var(--c-brand-700);
+  }
+
+  .contact__form .heading-3 {
+    margin-bottom: 16px;
+  }
+
+  /* Bot tuzağı: ekran dışında, düzene katılmaz */
+  .trap {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  /* SSS: konu listesi solda (yapışkan), akordeon sağda */
+  .faq__lead {
+    margin-top: 16px;
+  }
+
+  .faq {
+    display: grid;
+    gap: 32px;
+    margin-top: 32px;
+  }
+
+  .faq__nav {
+    align-self: start;
+    padding: 16px 24px;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: var(--r-card);
+    background: var(--c-neutral-50);
+  }
+
+  .faq__nav ol {
+    margin: 0;
+    padding-left: 24px;
+    list-style: decimal;
+    font-size: 14px;
+  }
+
+  .faq__groups {
+    display: grid;
+    gap: 48px;
+    max-width: 72ch;
+  }
+
+  .faq__category {
+    margin: 0 0 16px;
+    font-size: 24px;
+    line-height: 1.3;
+    scroll-margin-top: 24px;
+  }
+
+  .faq__item {
+    border-bottom: 1px solid var(--c-neutral-200);
+  }
+
+  .faq__item:first-of-type {
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .faq__question {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 48px;
+    padding: 16px 0;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--c-neutral-900);
+    cursor: pointer;
+    list-style: none;
+    transition: color 240ms var(--ease);
+  }
+
+  .faq__question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq__question:hover {
+    color: var(--c-brand-700);
+  }
+
+  .faq__question:active {
+    color: var(--c-brand-900);
+  }
+
+  .faq__question:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .faq__toggle {
+    color: var(--c-brand);
+    transition: transform 240ms var(--ease);
+  }
+
+  .faq__item[open] .faq__toggle {
+    transform: rotate(45deg);
+  }
+
+  .faq__answer {
+    margin: 0;
+    padding: 0 48px 24px 0;
+    color: var(--c-neutral-700);
+  }
+
+  /* Ürün sayfası yardım satırı */
+  .product__help {
+    margin: 16px 0 0;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .section.reviews {
+    padding-top: 48px;
+  }
+
+  /* Alan altındaki ipucu, alanın kendi alt boşluğuna ek boşluk bırakmaz */
+  .reviews__form .field .field__hint,
+  .contact__form .field .field__hint {
+    margin: 0;
+  }
+
+  /* Sarılan satırda alanlar arası dikey boşluk .field alt boşluğuyla sınırlı kalır */
+  .contact__form .field-row {
+    row-gap: 0;
+  }
+
+  /* Yorumlar: özet ve form solda dar, liste sağda geniş */
+  .reviews {
+    display: grid;
+    gap: 32px;
+  }
+
+  .reviews__side {
+    display: grid;
+    gap: 24px;
+    align-content: start;
+  }
+
+  .reviews__side .display-2,
+  .reviews__side .form-alert {
+    margin: 0;
+  }
+
+  .reviews__score {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 0;
+  }
+
+  .reviews__average {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--c-brand-900);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .reviews__meta {
+    display: grid;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .reviews__empty {
+    margin: 0;
+    color: var(--c-neutral-700);
+  }
+
+  .reviews__form .heading-3 {
+    margin-bottom: 16px;
+  }
+
+  .reviews__rating .chip {
+    gap: 8px;
+  }
+
+  .reviews__rating .field__error {
+    width: 100%;
+  }
+
+  .icon--star {
+    color: var(--c-brand);
+  }
+
+  .stars {
+    display: inline-flex;
+    gap: 4px;
+    color: var(--c-brand-300);
+  }
+
+  .stars__star.is-filled {
+    color: var(--c-brand);
+    fill: currentColor;
+  }
+
+  .reviews__list {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    align-content: start;
+  }
+
+  .review {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--c-neutral-200);
+  }
+
+  .review:first-child {
+    padding-top: 0;
+  }
+
+  .review__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .review__text {
+    margin: 0 0 8px;
+    max-width: 64ch;
+    overflow-wrap: anywhere;
+  }
+
+  .review__who {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-neutral-700);
+  }
+
+  /* Yönetim: uzun mesaj/yorum hücresi sarar */
+  .cell-text {
+    min-width: 256px;
+    max-width: 48ch;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+
+  @media (min-width: 768px) {
+    .section.reviews {
+      padding-top: 64px;
+    }
+
+    .cta-band {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      padding: 48px;
+    }
+
+    .about-trust__list {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .about {
+      grid-template-columns: 7fr 1fr 4fr;
+      align-items: start;
+    }
+
+    .about__facts {
+      grid-column: 3;
+      margin-top: 96px;
+    }
+
+    .contact {
+      grid-template-columns: 4fr 7fr;
+      column-gap: 48px;
+    }
+
+    .contact__head {
+      grid-column: 1 / -1;
+    }
+
+    .faq {
+      grid-template-columns: 256px minmax(0, 1fr);
+      gap: 48px;
+    }
+
+    .faq__nav {
+      position: sticky;
+      top: 24px;
+    }
+
+    .reviews {
+      grid-template-columns: 5fr 7fr;
+      column-gap: 64px;
+    }
+
+    .reviews__list {
+      margin-top: 64px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq__toggle,
+    .faq__question,
+    .about-trust a,
+    .faq__lead a,
+    .contact .field__hint a,
+    .contact__list a,
+    .product__help a,
+    .cta-band__link {
+      transition: none;
     }
   }
 }

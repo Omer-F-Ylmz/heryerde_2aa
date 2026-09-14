@@ -11,7 +11,7 @@
     ViewData["OgImage"] = Model.Images.Count > 0 ? Model.Images[0].Url : null;
     ViewData["JsonLd"] = new[]
     {
-        Seo.ProductJsonLd(Shop.Value.BaseUrl, product, price, Model.SoldOut, Model.Images.Select(i => i.Url)),
+        Seo.ProductJsonLd(Shop.Value.BaseUrl, product, price, Model.SoldOut, Model.Images.Select(i => i.Url), Model.Reviews.Summary),
         Seo.ProductBreadcrumbJsonLd(Shop.Value.BaseUrl, Model)
     };
 }
@@ -112,7 +112,10 @@
         </div>
     </div>
     <partial name="Components/_TrustStrip" />
+    <p class="product__help">Sipariş, kargo ya da iade hakkında sorunuz mu var? <a href="/sss">Sık sorulan sorular</a></p>
 </div>
+
+<partial name="_Reviews" model="Model.Reviews" />
 
 @if (Model.Similar.Count > 0)
 {
