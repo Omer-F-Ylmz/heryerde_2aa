@@ -10,6 +10,10 @@ public static class DataSeeder
     public const string HeroCampaignName = "Granit döküm tencere seti";
     public const string ExpiredCampaignName = "Aprilla ayaklı vantilatör";
 
+    /// <summary>Açılış kataloğu yalnız geliştirme ortamında tohumlanır; Production'da veri elle girilir.</summary>
+    public static bool ShouldSeed(string environmentName, bool enabledInConfig)
+        => enabledInConfig && environmentName == "Development";
+
     public static async Task SeedCatalogAsync(HerYerdeContext context, CancellationToken cancellationToken = default)
     {
         var ev = await context.Categories.FirstOrDefaultAsync(c => c.Slug == "ev", cancellationToken);

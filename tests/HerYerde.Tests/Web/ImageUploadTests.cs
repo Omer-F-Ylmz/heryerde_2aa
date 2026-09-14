@@ -85,26 +85,26 @@ public sealed class ImageUploadTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Kare_doldurmada_oran_korunur_kenarlar_kremle_dolar()
+    public async Task Kare_doldurmada_oran_korunur_kenarlar_kaynagin_zemin_rengiyle_dolar()
     {
         var productId = await NewProductAsync();
         var client = await _factory.CreateSignedInClientAsync();
 
-        // 400x200 kırmızı: kare içinde tam yarım yükseklik kaplamalı, üst ve alt krem kalmalı.
-        await UploadForm.PostAsync(client, productId, ("genis.png", TestImage.Png(400, 200)));
+        // 400x200: krem zeminli, kırmızı göbekli. Kare içinde tam yarım yükseklik kaplamalı, üst ve alt zeminden dolmalı.
+        await UploadForm.PostAsync(client, productId, ("genis.png", TestImage.Framed(400, 200, new Rgba32(0xF6, 0xF1, 0xE8), new Rgba32(220, 30, 30))));
 
         var path = Directory.GetFiles(ProductDirectory(productId), "*-800.webp").Single();
         using var square = Image.Load<Rgba32>(path);
 
         Assert.Equal(800, square.Width);
         Assert.Equal(800, square.Height);
-        Assert.True(IsCream(square[400, 4]), "Üst kenar krem dolgu olmalı.");
-        Assert.True(IsCream(square[400, 795]), "Alt kenar krem dolgu olmalı.");
+        Assert.True(IsCream(square[400, 4]), "Üst kenar zemin rengiyle dolmalı.");
+        Assert.True(IsCream(square[400, 795]), "Alt kenar zemin rengiyle dolmalı.");
         Assert.True(IsRed(square[400, 400]), "Görselin kendisi ortada durmalı.");
-        Assert.True(IsRed(square[4, 400]), "Görsel kare genişliğini tam kaplamalı.");
+        Assert.True(IsCream(square[4, 400]), "Görsel kare genişliğini tam kaplamalı; kenarı krem zemin.");
 
-        var redRows = Enumerable.Range(0, 800).Count(y => IsRed(square[400, y]));
-        Assert.InRange(redRows, 390, 410);
+        var imageRows = Enumerable.Range(0, 800).Count(y => IsRed(square[400, y]));
+        Assert.InRange(imageRows, 220, 260);
 
         static bool IsCream(Rgba32 pixel) => Math.Abs(pixel.R - 0xF6) < 12 && Math.Abs(pixel.G - 0xF1) < 12 && Math.Abs(pixel.B - 0xE8) < 12;
         static bool IsRed(Rgba32 pixel) => pixel.R > 150 && pixel.G < 90 && pixel.B < 90;

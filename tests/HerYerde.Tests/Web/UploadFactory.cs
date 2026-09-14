@@ -61,4 +61,21 @@ public static class TestImage
         image.Save(buffer, new PngEncoder());
         return buffer.ToArray();
     }
+
+    /// <summary>Kenarı ve göbeği ayrı renkte png; kare dolgu rengi kenardan okunduğu için ikisi ayrışmalı.</summary>
+    public static byte[] Framed(int width, int height, Rgba32 border, Rgba32 center)
+    {
+        using var image = new Image<Rgba32>(width, height, border);
+        for (var y = height / 5; y < height - (height / 5); y++)
+        {
+            for (var x = width / 5; x < width - (width / 5); x++)
+            {
+                image[x, y] = center;
+            }
+        }
+
+        using var buffer = new MemoryStream();
+        image.Save(buffer, new PngEncoder());
+        return buffer.ToArray();
+    }
 }

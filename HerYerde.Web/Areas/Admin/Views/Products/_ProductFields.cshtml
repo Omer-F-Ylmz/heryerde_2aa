@@ -4,6 +4,10 @@
 <div class="field">
     <label class="field__label" asp-for="Name"></label>
     <input class="field__input" asp-for="Name" autocomplete="off" />
+    @if (Model.SuggestedName is { } suggested)
+    {
+        <p class="field__hint field__hint--inline">Önerilen yazım: <strong class="field__hint-value">@suggested</strong> — cümle düzeni; marka ve kısaltmalar büyük kalır.</p>
+    }
     <span class="field__error" asp-validation-for="Name"></span>
 </div>
 

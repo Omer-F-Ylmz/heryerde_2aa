@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using HerYerde.Business.Dtos;
+using HerYerde.Business.Rules;
 using HerYerde.Entities.Concrete;
 using HerYerde.Entities.Enums;
 
@@ -82,6 +83,10 @@ public sealed class ProductFormViewModel
     [StringLength(200)]
     [Display(Name = "Ad")]
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>Ad standarttan sapıyorsa önerilen yazım; uyuyorsa null. Yalnız ipucudur, kayıt engellenmez.</summary>
+    public string? SuggestedName
+        => ProductRules.NormalizeName(Name) is var suggested && suggested.Length > 0 && suggested != Name ? suggested : null;
 
     [Required(ErrorMessage = "Açıklama gerekli.")]
     [Display(Name = "Açıklama")]

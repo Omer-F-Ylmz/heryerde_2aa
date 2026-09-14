@@ -1,3 +1,4 @@
+using System.Globalization;
 using HerYerde.Entities.Concrete;
 
 namespace HerYerde.Business.Rules;
@@ -41,4 +42,39 @@ public static class ProductRules
     /// <summary>Kampanya etiketi yalnız indirimli fiyat varken ve bitiş anı geçmemişken gösterilir.</summary>
     public static bool CampaignIsActive(Product product, DateTime now)
         => product.CampaignPrice is not null && (product.CampaignEndsAt is null || product.CampaignEndsAt > now);
+
+    /// <summary>Ad standardında büyük kalan marka ve kısaltmalar; listede olmayan her sözcük küçültülür.</summary>
+    private static readonly string[] Uppercase = ["TAÇ", "LED"];
+
+    /// <summary>Önerilen yazım: cümle düzeni (ilk harf büyük, gerisi küçük), marka ve kısaltmalar büyük.
+    /// Yalnız öneridir — hiçbir yerde doğrulama olarak uygulanmaz.</summary>
+    public static string NormalizeName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return string.Empty;
+        }
+
+        var turkish = CultureInfo.GetCultureInfo("tr-TR");
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var first = true;
+
+        for (var i = 0; i < words.Length; i++)
+        {
+            var upper = words[i].ToUpper(turkish);
+            if (Array.Exists(Uppercase, a => a == upper))
+            {
+                // Kısaltma cümleyi başlatabilir: zaten büyük olduğu için ayrıca büyütülmez ama sonrası küçük kalır.
+                words[i] = upper;
+                first = false;
+                continue;
+            }
+
+            var lower = words[i].ToLower(turkish);
+            words[i] = first ? string.Concat(lower[..1].ToUpper(turkish), lower[1..]) : lower;
+            first = false;
+        }
+
+        return string.Join(' ', words);
+    }
 }

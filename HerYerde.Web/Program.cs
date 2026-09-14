@@ -218,6 +218,16 @@ if (ImportCommand.DirectoryFrom(args) is { } importDirectory)
     return;
 }
 
+// Tek seferlik görsel yenileme: yüklenmiş görselleri yeniden üretip çıkar, sunucu açılmaz.
+if (RefreshImagesCommand.Requested(args))
+{
+    var refreshRaw = RefreshImagesCommand.DirectoryFrom(args);
+    await RefreshImagesCommand.RunAsync(
+        app.Services,
+        refreshRaw is null ? null : RepoPath.Resolve(RepoPath.Root(app.Environment.ContentRootPath), refreshRaw));
+    return;
+}
+
 app.Run();
 
 static async Task SeedFirstAdminAsync(WebApplication app)
@@ -238,10 +248,10 @@ static async Task SeedFirstAdminAsync(WebApplication app)
     logger.LogInformation("Yönetici tohumlama: {Message}", result.Message);
 }
 
-/// <summary>Katalog boşsa açılış ürünleri; Seed:Catalog=false ile kapatılır (testler).</summary>
+/// <summary>Katalog boşsa açılış ürünleri; yalnız Development'ta, Seed:Catalog=false ile kapatılır (testler).</summary>
 static async Task SeedCatalogAsync(WebApplication app)
 {
-    if (!app.Configuration.GetValue("Seed:Catalog", true))
+    if (!DataSeeder.ShouldSeed(app.Environment.EnvironmentName, app.Configuration.GetValue("Seed:Catalog", true)))
     {
         return;
     }

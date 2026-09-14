@@ -704,6 +704,15 @@
     color: var(--c-accent-deep);
   }
 
+  .field__hint--inline {
+    margin: 8px 0 0;
+  }
+
+  .field__hint-value {
+    font-weight: 600;
+    color: var(--c-brand-900);
+  }
+
   .field__error {
     font-size: 14px;
     color: var(--c-brand-900);

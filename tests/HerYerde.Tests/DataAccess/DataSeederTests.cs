@@ -28,4 +28,13 @@ public sealed class DataSeederTests : IAsyncLifetime
         Assert.Equal(8, await second.Categories.CountAsync());
         Assert.Equal(18, await second.Products.CountAsync());
     }
+
+    /// <summary>GÖZ-FIX-2: açılış kataloğu yalnız Development'ta tohumlanır; Production'da veri elle girilir.</summary>
+    [Theory]
+    [InlineData("Development", true, true)]
+    [InlineData("Development", false, false)]
+    [InlineData("Production", true, false)]
+    [InlineData("Staging", true, false)]
+    public void Katalog_yalniz_development_ortaminda_tohumlanir(string environment, bool enabled, bool expected)
+        => Assert.Equal(expected, DataSeeder.ShouldSeed(environment, enabled));
 }
