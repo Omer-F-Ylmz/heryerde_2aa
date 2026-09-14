@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HerYerde.DataAccess.Concrete.EntityFramework;
 
-/// <summary>Açılış kataloğu: Giyim/Ev kökleri, 6 Ev alt kategorisi, 18 ürün. Ev altında kategori varsa dokunmaz.</summary>
+/// <summary>Açılış kataloğu: Giyim/Ev kökleri, 6 Ev alt kategorisi, 18 ürün (Ev altında kategori varsa dokunmaz) ve
+/// 5 Örtü &amp; Eşarp alt kategorisi (slug'a göre eksik olanlar her koşuda eklenir; ürünleri [MÜŞTERİ] listesiyle gelir).</summary>
 public static class DataSeeder
 {
     public const string HeroCampaignName = "Granit döküm tencere seti";
@@ -16,15 +17,12 @@ public static class DataSeeder
 
     public static async Task SeedCatalogAsync(HerYerdeContext context, CancellationToken cancellationToken = default)
     {
+        await SeedOrtuAsync(context, cancellationToken);
+
         var ev = await context.Categories.FirstOrDefaultAsync(c => c.Slug == "ev", cancellationToken);
         if (ev is not null && await context.Categories.AnyAsync(c => c.ParentId == ev.Id, cancellationToken))
         {
             return;
-        }
-
-        if (await context.Categories.FirstOrDefaultAsync(c => c.Slug == "giyim", cancellationToken) is null)
-        {
-            context.Categories.Add(new Category { Name = "Giyim", Slug = "giyim", SortOrder = 1, IsActive = true });
         }
 
         if (ev is null)
@@ -91,6 +89,32 @@ public static class DataSeeder
         Add("kucuk-ev-aletleri", "El blenderı seti", "el-blenderi-seti", 1450m, "1000 W, çelik ayak, doğrayıcı ve çırpıcı başlıklı.");
 
         context.Products.AddRange(products);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>Giyim kökü (vitrinde Örtü &amp; Eşarp) ve alt kategorileri; eksik olan slug eklenir, var olana dokunulmaz.</summary>
+    private static async Task SeedOrtuAsync(HerYerdeContext context, CancellationToken cancellationToken)
+    {
+        var giyim = await context.Categories.FirstOrDefaultAsync(c => c.Slug == "giyim", cancellationToken);
+        if (giyim is null)
+        {
+            giyim = new Category { Name = "Giyim", Slug = "giyim", SortOrder = 1, IsActive = true };
+            context.Categories.Add(giyim);
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        var subs = new (string Name, string Slug)[]
+        {
+            ("Eşarp", "esarp"),
+            ("Başörtüsü", "basortusu"),
+            ("Şal", "sal"),
+            ("Namaz Örtüsü", "namaz-ortusu"),
+            ("Bone & Aksesuar", "bone-aksesuar")
+        };
+        var existing = await context.Categories.Select(c => c.Slug).ToListAsync(cancellationToken);
+        context.Categories.AddRange(subs
+            .Select((s, i) => new Category { Name = s.Name, Slug = s.Slug, ParentId = giyim.Id, SortOrder = i + 1, IsActive = true })
+            .Where(c => !existing.Contains(c.Slug)));
         await context.SaveChangesAsync(cancellationToken);
     }
 }

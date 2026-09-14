@@ -9,7 +9,7 @@
 }
 
 <div class="container section">
-    <p class="eyebrow">Ev</p>
+    <p class="eyebrow">@Model.RootName</p>
     <h1 class="display-2 h-mark">@Model.Title</h1>
     <partial name="Components/_CategoryTabs" model="Model.Tabs" />
     <div class="listing-bar">
@@ -19,7 +19,14 @@
     <h2 class="visually-hidden">Ürünler</h2>
     @if (Model.Cards.Count == 0)
     {
-        <p class="empty surface-elevated">Bu rafa henüz ürün konmadı.</p>
+        <div class="empty surface-elevated">
+            <p class="empty__title">Şu an ürün yok.</p>
+            <p>Bu rafa yeni ürünler geldiğinde burada göreceksiniz.</p>
+            @if (Model.EmptyLink is { } other)
+            {
+                <a class="btn btn--outline" href="@other.Url">@other.Name</a>
+            }
+        </div>
     }
     else
     {

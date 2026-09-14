@@ -220,7 +220,7 @@ if (ImportCommand.DirectoryFrom(args) is { } importDirectory)
     await ImportCommand.RunAsync(
         app.Services,
         RepoPath.Resolve(repoRoot, importDirectory),
-        RepoPath.Resolve(repoRoot, Path.Combine("docs", "ithal-1.md")));
+        RepoPath.Resolve(repoRoot, ImportCommand.TableFrom(args)));
     return;
 }
 

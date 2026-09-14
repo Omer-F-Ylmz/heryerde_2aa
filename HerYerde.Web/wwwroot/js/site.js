@@ -25,7 +25,7 @@ document.querySelectorAll(".tabs--scroll [aria-current=page]").forEach(function 
   el.scrollIntoView({ block: "nearest", inline: "center" });
 });
 
-// Sepete ekle: Giyim'de beden+renk seçimi bir varyanta denk gelene kadar buton kapalı.
+// Sepete ekle: Giyim'de beden+renk (örtüde yalnız renk) seçimi bir varyanta denk gelene kadar buton kapalı.
 (function () {
   var form = document.querySelector("[data-add-to-cart]");
   if (!form) { return; }
@@ -57,7 +57,7 @@ document.querySelectorAll(".tabs--scroll [aria-current=page]").forEach(function 
     if (hint) {
       hint.textContent = ok
         ? "Stokta " + match.Stock + " adet var."
-        : (match ? "Bu seçim tükendi." : "Sepete eklemek için beden ve renk seçin.");
+        : (match ? "Bu seçim tükendi." : (needsSize ? "Sepete eklemek için beden ve renk seçin." : "Sepete eklemek için renk seçin."));
     }
   };
 

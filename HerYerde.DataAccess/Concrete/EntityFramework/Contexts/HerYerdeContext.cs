@@ -64,6 +64,7 @@ public class HerYerdeContext : DbContext
             e.Property(p => p.Price).HasColumnName("price").HasPrecision(18, 2);
             e.Property(p => p.CampaignPrice).HasColumnName("campaign_price").HasPrecision(18, 2);
             e.Property(p => p.CampaignLabel).HasColumnName("campaign_label").HasMaxLength(40);
+            e.Property(p => p.Dimensions).HasColumnName("dimensions").HasMaxLength(60);
             e.Property(p => p.CampaignEndsAt).HasColumnName("campaign_ends_at");
             e.Property(p => p.GiftMode).HasColumnName("gift_mode").HasConversion<int>();
             e.Property(p => p.GiftProductId).HasColumnName("gift_product_id");

@@ -77,6 +77,13 @@
                 <h2 class="heading-3">Set içeriği</h2>
                 <p class="product__desc">@product.Description</p>
             }
+            @if (product.Dimensions is { } dimensions)
+            {
+                <dl class="product__facts">
+                    <dt>Ölçü</dt>
+                    <dd>@dimensions</dd>
+                </dl>
+            }
             <div class="product__cta">
                 <form method="post" action="/sepet/ekle" data-add-to-cart data-variants="@Model.VariantsJson">
                     @Html.AntiForgeryToken()
@@ -100,7 +107,7 @@
             }
             else if (Model.IsClothing)
             {
-                <p class="field__hint" data-add-hint>Sepete eklemek için beden ve renk seçin.</p>
+                <p class="field__hint" data-add-hint>@StoreCatalog.PickHint(Model.Picker)</p>
             }
         </div>
     </div>

@@ -13,13 +13,17 @@
 }
 @if (Model.Colors.Count > 0)
 {
-    <fieldset class="chips">
-        <legend class="chips__legend">Renk</legend>
+    // Beden yoksa (örtü/eşarp) tek boyut renk/desen: çipler tek satırda kayar.
+    var colorOnly = Model.Sizes.Count == 0;
+    <fieldset class="@(colorOnly ? "chips chips--row" : "chips")">
+        <legend class="chips__legend">@(colorOnly ? "Renk / desen" : "Renk")</legend>
+        <div class="@(colorOnly ? "chips__scroll" : "chips__group")">
         @foreach (var color in Model.Colors)
         {
             var id = "color-" + color.Label.ToLowerInvariant().Replace(' ', '-');
             <input class="chips__input" type="radio" name="color" id="@id" value="@color.Label" disabled="@(color.Stock <= 0)" />
             <label class="chip" for="@id">@color.Label@(color.Stock <= 0 ? " · tükendi" : "")</label>
         }
+        </div>
     </fieldset>
 }

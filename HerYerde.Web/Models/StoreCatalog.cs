@@ -48,14 +48,17 @@ public static class StoreCatalog
     public static string WhatsAppUrl(string baseUrl, string productName)
         => baseUrl + "?text=" + Uri.EscapeDataString($"Merhaba, {productName} için sipariş vermek istiyorum.");
 
-    /// <summary>Kırıntının kökü: vitrindeki ad ve bağlantı. Giyim alanının kendi rotası henüz yok,
-    /// kök bağlantısı ana sayfaya gider.</summary>
+    /// <summary>Kırıntının kökü: vitrindeki ad ve bağlantı. Giyim kökünün veritabanı slug'ı "giyim" kalır,
+    /// vitrinde "Örtü &amp; Eşarp" adıyla /ortu yolunda gezilir.</summary>
     public static (string Name, string Url) Root(string? rootSlug, string rootName) => rootSlug switch
     {
         "ev" => ("Ev", "/ev"),
-        "giyim" => ("Örtü & Eşarp", "/"),
+        "giyim" => ("Örtü & Eşarp", "/ortu"),
         _ => (rootName, "/")
     };
+
+    /// <summary>Vitrinde gezilebilen kökler: veritabanı slug'ı ve yolu.</summary>
+    public static readonly IReadOnlyList<(string Slug, string Path)> BrowsableRoots = [("ev", "/ev"), ("giyim", "/ortu")];
 
     /// <summary>Görselsiz üründe alt kategoriye göre tek çizgi ikon; bilinmeyen slug → ikon yok.</summary>
     public static string? PlaceholderIcon(string? categorySlug) => categorySlug switch
@@ -112,6 +115,10 @@ public static class StoreCatalog
         };
     }
 
+    /// <summary>Beden boyutu yoksa (örtü/eşarp) yalnız renk/desen seçilir; ipucu metni buna göre.</summary>
+    public static string PickHint(VariantPickerVm picker)
+        => picker.Sizes.Count == 0 ? "Sepete eklemek için renk seçin." : "Sepete eklemek için beden ve renk seçin.";
+
     public static VariantPickerVm Picker(IEnumerable<ProductVariant> variants)
     {
         var list = variants.ToList();
@@ -153,6 +160,7 @@ public sealed record HomeVm(
     IReadOnlyList<ProductCardVm> NewArrivals,
     IReadOnlyList<TestimonialVm> Testimonials);
 
+/// <summary>RootName kırıntı üst başlığı; EmptyLink boş rafta önerilen başka kök (Örtü'de Ev).</summary>
 public sealed record CategoryPageVm(
     string Title,
     IReadOnlyList<CategoryTabVm> Tabs,
@@ -160,7 +168,9 @@ public sealed record CategoryPageVm(
     PriceFilterVm Filter,
     IReadOnlyList<ProductCardVm> Cards,
     PaginationVm Pagination,
-    int Total);
+    int Total,
+    string RootName = "Ev",
+    CategoryTabVm? EmptyLink = null);
 
 /// <summary>Arama sonucu. Message doluysa (kısa terim) liste hiç sorgulanmaz.</summary>
 public sealed record SearchPageVm(
@@ -189,8 +199,8 @@ public sealed record ProductPageVm(
 {
     public string? PlaceholderIcon => StoreCatalog.PlaceholderIcon(CategorySlug);
 
-    /// <summary>Alt kategori bağlantısı yalnız gezilebilir kökte (Ev) vardır; giyimin rotası henüz yok.</summary>
-    public string? CategoryUrl => CategorySlug is { } slug && RootUrl == "/ev" ? "/ev/" + slug : null;
+    /// <summary>Alt kategori bağlantısı yalnız gezilebilir kökte (Ev, Örtü &amp; Eşarp) vardır.</summary>
+    public string? CategoryUrl => CategorySlug is { } slug && RootUrl != "/" ? RootUrl + "/" + slug : null;
 
     /// <summary>Beden/renk seçimini varyant kimliğine çeviren tablo; sepet formu bunu okur.</summary>
     public string VariantsJson => JsonSerializer.Serialize(Picker.Options ?? []);

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HerYerde.Web.Controllers;
 
-/// <summary>Vitrin: ana sayfa, /ev kategorileri, /ara, /urun/{slug}.</summary>
+/// <summary>Vitrin: ana sayfa, /ev ve /ortu kategorileri, /ara, /urun/{slug}.</summary>
 public class StoreController(IProductService productService, ICategoryService categoryService, IConfiguration configuration) : Controller
 {
     private string WhatsAppBase => configuration["Shop:WhatsApp"] ?? "https://wa.me/";
@@ -42,17 +42,39 @@ public class StoreController(IProductService productService, ICategoryService ca
 
     [HttpGet("ev")]
     [HttpGet("ev/{slug}")]
-    public async Task<IActionResult> Category(
+    public Task<IActionResult> Category(
         string? slug,
         string? sirala,
         decimal? min,
         decimal? max,
         int sayfa = 1,
         CancellationToken cancellationToken = default)
+        => ListingAsync("ev", slug, sirala, min, max, sayfa, cancellationToken);
+
+    /// <summary>Örtü &amp; Eşarp: veritabanında "giyim" kökü; görünen ad ve yol vitrine özel.</summary>
+    [HttpGet("ortu")]
+    [HttpGet("ortu/{slug}")]
+    public Task<IActionResult> Ortu(
+        string? slug,
+        string? sirala,
+        decimal? min,
+        decimal? max,
+        int sayfa = 1,
+        CancellationToken cancellationToken = default)
+        => ListingAsync("giyim", slug, sirala, min, max, sayfa, cancellationToken);
+
+    private async Task<IActionResult> ListingAsync(
+        string rootSlug,
+        string? slug,
+        string? sirala,
+        decimal? min,
+        decimal? max,
+        int sayfa,
+        CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
         var (_, categories) = await categoryService.GetAllAsync(cancellationToken);
-        var root = categories.Data!.FirstOrDefault(c => c.Slug == "ev" && c.ParentId is null && c.IsActive);
+        var root = categories.Data!.FirstOrDefault(c => c.Slug == rootSlug && c.ParentId is null && c.IsActive);
         if (root is null)
         {
             return NotFound();
@@ -69,7 +91,8 @@ public class StoreController(IProductService productService, ICategoryService ca
             }
         }
 
-        var scope = current is null ? children.Select(c => c.Id).ToList() : [current.Id];
+        // Kök de kapsama girer: alt kategorisi olmayan kökte boş liste "süzgeç yok" sayılıp tüm ürünleri getirirdi.
+        var scope = current is null ? children.Select(c => c.Id).Append(root.Id).ToList() : [current.Id];
         var byPrice = sirala == "fiyat";
         var (low, high) = StoreCatalog.Range(min, max);
 
@@ -87,12 +110,13 @@ public class StoreController(IProductService productService, ICategoryService ca
         var (page, clamped, total) = await PageAsync(Query, sayfa, cancellationToken);
         var (_, images) = await productService.GetImagesForAsync(page.Select(i => i.Product.Id).ToList(), cancellationToken);
 
-        var baseUrl = current is null ? "/ev" : "/ev/" + current.Slug;
-        var tabs = new List<CategoryTabVm> { new("Tümü", "/ev", current is null) };
-        tabs.AddRange(children.Select(c => new CategoryTabVm(c.Name, "/ev/" + c.Slug, c.Id == current?.Id)));
+        var (rootName, rootPath) = StoreCatalog.Root(root.Slug, root.Name);
+        var baseUrl = current is null ? rootPath : rootPath + "/" + current.Slug;
+        var tabs = new List<CategoryTabVm> { new("Tümü", rootPath, current is null) };
+        tabs.AddRange(children.Select(c => new CategoryTabVm(c.Name, rootPath + "/" + c.Slug, c.Id == current?.Id)));
 
-        return View(new CategoryPageVm(
-            current?.Name ?? root.Name,
+        return View("Category", new CategoryPageVm(
+            current?.Name ?? rootName,
             tabs,
             Sort(baseUrl, byPrice, term: null, low, high),
             Filter(baseUrl, byPrice, term: null, low, high),
@@ -102,7 +126,10 @@ public class StoreController(IProductService productService, ICategoryService ca
                 ("sirala", byPrice ? "fiyat" : null),
                 ("min", StoreCatalog.Amount(low)),
                 ("max", StoreCatalog.Amount(high)))),
-            total));
+            total,
+            rootName,
+            // Boş rafta öteki kök önerilir: Örtü'de Ev, Ev'de Örtü & Eşarp.
+            rootSlug == "giyim" ? new CategoryTabVm("Ev ürünlerine bak", "/ev", false) : new CategoryTabVm("Örtü & Eşarp'a bak", "/ortu", false)));
     }
 
     [HttpGet("ara")]

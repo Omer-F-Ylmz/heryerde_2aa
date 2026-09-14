@@ -9,13 +9,23 @@ namespace HerYerde.Web.Infrastructure;
 
 public sealed record ImportSummary(int Products, int Images, int Skipped);
 
-/// <summary>Tek seferlik ham fotoğraf ithali: docs/ithal-1.md satırlarını ürüne ve işlenmiş görsele çevirir.</summary>
+/// <summary>Tek seferlik ham fotoğraf ithali: tablo satırlarını (docs/ithal-1.md, ithal-2.md) ürüne ve işlenmiş görsele çevirir.
+/// Kategori sütunu herhangi bir alt kategorinin slug'ı olabilir (Ev ya da Örtü &amp; Eşarp).</summary>
 public static class ImportCommand
 {
     public const string Argument = "--ithal";
 
     /// <summary>Fiyat sonradan girilir; 1 ₺ "fiyat eksik" bayrağıdır, ürün taslak kalır.</summary>
     public const decimal PlaceholderPrice = 1m;
+
+    public const string TableArgument = "--tablo";
+
+    /// <summary>İthal tablosu: "--tablo docs/ithal-2.md" ile seçilir (Örtü &amp; Eşarp ayrı tabloda); yoksa ithal-1.</summary>
+    public static string TableFrom(string[] args)
+    {
+        var index = Array.IndexOf(args, TableArgument);
+        return index >= 0 && index + 1 < args.Length ? args[index + 1] : Path.Combine("docs", "ithal-1.md");
+    }
 
     public static string? DirectoryFrom(string[] args)
     {

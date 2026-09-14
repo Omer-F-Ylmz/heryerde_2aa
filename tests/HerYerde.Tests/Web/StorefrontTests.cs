@@ -47,13 +47,13 @@ public sealed class StorefrontTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Ana_sayfa_ortu_kapisi_link_degil_ve_testimonials_json_okunur()
+    public async Task Ana_sayfa_ortu_kapisi_aktif_link_ve_testimonials_json_okunur()
     {
         var html = await GetHtmlAsync(_factory.CreateClient(), "/");
 
-        Assert.DoesNotContain("href=\"/ortu", html);
+        // D8: Örtü & Eşarp açıldı; kapı /ortu'ya gider, veritabanı slug'ı (giyim) adreste görünmez.
+        Assert.Contains("<a class=\"door door--active\" href=\"/ortu\">", html);
         Assert.DoesNotContain("href=\"/giyim", html);
-        Assert.Matches("class=\"door door--soon\"[^>]*aria-disabled=\"true\"", html);
 
         var quotes = TestimonialSourceQuotes();
         Assert.Equal(4, quotes.Count);

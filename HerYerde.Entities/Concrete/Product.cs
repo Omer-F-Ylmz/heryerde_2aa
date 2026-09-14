@@ -29,6 +29,9 @@ public class Product : IEntity
     /// <summary>Ev ürününde adet takibi. NULL = takip yok; Giyim'de daima NULL, stok varyantta durur.</summary>
     public int? Stock { get; set; }
 
+    /// <summary>Serbest metin ölçü (ör. "70x70 cm"); yalnız ürün detayında "Ölçü" satırı olarak görünür.</summary>
+    public string? Dimensions { get; set; }
+
     public bool IsActive { get; set; }
 
     /// <summary>Soft delete: dolu olan kayıtlar sorgulardan global filtreyle düşer.</summary>

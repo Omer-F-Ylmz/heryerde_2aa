@@ -38,13 +38,18 @@ public class SeoController(
             => items.Where(inScope).Select(i => i.Product.UpdatedAt).DefaultIfEmpty(now).Max();
 
         var urls = new List<(string Path, DateTime LastModified)> { ("/", Latest(_ => true)) };
-        var root = categories.Data!.FirstOrDefault(c => c.Slug == "ev" && c.ParentId is null && c.IsActive);
-        if (root is not null)
+        foreach (var (rootSlug, rootPath) in StoreCatalog.BrowsableRoots)
         {
+            var root = categories.Data!.FirstOrDefault(c => c.Slug == rootSlug && c.ParentId is null && c.IsActive);
+            if (root is null)
+            {
+                continue;
+            }
+
             var children = categories.Data!.Where(c => c.ParentId == root.Id && c.IsActive).ToList();
             var childIds = children.Select(c => c.Id).ToHashSet();
-            urls.Add(("/ev", Latest(i => i.Product.CategoryId == root.Id || childIds.Contains(i.Product.CategoryId))));
-            urls.AddRange(children.Select(c => ("/ev/" + c.Slug, Latest(i => i.Product.CategoryId == c.Id))));
+            urls.Add((rootPath, Latest(i => i.Product.CategoryId == root.Id || childIds.Contains(i.Product.CategoryId))));
+            urls.AddRange(children.Select(c => (rootPath + "/" + c.Slug, Latest(i => i.Product.CategoryId == c.Id))));
         }
 
         urls.AddRange(items.Select(i => ("/urun/" + i.Product.Slug, i.Product.UpdatedAt)));

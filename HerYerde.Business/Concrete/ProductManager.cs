@@ -149,6 +149,7 @@ public class ProductManager : IProductService
         stored.Price = product.Price;
         stored.CampaignPrice = product.CampaignPrice;
         stored.CampaignLabel = product.CampaignLabel;
+        stored.Dimensions = product.Dimensions;
         stored.CampaignEndsAt = product.CampaignEndsAt;
         stored.GiftMode = product.GiftMode;
         stored.GiftProductId = product.GiftMode == GiftMode.BaskaUrun ? product.GiftProductId : null;

@@ -112,6 +112,10 @@ public sealed class ProductFormViewModel
     [Display(Name = "Kampanya bitişi")]
     public DateTime? CampaignEndsAt { get; set; }
 
+    [StringLength(60)]
+    [Display(Name = "Ölçü (isteğe bağlı)")]
+    public string? Dimensions { get; set; }
+
     [Display(Name = "Stok (boş = takip yok)")]
     [Range(0, int.MaxValue, ErrorMessage = "Stok negatif olamaz.")]
     public int? Stock { get; set; }

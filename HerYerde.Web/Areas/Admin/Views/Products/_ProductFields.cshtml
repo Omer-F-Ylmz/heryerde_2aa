@@ -37,6 +37,13 @@
     </div>
 </div>
 
+<div class="field">
+    <label class="field__label" asp-for="Dimensions"></label>
+    <input class="field__input" asp-for="Dimensions" autocomplete="off" placeholder="70x70 cm" />
+    <span class="field__hint">Yalnız ürün sayfasında "Ölçü" satırı olarak görünür.</span>
+    <span class="field__error" asp-validation-for="Dimensions"></span>
+</div>
+
 <fieldset class="fieldset">
     <legend class="fieldset__legend">Kampanya</legend>
     <p class="fieldset__note">Kampanya fiyatı normal fiyattan küçük olmalı. Bitiş anı geçtiğinde etiket kendiliğinden düşer.</p>

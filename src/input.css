@@ -812,6 +812,17 @@
     margin: 0;
   }
 
+  .empty > p {
+    margin: 0 0 16px;
+  }
+
+  .empty__title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    letter-spacing: -0.03em;
+    color: var(--c-brand-900);
+  }
+
   /* --- Tablo --- */
   .table-wrap {
     /* position: relative — .visually-hidden mutlak konumu tabloyla birlikte kayar, sayfayı genişletmez */
@@ -1620,6 +1631,28 @@
     min-width: 0;
   }
 
+  /* Tek boyutlu seçici (örtü: yalnız renk/desen): başlık üstte, çipler tek satırda, taşarsa yatay kayar */
+  .chips--row {
+    display: block;
+  }
+
+  .chips__scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+
+  .chips__scroll .chip {
+    flex: none;
+  }
+
+  /* İki boyutlu seçicide sarmalayıcı düzene katılmaz; çipler .chips akışında kalır */
+  .chips__group {
+    display: contents;
+  }
+
   .chips__legend {
     width: 100%;
     margin-bottom: 8px;
@@ -2367,6 +2400,27 @@
 
   .product__desc {
     margin: 0 0 24px;
+  }
+
+  .product__facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    gap: 8px 16px;
+    margin: 0 0 24px;
+    padding: 16px 0;
+    border-block: 1px solid var(--c-neutral-200);
+  }
+
+  .product__facts dt {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-brand-700);
+  }
+
+  .product__facts dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
   }
 
   .product__cta {
