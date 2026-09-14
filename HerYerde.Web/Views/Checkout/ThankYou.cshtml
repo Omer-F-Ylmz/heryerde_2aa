@@ -29,7 +29,7 @@
             }
             <p class="summary__row">
                 <span>Kargo</span>
-                <span class="summary__value">@Money.Tl(order.ShippingFee)</span>
+                <span class="summary__value">@(order.ShippingFee == 0m ? "Kargo bedava" : Money.Tl(order.ShippingFee))</span>
             </p>
             <p class="summary__row summary__row--total">
                 <span>Toplam</span>
@@ -57,12 +57,32 @@
             </div>
         }
 
+        @if (order.Carrier is { } carrier)
+        {
+            <div class="thanks__card">
+                <h2 class="heading-3">Kargo takibi</h2>
+                <p class="summary__row">
+                    <span>@carrier</span>
+                    <span class="summary__value">@order.TrackingNo</span>
+                </p>
+                @if (Model.TrackingUrl is { } tracking)
+                {
+                    <p>
+                        <a class="btn btn--secondary" href="@tracking" rel="noopener" target="_blank">
+                            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                            <span>Kargomu takip et</span>
+                        </a>
+                    </p>
+                }
+            </div>
+        }
+
         <div>
             <h2 class="heading-3">Bundan sonrası</h2>
             <ol class="thanks__steps">
                 <li>@order.Phone numarasından sizi arayıp siparişi teyit ediyoruz.</li>
                 <li>@(havale ? "Ödeme hesabımıza geçtiğinde kargoya veriyoruz." : "Kargoya verip takip bilgisini paylaşıyoruz.")</li>
-                <li>Kargo ücreti alıcıya aittir.</li>
+                <li>@(order.ShippingFee == 0m ? "Bu siparişin kargosu bizden." : "Kargo ücreti alıcıya aittir.")</li>
             </ol>
             <p>
                 <a class="btn btn--cta btn--lg" href="@Model.WhatsAppUrl" rel="noopener">

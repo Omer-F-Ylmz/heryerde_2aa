@@ -19,7 +19,9 @@ public class OrderManager : IOrderService
     private readonly IProductDal _productDal;
     private readonly IProductVariantDal _variantDal;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationService _notifications;
     private readonly ShopSettings _shop;
+    private readonly ShippingSettings _shipping;
     private readonly TimeProvider _clock;
 
     public OrderManager(
@@ -29,7 +31,9 @@ public class OrderManager : IOrderService
         IProductDal productDal,
         IProductVariantDal variantDal,
         IUnitOfWork unitOfWork,
+        INotificationService notifications,
         IOptions<ShopSettings> shop,
+        IOptions<ShippingSettings> shipping,
         TimeProvider clock)
     {
         _orderDal = orderDal;
@@ -38,7 +42,9 @@ public class OrderManager : IOrderService
         _productDal = productDal;
         _variantDal = variantDal;
         _unitOfWork = unitOfWork;
+        _notifications = notifications;
         _shop = shop.Value;
+        _shipping = shipping.Value;
         _clock = clock;
     }
 
@@ -69,6 +75,7 @@ public class OrderManager : IOrderService
         var now = _clock.GetUtcNow().UtcDateTime;
         var gifts = GiftRules.Plan(items, await WithGiftProductsAsync(products, now, cancellationToken), now);
         var subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
+        var shippingFee = ShippingRules.Fee(subtotal, _shop.ShippingFee, _shop.FreeShippingOver);
         var order = new Order
         {
             OrderNo = await NextOrderNoAsync(now, cancellationToken),
@@ -76,8 +83,8 @@ public class OrderManager : IOrderService
             Status = OrderStatus.Beklemede,
             PaymentMethod = draft.PaymentMethod,
             Subtotal = subtotal,
-            ShippingFee = _shop.ShippingFee,
-            Total = subtotal + _shop.ShippingFee,
+            ShippingFee = shippingFee,
+            Total = subtotal + shippingFee,
             FullName = draft.FullName.Trim(),
             Phone = phone,
             Email = string.IsNullOrWhiteSpace(draft.Email) ? null : draft.Email.Trim(),
@@ -92,6 +99,7 @@ public class OrderManager : IOrderService
         };
 
         var granted = new List<GiftPlan>();
+        var placedItems = new List<OrderItem>();
         try
         {
             await _unitOfWork.InTransactionAsync(async () =>
@@ -139,25 +147,27 @@ public class OrderManager : IOrderService
                         ? await _variantDal.GetAsync(v => v.Id == variantId, cancellationToken)
                         : null;
 
-                    await _orderItemDal.AddAsync(new OrderItem
+                    var line = new OrderItem
                     {
                         OrderId = order.Id,
                         ProductName = product?.Name ?? "Ürün",
                         Sku = variant?.Sku ?? product?.Slug ?? string.Empty,
                         Quantity = item.Quantity,
                         UnitPrice = item.UnitPrice
-                    }, cancellationToken);
+                    };
+                    placedItems.Add(line);
+                    await _orderItemDal.AddAsync(line, cancellationToken);
 
-                    var line = await _cartItemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken);
-                    if (line is not null)
+                    var cartLine = await _cartItemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken);
+                    if (cartLine is not null)
                     {
-                        _cartItemDal.Delete(line);
+                        _cartItemDal.Delete(cartLine);
                     }
                 }
 
                 foreach (var gift in granted)
                 {
-                    await _orderItemDal.AddAsync(new OrderItem
+                    var giftLine = new OrderItem
                     {
                         OrderId = order.Id,
                         ProductName = gift.ProductName,
@@ -165,8 +175,13 @@ public class OrderManager : IOrderService
                         Quantity = gift.Quantity,
                         UnitPrice = 0m,
                         IsGift = true
-                    }, cancellationToken);
+                    };
+                    placedItems.Add(giftLine);
+                    await _orderItemDal.AddAsync(giftLine, cancellationToken);
                 }
+
+                // Bildirim siparişle aynı işlemde kuyruğa girer: sipariş yazıldıysa postası da kesin kuyruktadır.
+                await _notifications.QueueOrderPlacedAsync(order, placedItems, cancellationToken);
 
                 return await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
@@ -208,7 +223,12 @@ public class OrderManager : IOrderService
         return (HttpStatusCode.OK, new SuccessDataResult<List<Order>>(orders.OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id).ToList()));
     }
 
-    public async Task<(HttpStatusCode, IResult)> ChangeStatusAsync(int orderId, OrderStatus next, CancellationToken cancellationToken = default)
+    public async Task<(HttpStatusCode, IResult)> ChangeStatusAsync(
+        int orderId,
+        OrderStatus next,
+        string? carrier = null,
+        string? trackingNo = null,
+        CancellationToken cancellationToken = default)
     {
         var order = await _orderDal.GetTrackedAsync(o => o.Id == orderId, cancellationToken);
         if (order is null)
@@ -220,6 +240,29 @@ public class OrderManager : IOrderService
         {
             return (HttpStatusCode.BadRequest, new ErrorResult(
                 $"'{order.Status}' durumundan '{next}' durumuna geçilemez; durum geri alınamaz."));
+        }
+
+        if (next == OrderStatus.Kargoda)
+        {
+            var firm = carrier?.Trim();
+            var code = trackingNo?.Trim();
+            if (string.IsNullOrEmpty(firm) || string.IsNullOrEmpty(code))
+            {
+                return (HttpStatusCode.BadRequest, new ErrorResult(
+                    "Kargoya verirken kargo firması ve takip numarası zorunlu."));
+            }
+
+            if (!_shipping.Knows(firm))
+            {
+                return (HttpStatusCode.BadRequest, new ErrorResult($"'{firm}' tanımlı bir kargo firması değil."));
+            }
+
+            order.Carrier = firm;
+            order.TrackingNo = code;
+            order.Status = next;
+            await _notifications.QueueOrderShippedAsync(order, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return (HttpStatusCode.OK, new SuccessResult("Sipariş kargoya verildi; takip bilgisi müşteriye gidecek."));
         }
 
         if (next == OrderStatus.IptalEdildi)
@@ -246,6 +289,27 @@ public class OrderManager : IOrderService
         order.Status = next;
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Sipariş durumu güncellendi."));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<int>)> UnseenCountAsync(CancellationToken cancellationToken = default)
+        => (HttpStatusCode.OK, new SuccessDataResult<int>(await _orderDal.UnseenCountAsync(cancellationToken)));
+
+    public async Task<(HttpStatusCode, IResult)> MarkSeenAsync(int orderId, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderDal.GetTrackedAsync(o => o.Id == orderId, cancellationToken);
+        if (order is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Sipariş bulunamadı."));
+        }
+
+        // İlk açılış rozeti düşürür; sonraki açılışlar ilk görülme anını korur.
+        if (order.SeenAt is null)
+        {
+            order.SeenAt = _clock.GetUtcNow().UtcDateTime;
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        return (HttpStatusCode.OK, new SuccessResult("Sipariş görüldü olarak işaretlendi."));
     }
 
     public async Task<(HttpStatusCode, IResult)> AnonymizeAsync(int orderId, CancellationToken cancellationToken = default)

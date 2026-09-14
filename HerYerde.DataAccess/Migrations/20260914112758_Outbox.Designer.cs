@@ -4,6 +4,7 @@ using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HerYerde.DataAccess.Migrations
 {
     [DbContext(typeof(HerYerdeContext))]
-    partial class HerYerdeContextModelSnapshot : ModelSnapshot
+    [Migration("20260914112758_Outbox")]
+    partial class Outbox
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -235,11 +238,6 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("address");
 
-                    b.Property<string>("Carrier")
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)")
-                        .HasColumnName("carrier");
-
                     b.Property<string>("City")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -319,11 +317,6 @@ namespace HerYerde.DataAccess.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("total");
-
-                    b.Property<string>("TrackingNo")
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)")
-                        .HasColumnName("tracking_no");
 
                     b.HasKey("Id");
 

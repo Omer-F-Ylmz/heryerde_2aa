@@ -126,7 +126,7 @@ public class CartManager : ICartService
         }
 
         var subtotal = lines.Sum(l => l.LineTotal);
-        var shipping = lines.Count == 0 ? 0m : _shop.ShippingFee;
+        var shipping = lines.Count == 0 ? 0m : ShippingRules.Fee(subtotal, _shop.ShippingFee, _shop.FreeShippingOver);
         var gifts = GiftRules.Plan(items, products, _clock.GetUtcNow().UtcDateTime);
         return (HttpStatusCode.OK, new SuccessDataResult<CartView>(new CartView(
             cartId,
@@ -134,7 +134,8 @@ public class CartManager : ICartService
             subtotal,
             shipping,
             gifts.Where(g => g.Available).Select(g => new CartGift(g.ProductName, g.Quantity)).ToList(),
-            GiftRules.Note(gifts) is { Length: > 0 } note ? note : null)));
+            GiftRules.Note(gifts) is { Length: > 0 } note ? note : null,
+            _shop.FreeShippingOver)));
     }
 
     public async Task<(HttpStatusCode, IResult)> AddAsync(Guid cartId, int productId, int? variantId, int quantity, CancellationToken cancellationToken = default)

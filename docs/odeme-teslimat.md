@@ -15,7 +15,11 @@ Havale/EFT seçilince IBAN kutusu açılır (`Shop:Iban`).
 ## Teslimat
 - Kargo ücreti **alıcıya** aittir: `appsettings` → `Shop:ShippingFee`, siparişe `order.shipping_fee`
   olarak kopyalanır (sonradan ücret değişse de eski sipariş değişmez). Toplam = ara toplam + kargo.
-- Ücretsiz kargo eşiği ve kargo firması anlaşması henüz yok; kargo takip numarası D5'te.
+- Ücretsiz kargo eşiği `Shop:FreeShippingOver`: ara toplam eşiğe ulaşınca kargo 0 ₺ yazılır (0 = eşik
+  kapalı). Sepet ve ödeme özetinde eşiğe kalan tutar ilerleme çubuğuyla gösterilir.
+- Kargo firması ve takip numarası siparişte tutulur (`order.carrier`, `order.tracking_no`);
+  "Kargoda" durumuna geçerken ikisi de zorunludur. Firma listesi ve takip adresi şablonu
+  `Shipping:Carriers` altında; bkz. [dis-hesaplar.md](dis-hesaplar.md).
 
 ## Sipariş durumu
 `OrderStatus`: Beklemede → Onaylandi → Kargoda → TeslimEdildi. Geçiş tek yönlüdür, aşama atlanmaz

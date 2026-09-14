@@ -12,7 +12,13 @@
         <h1 class="display-2">@order.OrderNo</h1>
         <p class="page-head__note">@IstanbulTime.Format(order.CreatedAt) · <partial name="Components/_StatusPill" model="order.Status" /></p>
     </div>
-    <a class="btn btn--ghost" asp-area="Admin" asp-controller="Orders" asp-action="Index">Listeye dön</a>
+    <div class="page-head__actions">
+        <a class="btn btn--cta" href="@Model.WhatsAppUrl" rel="noopener" target="_blank">
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+            <span>WhatsApp'tan yaz</span>
+        </a>
+        <a class="btn btn--ghost" asp-area="Admin" asp-controller="Orders" asp-action="Index">Listeye dön</a>
+    </div>
 </div>
 
 @if (Model.ErrorMessage is not null)
@@ -38,6 +44,23 @@
             <dt>Not</dt>
             <dd>@(order.Note ?? "—")</dd>
         </div>
+        @if (order.Carrier is { } carrier)
+        {
+            <div>
+                <dt>Kargo</dt>
+                <dd>
+                    @carrier<br />
+                    @if (Model.TrackingUrl is { } tracking)
+                    {
+                        <a href="@tracking" rel="noopener" target="_blank">@order.TrackingNo</a>
+                    }
+                    else
+                    {
+                        <span class="cell-mono">@order.TrackingNo</span>
+                    }
+                </dd>
+            </div>
+        }
         <div>
             <dt>Sözleşme</dt>
             <dd>
@@ -87,7 +110,7 @@
     </p>
     <p class="summary__row">
         <span>Kargo</span>
-        <span class="summary__value">@Money.Tl(order.ShippingFee)</span>
+        <span class="summary__value">@(order.ShippingFee == 0m ? "Kargo bedava" : Money.Tl(order.ShippingFee))</span>
     </p>
     <p class="summary__row summary__row--total">
         <span>Toplam</span>
@@ -97,8 +120,26 @@
     <div class="order-actions">
         @if (Model.NextStatus is { } next)
         {
-            <form asp-area="Admin" asp-controller="Orders" asp-action="ChangeStatus" asp-route-id="@order.Id" method="post">
+            <form class="@(Model.NeedsShipment ? "shipment" : null)"
+                  asp-area="Admin" asp-controller="Orders" asp-action="ChangeStatus" asp-route-id="@order.Id" method="post">
                 <input type="hidden" name="next" value="@((int)next)" />
+                @if (Model.NeedsShipment)
+                {
+                    <div class="field">
+                        <label class="field__label" for="carrier">Kargo firması</label>
+                        <select class="field__input" id="carrier" name="carrier" required>
+                            <option value="">Seçin</option>
+                            @foreach (var firm in Model.Carriers)
+                            {
+                                <option value="@firm">@firm</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="trackingNo">Takip numarası</label>
+                        <input class="field__input" id="trackingNo" name="trackingNo" autocomplete="off" required />
+                    </div>
+                }
                 <button class="btn btn--primary" type="submit">@NextLabel(next)</button>
             </form>
         }

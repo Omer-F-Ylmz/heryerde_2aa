@@ -19,6 +19,7 @@ public class HerYerdeContext : DbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -167,6 +168,9 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.CreatedAt).HasColumnName("created_at");
             e.Property(o => o.ConsentAt).HasColumnName("consent_at");
             e.Property(o => o.LegalVersion).HasColumnName("legal_version").HasMaxLength(20);
+            e.Property(o => o.SeenAt).HasColumnName("seen_at");
+            e.Property(o => o.Carrier).HasColumnName("carrier").HasMaxLength(40);
+            e.Property(o => o.TrackingNo).HasColumnName("tracking_no").HasMaxLength(60);
             e.HasIndex(o => o.OrderNo).IsUnique().HasDatabaseName("ux_order_order_no");
             e.HasIndex(o => o.AccessToken).IsUnique().HasDatabaseName("ux_order_access_token");
             // Yönetim sipariş listesi: duruma göre süzüp en yeniden eskiye.
@@ -187,6 +191,23 @@ public class HerYerdeContext : DbContext
             e.Property(i => i.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2);
             e.Property(i => i.IsGift).HasColumnName("is_gift");
             e.HasOne<Order>().WithMany().HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OutboxMessage>(e =>
+        {
+            e.ToTable("outbox_message");
+            e.HasKey(m => m.Id);
+            e.Property(m => m.Id).HasColumnName("id");
+            e.Property(m => m.Type).HasColumnName("type").HasMaxLength(30).IsRequired();
+            e.Property(m => m.To).HasColumnName("to").HasMaxLength(200).IsRequired();
+            e.Property(m => m.Subject).HasColumnName("subject").HasMaxLength(200).IsRequired();
+            e.Property(m => m.Body).HasColumnName("body").HasColumnType("nvarchar(max)").IsRequired();
+            e.Property(m => m.Status).HasColumnName("status").HasConversion<int>();
+            e.Property(m => m.TryCount).HasColumnName("try_count");
+            e.Property(m => m.NextTryAt).HasColumnName("next_try_at");
+            e.Property(m => m.SentAt).HasColumnName("sent_at");
+            // Dağıtım turu: yalnız bekleyen ve sırası gelmiş kayıtlar okunur.
+            e.HasIndex(m => new { m.Status, m.NextTryAt }).HasDatabaseName("ix_outbox_message_status_next_try_at");
         });
 
         modelBuilder.Entity<AdminAuditLog>(e =>

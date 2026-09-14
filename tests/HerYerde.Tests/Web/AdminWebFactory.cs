@@ -30,7 +30,11 @@ public class AdminWebFactory : WebApplicationFactory<Program>
             ["Admin:Email"] = AdminEmail,
             ["Admin:Password"] = AdminPassword,
             ["Seed:Catalog"] = "false",
-            ["Shop:BaseUrl"] = BaseUrl
+            ["Shop:BaseUrl"] = BaseUrl,
+            ["Shop:FreeShippingOver"] = "2500",
+            ["Notifications:StoreTo"] = TestData.StoreEmail,
+            ["Shipping:Carriers:0:Name"] = TestData.Carrier,
+            ["Shipping:Carriers:0:TrackingUrl"] = TestData.TrackingUrlTemplate
         };
         Configure(settings);
 

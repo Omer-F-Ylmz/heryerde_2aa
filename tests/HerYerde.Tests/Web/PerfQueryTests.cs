@@ -39,12 +39,12 @@ public sealed class PerfQueryTests : IAsyncLifetime
     public async Task Urun_sayfasi_en_cok_bes_sorgu_atar()
         => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/urun/granit-dokum-tencere-seti"), 1, 5);
 
-    /// <summary>Üç liste sorgusu + G12 ile gelen yönetici parola damgası kontrolü.</summary>
+    /// <summary>Üç liste sorgusu + G12 parola damgası kontrolü + D6 okunmamış sipariş sayacı.</summary>
     [Fact]
-    public async Task Yonetim_urun_listesi_en_cok_dort_sorgu_atar()
+    public async Task Yonetim_urun_listesi_en_cok_bes_sorgu_atar()
     {
         var client = await _factory.CreateSignedInClientAsync();
-        Assert.InRange(await _factory.QueryCountAsync(client, "/admin/products"), 1, 4);
+        Assert.InRange(await _factory.QueryCountAsync(client, "/admin/products"), 1, 5);
     }
 
     [Fact]

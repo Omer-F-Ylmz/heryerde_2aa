@@ -3,6 +3,7 @@ using HerYerde.Business.Dtos;
 using HerYerde.Business.Rules;
 using HerYerde.Entities.Concrete;
 using HerYerde.Entities.Enums;
+using HerYerde.Web.Models;
 
 namespace HerYerde.Web.Areas.Admin.Models;
 
@@ -207,6 +208,17 @@ public sealed class OrderDetailViewModel
     public OrderDetail Detail { get; set; } = null!;
     public string? ErrorMessage { get; set; }
 
+    /// <summary>Ayarlardaki kargo firmaları; "Kargoya verdim" formunun seçenekleri.</summary>
+    public IReadOnlyList<string> Carriers { get; set; } = [];
+
+    public string? TrackingUrl { get; set; }
+
+    /// <summary>Müşteriyle hızlı temas: ad, sipariş numarası ve durum önden dolu.</summary>
+    public string WhatsAppUrl => WhatsAppLink.For(
+        Detail.Order.Phone,
+        $"Merhaba {Detail.Order.FullName}, {Detail.Order.OrderNo} numaralı siparişiniz: "
+        + OrderLabels.For(Detail.Order.Status) + ".");
+
     /// <summary>Sıralı akışta bir sonraki adım; yoksa (teslim/iptal) buton çıkmaz.</summary>
     public OrderStatus? NextStatus => Detail.Order.Status switch
     {
@@ -217,6 +229,9 @@ public sealed class OrderDetailViewModel
     };
 
     public bool CanCancel => Detail.Order.Status == OrderStatus.Beklemede;
+
+    /// <summary>Sıradaki adım kargoysa firma ve takip numarası istenir.</summary>
+    public bool NeedsShipment => NextStatus == OrderStatus.Kargoda;
 
     /// <summary>Kişisel veri yalnız kapanmış (teslim/iptal) siparişte anonimleştirilir.</summary>
     public bool CanAnonymize => HerYerde.Business.Rules.OrderRules.CanAnonymize(Detail.Order.Status);

@@ -1,0 +1,137 @@
+using HerYerde.Business.Abstract;
+using HerYerde.Business.Notifications;
+using HerYerde.Core.DataAccess;
+using HerYerde.DataAccess.Abstract;
+using HerYerde.Entities.Concrete;
+using HerYerde.Entities.Enums;
+using Microsoft.Extensions.Options;
+
+namespace HerYerde.Business.Concrete;
+
+public class NotificationManager : INotificationService
+{
+    /// <summary>Bu sayıya ulaşan kayıt bir daha denenmez.</summary>
+    public const int MaxTries = 3;
+
+    private const int BatchSize = 50;
+
+    private readonly IOutboxMessageDal _outboxDal;
+    private readonly INotificationSender _sender;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly NotificationSettings _notifications;
+    private readonly ShippingSettings _shipping;
+    private readonly ShopSettings _shop;
+    private readonly TimeProvider _clock;
+
+    public NotificationManager(
+        IOutboxMessageDal outboxDal,
+        INotificationSender sender,
+        IUnitOfWork unitOfWork,
+        IOptions<NotificationSettings> notifications,
+        IOptions<ShippingSettings> shipping,
+        IOptions<ShopSettings> shop,
+        TimeProvider clock)
+    {
+        _outboxDal = outboxDal;
+        _sender = sender;
+        _unitOfWork = unitOfWork;
+        _notifications = notifications.Value;
+        _shipping = shipping.Value;
+        _shop = shop.Value;
+        _clock = clock;
+    }
+
+    public async Task QueueOrderPlacedAsync(
+        Order order,
+        IReadOnlyList<OrderItem> items,
+        CancellationToken cancellationToken = default)
+    {
+        if (order.Email is { Length: > 0 } email)
+        {
+            var (subject, body) = NotificationTemplates.OrderPlaced(
+                order,
+                items,
+                $"{_shop.BaseUrl}/siparis/{order.OrderNo}/tesekkur?t={order.AccessToken}",
+                _shop.Iban);
+
+            await QueueAsync(OutboxType.OrderPlaced, email, subject, body, cancellationToken);
+        }
+
+        if (_notifications.StoreTo is { Length: > 0 } store)
+        {
+            var (subject, body) = NotificationTemplates.NewOrderForStore(
+                order,
+                items,
+                $"{_shop.BaseUrl}/admin/orders/detail/{order.Id}");
+
+            await QueueAsync(OutboxType.NewOrderForStore, store, subject, body, cancellationToken);
+        }
+    }
+
+    public async Task QueueOrderShippedAsync(Order order, CancellationToken cancellationToken = default)
+    {
+        if (order.Email is not { Length: > 0 } email)
+        {
+            return;
+        }
+
+        var (subject, body) = NotificationTemplates.OrderShipped(
+            order,
+            _shipping.TrackingUrl(order.Carrier, order.TrackingNo));
+
+        await QueueAsync(OutboxType.OrderShipped, email, subject, body, cancellationToken);
+    }
+
+    public async Task<NotificationDispatch> DispatchAsync(CancellationToken cancellationToken = default)
+    {
+        var now = _clock.GetUtcNow().UtcDateTime;
+        var due = await _outboxDal.DueAsync(now, BatchSize, cancellationToken);
+        if (due.Count == 0)
+        {
+            return new NotificationDispatch(0, 0, 0);
+        }
+
+        if (!_sender.IsConfigured)
+        {
+            // Ayar gelene kadar kayıtlar kuyrukta bekler; deneme sayısı artmaz.
+            return new NotificationDispatch(0, 0, due.Count);
+        }
+
+        var sent = 0;
+        var failed = 0;
+        foreach (var message in due)
+        {
+            try
+            {
+                await _sender.SendAsync(message.To, message.Subject, message.Body, cancellationToken);
+                message.Status = OutboxStatus.Gonderildi;
+                message.SentAt = now;
+                message.NextTryAt = null;
+                sent++;
+            }
+            catch (Exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                message.TryCount++;
+                message.Status = message.TryCount >= MaxTries ? OutboxStatus.Basarisiz : OutboxStatus.Bekliyor;
+                // Üstel bekleme: 4 dk, sonra 16 dk.
+                message.NextTryAt = now.AddMinutes(Math.Pow(4, message.TryCount));
+                failed++;
+            }
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return new NotificationDispatch(sent, failed, 0);
+    }
+
+    private Task QueueAsync(string type, string to, string subject, string body, CancellationToken cancellationToken)
+        => _outboxDal.AddAsync(
+            new OutboxMessage
+            {
+                Type = type,
+                To = to,
+                Subject = subject,
+                Body = body,
+                Status = OutboxStatus.Bekliyor
+            },
+            cancellationToken);
+}

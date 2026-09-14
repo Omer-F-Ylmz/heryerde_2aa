@@ -8,8 +8,9 @@
     </p>
     <p class="summary__row">
         <span>Kargo</span>
-        <span class="summary__value">@Money.Tl(Model.ShippingFee)</span>
+        <span class="summary__value">@(Model.FreeShipping ? "Kargo bedava" : Money.Tl(Model.ShippingFee))</span>
     </p>
+    <partial name="Components/_FreeShipping" model="Model" />
     <p class="summary__row summary__row--total">
         <span>Toplam</span>
         <span class="summary__value">@Money.Tl(Model.Total)</span>

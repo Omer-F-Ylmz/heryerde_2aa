@@ -3,7 +3,12 @@
 @{
     ViewData["Title"] = "Sepetim";
     var cart = Model.Cart;
-    var summary = new OrderSummaryViewModel(cart.Subtotal, cart.ShippingFee, cart.Total, "Kargo ücreti alıcıya aittir.");
+    var summary = new OrderSummaryViewModel(
+        cart.Subtotal,
+        cart.ShippingFee,
+        cart.Total,
+        cart.FreeShipping ? null : "Kargo ücreti alıcıya aittir.",
+        cart.FreeShippingOver);
 }
 
 <div class="container section">

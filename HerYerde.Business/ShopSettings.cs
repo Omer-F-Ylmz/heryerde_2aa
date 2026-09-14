@@ -3,6 +3,9 @@ namespace HerYerde.Business;
 public sealed class ShopSettings
 {
     public decimal ShippingFee { get; set; }
+
+    /// <summary>Bu ara toplamdan itibaren kargo bedava; 0 ise eşik kapalıdır.</summary>
+    public decimal FreeShippingOver { get; set; }
     public string Iban { get; set; } = string.Empty;
 
     /// <summary>Sepet satırı başına adet tavanı; perakende bir siparişin makul üst sınırı.</summary>

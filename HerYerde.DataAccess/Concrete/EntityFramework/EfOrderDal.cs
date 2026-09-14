@@ -20,4 +20,7 @@ public class EfOrderDal : EfEntityRepositoryBase<Order, HerYerdeContext>, IOrder
 
         return rows[0];
     }
+
+    public Task<int> UnseenCountAsync(CancellationToken cancellationToken = default)
+        => Context.Orders.CountAsync(o => o.SeenAt == null, cancellationToken);
 }

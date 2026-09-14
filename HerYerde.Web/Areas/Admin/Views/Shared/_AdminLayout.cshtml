@@ -1,6 +1,10 @@
+@using HerYerde.Business.Abstract
+@inject IOrderService OrderService
 @{
     var signedIn = User.Identity?.IsAuthenticated == true;
     var section = ViewContext.RouteData.Values["controller"] as string;
+    // Rozet yalnız girişten sonra sorulur; çıkış ekranında veritabanına gidilmez.
+    var unseen = signedIn ? (await OrderService.UnseenCountAsync()).Item2.Data : 0;
 }
 <!DOCTYPE html>
 <html lang="tr">
@@ -32,6 +36,13 @@
                        aria-current="@(section == "Orders" ? "page" : null)">
                         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                         <span>Siparişler</span>
+                        @if (unseen > 0)
+                        {
+                            <span class="admin-nav__count" data-unseen-count="@unseen">
+                                @unseen
+                                <span class="visually-hidden">okunmamış sipariş</span>
+                            </span>
+                        }
                     </a>
                     <a class="admin-nav__link @(section == "Categories" ? "is-current" : null)"
                        asp-area="Admin" asp-controller="Categories" asp-action="Index"

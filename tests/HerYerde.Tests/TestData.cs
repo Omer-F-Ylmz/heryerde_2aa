@@ -1,4 +1,5 @@
 using HerYerde.Business;
+using HerYerde.Business.Abstract;
 using HerYerde.Business.Concrete;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
@@ -39,17 +40,57 @@ public static class TestData
     };
 
     public const decimal ShippingFee = 79.90m;
+    public const decimal FreeShippingOver = 2500m;
     public const int MaxQtyPerLine = 10;
     public const string Iban = "TR00 0000 0000 0000 0000 0000 00";
+    public const string StoreEmail = "magaza@heryerde.test";
+    public const string Carrier = "Yurtiçi";
+    public const string TrackingUrlTemplate = "https://kargo.test/takip/{0}";
+    public const string BaseUrl = "https://heryerde.test";
 
-    public static CartManager NewCartManager(HerYerdeContext context, TimeProvider? clock = null) => new(
+    public static ShopSettings NewShopSettings(decimal? freeShippingOver = null) => new()
+    {
+        ShippingFee = ShippingFee,
+        FreeShippingOver = freeShippingOver ?? FreeShippingOver,
+        Iban = Iban,
+        MaxQtyPerLine = MaxQtyPerLine,
+        BaseUrl = BaseUrl
+    };
+
+    public static NotificationSettings NewNotificationSettings() => new()
+    {
+        From = "siparis@heryerde.test",
+        StoreTo = StoreEmail
+    };
+
+    public static ShippingSettings NewShippingSettings() => new()
+    {
+        Carriers = [new CarrierSettings { Name = Carrier, TrackingUrl = TrackingUrlTemplate }]
+    };
+
+    public static NotificationManager NewNotificationManager(
+        HerYerdeContext context,
+        INotificationSender? sender = null,
+        TimeProvider? clock = null) => new(
+        new EfOutboxMessageDal(context),
+        sender ?? new FakeNotificationSender(),
+        new EfUnitOfWork(context),
+        Options.Create(NewNotificationSettings()),
+        Options.Create(NewShippingSettings()),
+        Options.Create(NewShopSettings()),
+        clock ?? TestClock.Fixed);
+
+    public static CartManager NewCartManager(
+        HerYerdeContext context,
+        TimeProvider? clock = null,
+        decimal? freeShippingOver = null) => new(
         new EfCartDal(context),
         new EfCartItemDal(context),
         new EfProductDal(context),
         new EfProductVariantDal(context),
         new EfProductImageDal(context),
         new EfUnitOfWork(context),
-        Options.Create(new ShopSettings { ShippingFee = ShippingFee, Iban = Iban, MaxQtyPerLine = MaxQtyPerLine }),
+        Options.Create(NewShopSettings(freeShippingOver)),
         clock ?? TestClock.Fixed);
 
     public static AdminAuthManager NewAdminAuthManager(HerYerdeContext context) => new(
@@ -63,14 +104,19 @@ public static class TestData
         new EfCategoryDal(context),
         new EfUnitOfWork(context));
 
-    public static OrderManager NewOrderManager(HerYerdeContext context, TimeProvider? clock = null) => new(
+    public static OrderManager NewOrderManager(
+        HerYerdeContext context,
+        TimeProvider? clock = null,
+        decimal? freeShippingOver = null) => new(
         new EfOrderDal(context),
         new EfOrderItemDal(context),
         new EfCartItemDal(context),
         new EfProductDal(context),
         new EfProductVariantDal(context),
         new EfUnitOfWork(context),
-        Options.Create(new ShopSettings { ShippingFee = ShippingFee, Iban = Iban }),
+        NewNotificationManager(context, clock: clock),
+        Options.Create(NewShopSettings(freeShippingOver)),
+        Options.Create(NewShippingSettings()),
         clock ?? TestClock.Fixed);
 
     /// <summary>Ev alanında varyantsız ürün.</summary>

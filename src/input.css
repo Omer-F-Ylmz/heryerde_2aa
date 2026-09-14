@@ -2968,3 +2968,125 @@
     }
   }
 }
+
+@layer components {
+  /* --- D6: bedava kargo esigi, yeni siparis rozeti, kargo formu --- */
+
+  /* Esik cubugu: sepet ve odeme ozetinde ayni bilesen */
+  .freeship {
+    margin-block: 8px;
+    padding: 16px;
+    border-radius: 8px;
+    background: var(--c-brand-100);
+  }
+
+  .freeship__text {
+    margin: 0 0 8px;
+    color: var(--c-brand-900);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .freeship__text--done {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--c-accent-deep);
+  }
+
+  .freeship__track {
+    height: 8px;
+    border-radius: 8px;
+    background: var(--c-neutral-50);
+    overflow: hidden;
+  }
+
+  .freeship__fill {
+    display: block;
+    height: 100%;
+    border-radius: 8px;
+    background: var(--c-brand);
+  }
+
+  .freeship__text--done + .freeship__track .freeship__fill {
+    background: var(--c-accent);
+  }
+
+  /* Genislik satir ici stille verilemez (CSP style-src 'self'); yuzde ona yuvarlanip sinifa cevrilir. */
+  .freeship__fill--0 { width: 0%; }
+  .freeship__fill--10 { width: 10%; }
+  .freeship__fill--20 { width: 20%; }
+  .freeship__fill--30 { width: 30%; }
+  .freeship__fill--40 { width: 40%; }
+  .freeship__fill--50 { width: 50%; }
+  .freeship__fill--60 { width: 60%; }
+  .freeship__fill--70 { width: 70%; }
+  .freeship__fill--80 { width: 80%; }
+  .freeship__fill--90 { width: 90%; }
+  .freeship__fill--100 { width: 100%; }
+
+  /* Yonetim: okunmamis siparis sayaci ve satir rozeti */
+  .admin-nav__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding-inline: 8px;
+    border-radius: 16px;
+    background: var(--c-brand);
+    color: var(--c-white);
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .admin-nav__link.is-current .admin-nav__count {
+    background: var(--c-neutral-50);
+    color: var(--c-brand-900);
+  }
+
+  .order-row__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .order-row__new {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding-inline: 8px;
+    border-radius: 16px;
+    background: var(--c-accent);
+    color: var(--c-white);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .page-head__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Kargoya verirken firma ve takip numarasi ayni formda istenir */
+  .shipment {
+    display: grid;
+    gap: 16px;
+    width: 100%;
+    padding: 16px;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: 8px;
+    background: var(--c-neutral-50);
+  }
+
+  @media (min-width: 768px) {
+    .shipment {
+      grid-template-columns: 1fr 1fr auto;
+      align-items: end;
+    }
+  }
+}

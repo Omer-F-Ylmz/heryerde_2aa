@@ -56,7 +56,13 @@ else
                 <tr>
                     <th scope="row">
                         <div class="cell-product">
-                            <span>@order.OrderNo</span>
+                            <span class="order-row__head">
+                                <span>@order.OrderNo</span>
+                                @if (order.SeenAt is null)
+                                {
+                                    <span class="order-row__new">Yeni</span>
+                                }
+                            </span>
                             <span class="cell-mono">@IstanbulTime.Format(order.CreatedAt)</span>
                         </div>
                     </th>

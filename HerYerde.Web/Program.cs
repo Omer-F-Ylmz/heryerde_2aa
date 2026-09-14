@@ -65,6 +65,8 @@ builder.Services.AddSingleton(HtmlEncoder.Create(
 
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.Configure<ShopSettings>(builder.Configuration.GetSection("Shop"));
+builder.Services.Configure<NotificationSettings>(builder.Configuration.GetSection("Notifications"));
+builder.Services.Configure<ShippingSettings>(builder.Configuration.GetSection("Shipping"));
 
 builder.Services.Configure<RateLimitSettings>(builder.Configuration.GetSection("RateLimit"));
 builder.Services.AddRateLimiter(options =>
@@ -128,6 +130,8 @@ builder.Services.AddSingleton<IProductImageStorage>(services => new ProductImage
         : services.GetRequiredService<IWebHostEnvironment>().WebRootPath));
 builder.Services.AddHostedService<CartCleanupHostedService>();
 builder.Services.AddHostedService<AuditLogCleanupHostedService>();
+builder.Services.AddSingleton<INotificationSender, SmtpNotificationSender>();
+builder.Services.AddHostedService<OutboxHostedService>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

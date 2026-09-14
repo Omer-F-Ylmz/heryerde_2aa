@@ -1,3 +1,5 @@
+using HerYerde.Business.Rules;
+
 namespace HerYerde.Business.Dtos;
 
 /// <summary>Sepet satırı; fiyat sepete atıldığı andan taşınır, stok anlık okunur.</summary>
@@ -29,10 +31,16 @@ public sealed record CartView(
     decimal Subtotal,
     decimal ShippingFee,
     IReadOnlyList<CartGift>? Gifts = null,
-    string? GiftNote = null)
+    string? GiftNote = null,
+    decimal FreeShippingOver = 0m)
 {
     public decimal Total => Subtotal + ShippingFee;
     public int Count => Lines.Sum(l => l.Quantity);
     public bool IsEmpty => Lines.Count == 0;
     public IReadOnlyList<CartGift> GiftLines => Gifts ?? [];
+
+    public bool FreeShipping => ShippingRules.IsFree(Subtotal, FreeShippingOver);
+
+    /// <summary>Bedava kargoya kalan tutar; eşik kapalıysa ya da aşıldıysa 0.</summary>
+    public decimal ToFreeShipping => ShippingRules.Remaining(Subtotal, FreeShippingOver);
 }

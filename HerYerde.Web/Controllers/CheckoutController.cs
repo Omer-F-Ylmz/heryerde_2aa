@@ -15,6 +15,7 @@ public class CheckoutController(
     ICartService cartService,
     IOrderService orderService,
     IOptions<ShopSettings> shop,
+    IOptions<ShippingSettings> shipping,
     IConfiguration configuration) : Controller
 {
     private ShopSettings Shop => shop.Value;
@@ -116,7 +117,11 @@ public class CheckoutController(
 
         var whatsAppBase = configuration["Shop:WhatsApp"] ?? "https://wa.me/";
         var message = $"Merhaba, {result.Data.Order.OrderNo} numaralı siparişimi bildirmek istiyorum.";
-        return View(new ThankYouViewModel(result.Data, whatsAppBase + "?text=" + Uri.EscapeDataString(message), Shop.Iban));
+        return View(new ThankYouViewModel(
+            result.Data,
+            whatsAppBase + "?text=" + Uri.EscapeDataString(message),
+            Shop.Iban,
+            shipping.Value.TrackingUrl(result.Data.Order.Carrier, result.Data.Order.TrackingNo)));
     }
 
     private IActionResult Invalid(CheckoutFormViewModel form, CartView cart, string? message, bool setStatus = true)

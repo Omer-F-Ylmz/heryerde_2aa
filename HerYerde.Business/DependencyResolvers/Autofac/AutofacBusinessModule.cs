@@ -23,6 +23,7 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfOrderDal>().As<IOrderDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfOrderItemDal>().As<IOrderItemDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfAdminAuditLogDal>().As<IAdminAuditLogDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfOutboxMessageDal>().As<IOutboxMessageDal>().InstancePerLifetimeScope();
 
         builder.RegisterType<AdminAuthManager>().As<IAdminAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<CategoryManager>().As<ICategoryService>().InstancePerLifetimeScope();
@@ -30,5 +31,6 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<CartManager>().As<ICartService>().InstancePerLifetimeScope();
         builder.RegisterType<OrderManager>().As<IOrderService>().InstancePerLifetimeScope();
         builder.RegisterType<AdminAuditManager>().As<IAdminAuditService>().InstancePerLifetimeScope();
+        builder.RegisterType<NotificationManager>().As<INotificationService>().InstancePerLifetimeScope();
     }
 }

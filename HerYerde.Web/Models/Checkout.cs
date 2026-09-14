@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using HerYerde.Business.Dtos;
+using HerYerde.Business.Rules;
 using HerYerde.Entities.Enums;
 
 namespace HerYerde.Web.Models;
@@ -57,15 +58,37 @@ public sealed record CheckoutPageViewModel(
     string? ErrorMessage,
     string? Notice = null);
 
-public sealed record ThankYouViewModel(OrderDetail Detail, string WhatsAppUrl, string Iban);
+public sealed record ThankYouViewModel(OrderDetail Detail, string WhatsAppUrl, string Iban, string? TrackingUrl = null);
 
 public sealed record CartPageViewModel(CartView Cart, string? ErrorMessage);
 
 /// <summary>FRONT kiti: sepet satırı; düzenlenebilir halinde adet ve silme formlarını da çizer.</summary>
 public sealed record CartLineViewModel(CartLine Line, bool Editable);
 
-/// <summary>FRONT kiti: ara toplam / kargo / toplam üçlüsü.</summary>
-public sealed record OrderSummaryViewModel(decimal Subtotal, decimal ShippingFee, decimal Total, string? Note = null);
+/// <summary>FRONT kiti: ara toplam / kargo / toplam üçlüsü; eşik verilirse bedava kargo çubuğu da çizilir.</summary>
+public sealed record OrderSummaryViewModel(
+    decimal Subtotal,
+    decimal ShippingFee,
+    decimal Total,
+    string? Note = null,
+    decimal FreeShippingOver = 0m)
+{
+    public bool FreeShipping => ShippingRules.IsFree(Subtotal, FreeShippingOver);
+
+    public decimal ToFreeShipping => ShippingRules.Remaining(Subtotal, FreeShippingOver);
+
+    /// <summary>Eşik kapalıysa çubuk çizilmez.</summary>
+    public bool ShowProgress => FreeShippingOver > 0m && Subtotal > 0m;
+
+    /// <summary>Çubuğun dolu yüzdesi (0-100).</summary>
+    public int Progress => FreeShippingOver <= 0m
+        ? 0
+        : (int)Math.Clamp(Math.Round(Subtotal / FreeShippingOver * 100m), 0m, 100m);
+
+    /// <summary>Çubuğun genişliği sınıfla verilir: CSP "style-src 'self'" satır içi stili engelliyor,
+    /// bu yüzden yüzde ona yuvarlanıp hazır sınıfa çevrilir.</summary>
+    public int ProgressStep => (int)Math.Round(Progress / 10d) * 10;
+}
 
 /// <summary>Sipariş durumunun Türkçe karşılığı; rozet ve yönetim süzgeci aynı metni kullanır.</summary>
 public static class OrderLabels

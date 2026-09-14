@@ -18,8 +18,20 @@ public interface IOrderService
     /// <summary>Yönetim listesi: duruma göre süzer, sipariş numarası veya telefonla arar.</summary>
     Task<(HttpStatusCode, IDataResult<List<Order>>)> SearchAsync(OrderStatus? status, string? query, CancellationToken cancellationToken = default);
 
-    /// <summary>Yalnız <see cref="Rules.OrderRules.CanTransition"/> izin verirse; aksi halde 400.</summary>
-    Task<(HttpStatusCode, IResult)> ChangeStatusAsync(int orderId, OrderStatus next, CancellationToken cancellationToken = default);
+    /// <summary>Yalnız <see cref="Rules.OrderRules.CanTransition"/> izin verirse; aksi halde 400.
+    /// <see cref="OrderStatus.Kargoda"/> geçişinde tanımlı kargo firması ve takip numarası zorunlu.</summary>
+    Task<(HttpStatusCode, IResult)> ChangeStatusAsync(
+        int orderId,
+        OrderStatus next,
+        string? carrier = null,
+        string? trackingNo = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Yönetimde henüz açılmamış sipariş sayısı; başlıktaki rozet buradan.</summary>
+    Task<(HttpStatusCode, IDataResult<int>)> UnseenCountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Siparişi görüldü sayar; ilk görülme anı korunur.</summary>
+    Task<(HttpStatusCode, IResult)> MarkSeenAsync(int orderId, CancellationToken cancellationToken = default);
 
     /// <summary>Kapanmış (teslim/iptal) siparişin ad, telefon, e-posta ve adresini maskeler, notu siler; açık siparişte 409.</summary>
     Task<(HttpStatusCode, IResult)> AnonymizeAsync(int orderId, CancellationToken cancellationToken = default);

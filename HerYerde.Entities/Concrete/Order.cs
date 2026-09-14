@@ -28,6 +28,15 @@ public class Order : IEntity
 
     public DateTime CreatedAt { get; set; }
 
+    /// <summary>Yönetimde ilk kez açıldığı an; boşsa sipariş listede "yeni" rozetiyle çıkar.</summary>
+    public DateTime? SeenAt { get; set; }
+
+    /// <summary>Kargo firmasının adı; <see cref="OrderStatus.Kargoda"/> durumunda zorunlu.</summary>
+    public string? Carrier { get; set; }
+
+    /// <summary>Kargo takip numarası; <see cref="OrderStatus.Kargoda"/> durumunda zorunlu.</summary>
+    public string? TrackingNo { get; set; }
+
     /// <summary>Ödeme adımında ön bilgilendirme formu ve mesafeli satış sözleşmesinin onaylandığı an.</summary>
     public DateTime? ConsentAt { get; set; }
 

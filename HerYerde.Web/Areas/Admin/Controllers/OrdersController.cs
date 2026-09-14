@@ -1,5 +1,7 @@
 using System.Net;
+using HerYerde.Business;
 using HerYerde.Business.Abstract;
+using HerYerde.Business.Dtos;
 using HerYerde.Business.Rules;
 using HerYerde.Entities.Enums;
 using HerYerde.Web.Areas.Admin.Models;
@@ -7,6 +9,7 @@ using HerYerde.Web.Infrastructure;
 using HerYerde.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace HerYerde.Web.Areas.Admin.Controllers;
 
@@ -17,12 +20,18 @@ public class OrdersController : Controller
     private readonly IOrderService _orderService;
     private readonly TimeProvider _clock;
     private readonly IAdminAuditService _auditService;
+    private readonly ShippingSettings _shipping;
 
-    public OrdersController(IOrderService orderService, TimeProvider clock, IAdminAuditService auditService)
+    public OrdersController(
+        IOrderService orderService,
+        TimeProvider clock,
+        IAdminAuditService auditService,
+        IOptions<ShippingSettings> shipping)
     {
         _orderService = orderService;
         _clock = clock;
         _auditService = auditService;
+        _shipping = shipping.Value;
     }
 
     [HttpGet]
@@ -47,14 +56,21 @@ public class OrdersController : Controller
             return NotFound();
         }
 
-        return View(new OrderDetailViewModel { Detail = detail.Data! });
+        // Detayı açmak siparişi okunmuş sayar; başlıktaki rozet buradan düşer.
+        await _orderService.MarkSeenAsync(id, cancellationToken);
+        return View(ViewFor(detail.Data!));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ChangeStatus(int id, OrderStatus next, CancellationToken cancellationToken)
+    public async Task<IActionResult> ChangeStatus(
+        int id,
+        OrderStatus next,
+        string? carrier,
+        string? trackingNo,
+        CancellationToken cancellationToken)
     {
-        var (status, result) = await _orderService.ChangeStatusAsync(id, next, cancellationToken);
+        var (status, result) = await _orderService.ChangeStatusAsync(id, next, carrier, trackingNo, cancellationToken);
         if (status == HttpStatusCode.NotFound)
         {
             return NotFound();
@@ -64,7 +80,7 @@ public class OrdersController : Controller
         {
             var (_, detail) = await _orderService.GetByIdAsync(id, cancellationToken);
             Response.StatusCode = (int)status;
-            return View("Detail", new OrderDetailViewModel { Detail = detail.Data!, ErrorMessage = result.Message });
+            return View("Detail", ViewFor(detail.Data!, result.Message));
         }
 
         await _auditService.WriteAsync(HttpContext, "durum: " + OrderLabels.For(next), "sipariş", id);
@@ -85,10 +101,18 @@ public class OrdersController : Controller
         {
             var (_, detail) = await _orderService.GetByIdAsync(id, cancellationToken);
             Response.StatusCode = (int)status;
-            return View("Detail", new OrderDetailViewModel { Detail = detail.Data!, ErrorMessage = result.Message });
+            return View("Detail", ViewFor(detail.Data!, result.Message));
         }
 
         await _auditService.WriteAsync(HttpContext, "kişisel veri anonimleştirildi", "sipariş", id);
         return RedirectToAction(nameof(Detail), new { id });
     }
+
+    private OrderDetailViewModel ViewFor(OrderDetail detail, string? errorMessage = null) => new()
+    {
+        Detail = detail,
+        ErrorMessage = errorMessage,
+        Carriers = _shipping.Carriers.Select(c => c.Name).ToList(),
+        TrackingUrl = _shipping.TrackingUrl(detail.Order.Carrier, detail.Order.TrackingNo)
+    };
 }
