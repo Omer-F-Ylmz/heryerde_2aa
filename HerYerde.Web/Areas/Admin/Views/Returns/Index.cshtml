@@ -1,0 +1,65 @@
+@using HerYerde.Business.Dtos
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@model List<ReturnListItem>
+@{
+    ViewData["Title"] = "İadeler";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Müşteri</p>
+        <h1 class="display-2">İade ve değişim</h1>
+        <p class="page-head__note">Teslimden sonra 14 gün içinde açılan talepler, en yeniden eskiye. İade tutarı cayma bildiriminden itibaren 14 gün içinde ödenir; sayaç kalan günü gösterir.</p>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <p class="empty surface-elevated">Henüz iade ya da değişim talebi yok.</p>
+}
+else
+{
+    <div class="table-wrap surface-elevated">
+        <table class="table">
+            <caption class="visually-hidden">İade ve değişim talepleri: zaman, sipariş, tür, durum, geri ödeme süresi</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Zaman</th>
+                    <th scope="col">Sipariş</th>
+                    <th scope="col">Tür</th>
+                    <th scope="col">Durum</th>
+                    <th scope="col">Geri ödeme</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var row in Model)
+            {
+                <tr>
+                    <th scope="row"><span class="cell-mono">@IstanbulTime.Format(row.Request.CreatedAt)</span></th>
+                    <td>
+                        <div class="cell-product">
+                            <a href="/admin/iadeler/@row.Request.Id">@row.OrderNo</a>
+                            <span>@row.FullName</span>
+                        </div>
+                    </td>
+                    <td>@ReturnLabels.Type(row.Request.Type)</td>
+                    <td>
+                        <span class="tag @(row.Request.Status == ReturnStatus.Bekliyor ? "tag--live" : "tag--draft")">@ReturnLabels.Status(row.Request.Status)</span>
+                    </td>
+                    <td>
+                        @if (row.RefundDaysLeft is { } left)
+                        {
+                            <span class="tag @(left <= 3 ? "tag--low" : "tag--draft")">@(left < 0 ? $"{-left} gün gecikti" : $"{left} gün kaldı")</span>
+                        }
+                        else
+                        {
+                            <span>—</span>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

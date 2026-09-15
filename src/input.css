@@ -399,6 +399,13 @@
     flex-wrap: wrap;
   }
 
+  /* Telefonda menü tek sütun: kısa adlı iki bağlantı (İadeler, Rapor) aynı satıra düşmesin. */
+  @media (max-width: 767.98px) {
+    .admin-nav {
+      flex-direction: column;
+    }
+  }
+
   .admin-nav__link {
     display: flex;
     align-items: center;
@@ -1441,6 +1448,12 @@
     font-size: 16px;
   }
 
+  .price-block__vat {
+    flex-basis: 100%;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
   /* Rozetler: kampanya kiremit (mevcut .tag--campaign), hediye yeşil, tükeniyor sarı */
   .tag--gift {
     background: var(--c-accent);
@@ -2083,8 +2096,18 @@
     outline-offset: 2px;
   }
 
+  /* Ön bilgilendirme ve sözleşme metinleri en az 12 punto (16 px) okunur. */
   .legal__body {
     max-width: 72ch;
+    font-size: 16px;
+  }
+
+  .withdrawal-form {
+    margin-top: 16px;
+    padding: 24px;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: var(--r-card);
+    background: var(--c-neutral-50);
   }
 
   .legal__body section {
@@ -2215,7 +2238,7 @@
     }
 
     .trust {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
     }
 
     .tabs--scroll::after {
@@ -3426,6 +3449,7 @@
   .faq__lead a,
   .contact .field__hint a,
   .notice-form .field__hint a,
+  .return-form .field__hint a,
   .product__help a,
   .cta-band__link {
     color: var(--c-brand-700);
@@ -3439,6 +3463,7 @@
   .faq__lead a:hover,
   .contact .field__hint a:hover,
   .notice-form .field__hint a:hover,
+  .return-form .field__hint a:hover,
   .product__help a:hover,
   .cta-band__link:hover {
     color: var(--c-brand-900);
@@ -3448,6 +3473,7 @@
   .faq__lead a:focus-visible,
   .contact .field__hint a:focus-visible,
   .notice-form .field__hint a:focus-visible,
+  .return-form .field__hint a:focus-visible,
   .product__help a:focus-visible,
   .cta-band__link:focus-visible,
   .contact__list a:focus-visible {
@@ -4081,6 +4107,70 @@
   .audit-detail {
     font-size: 14px;
     color: var(--c-neutral-700);
+  }
+
+  /* İade / değişim talebi */
+  .return-head {
+    margin-bottom: 32px;
+  }
+
+  .return-head .lead {
+    max-width: 65ch;
+  }
+
+  .return-form {
+    max-width: 720px;
+  }
+
+  .return-form .pay {
+    margin-bottom: 24px;
+  }
+
+  .return-form .form-card__foot {
+    flex-wrap: wrap;
+  }
+
+  .return-form .form-card__foot .btn {
+    white-space: nowrap;
+  }
+
+  .return-item + .return-item {
+    padding-top: 16px;
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .return-item__name {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+
+  .return-line {
+    margin-bottom: 16px;
+  }
+
+  .return-line:last-child,
+  .return-line .summary__note {
+    margin-bottom: 0;
+  }
+
+  .return-line + .return-line {
+    padding-top: 16px;
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .reject-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+  }
+
+  .reject-form .field {
+    margin-bottom: 0;
   }
 
   .notice-form {

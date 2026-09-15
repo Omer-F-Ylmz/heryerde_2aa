@@ -2,7 +2,8 @@
 @inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
 @model LegalPage
 @{
-    Layout = "_LegalLayout";
+    // Sözleşme PDF'i (LegalPdfArchive) aynı görünümü düzensiz çizer.
+    Layout = ViewData[HerYerde.Web.Infrastructure.RazorViewText.PdfFlag] is true ? null : "_LegalLayout";
 }
 @section Toc {
     <li><a class="legal__toc-link" href="#satici">Satıcı bilgileri</a></li>

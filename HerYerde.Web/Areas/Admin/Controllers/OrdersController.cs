@@ -19,6 +19,7 @@ public class OrdersController : Controller
 {
     private readonly IOrderService _orderService;
     private readonly IPaymentService _paymentService;
+    private readonly IReturnService _returnService;
     private readonly TimeProvider _clock;
     private readonly IAdminAuditService _auditService;
     private readonly IPrivateFileStorage _files;
@@ -27,6 +28,7 @@ public class OrdersController : Controller
     public OrdersController(
         IOrderService orderService,
         IPaymentService paymentService,
+        IReturnService returnService,
         TimeProvider clock,
         IAdminAuditService auditService,
         IPrivateFileStorage files,
@@ -34,6 +36,7 @@ public class OrdersController : Controller
     {
         _orderService = orderService;
         _paymentService = paymentService;
+        _returnService = returnService;
         _clock = clock;
         _auditService = auditService;
         _files = files;
@@ -304,6 +307,26 @@ public class OrdersController : Controller
         }
 
         await _auditService.WriteAsync(HttpContext, "iade", "sipariş", id);
+        return RedirectToAction(nameof(Detail), new { id });
+    }
+
+    /// <summary>Müşterinin iptal ettiği onaylı havalenin IBAN'a elle geri ödemesi yapıldı.</summary>
+    [HttpPost("admin/orders/{id:int}/geri-odendi")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarkRefunded(int id, CancellationToken cancellationToken)
+    {
+        var (status, result) = await _returnService.MarkOrderRefundedAsync(id, cancellationToken);
+        if (status == HttpStatusCode.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (status != HttpStatusCode.OK)
+        {
+            return await DetailWithErrorAsync(id, status, result.Message, cancellationToken);
+        }
+
+        await _auditService.WriteAsync(HttpContext, "havale geri ödendi", "sipariş", id);
         return RedirectToAction(nameof(Detail), new { id });
     }
 

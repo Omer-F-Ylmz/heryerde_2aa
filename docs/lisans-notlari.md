@@ -33,3 +33,19 @@ Yönetici iki adımlı doğrulama kurulumunda `otpauth://` adresinin QR kodunu P
 - Lisans: **MIT**. Ticari kullanım serbest, bildirim metninin korunması yeterli:
   <https://github.com/codebude/QRCoder/blob/master/LICENSE.txt>
 - Yalnız `QRCodeGenerator` + `PngByteQRCode` kullanılıyor (System.Drawing bağımlılığı olmayan yol; Linux imajında çalışır).
+
+## QuestPDF 2026.9.0
+
+Sözleşme arşivi (ön bilgilendirme + mesafeli satış sözleşmesi) ve cayma formu PDF'lerini üretmek için kullanılıyor
+(`HerYerde.Web/Infrastructure/LegalPdf.cs`). Varsayılan yazı tipi paketle gelen Lato (SIL Open Font License 1.1).
+
+- Lisans: **QuestPDF Community License** (MIT/Apache değil). Koşullar: yıllık brüt geliri **1.000.000 USD altında** olan
+  şirket ve bireyler ile kâr amacı gütmeyen, akademik ve açık kaynak projeler ücretsiz ve ticari amaçla kullanabilir; halka açık
+  şirketler ve kamu kurumları gelirden bağımsız olarak kapsam dışıdır. Eşik aşılırsa 90 gün içinde Professional/Enterprise
+  lisansa geçilir. Kod lisans türünü açıkça bildirir (`QuestPDF.Settings.License = LicenseType.Community`).
+  <https://www.questpdf.com/license/community.html>
+- **[MÜŞTERİ]:** işletmenin yıllık brüt gelirinin eşiğin altında olduğu teyit edilmeli; eşik aşılırsa lisans satın alınır.
+
+## PdfPig 0.1.16 (yalnız test)
+
+Testlerde üretilen PDF'lerin metnini okumak için (`tests/HerYerde.Tests`). Lisans: **Apache-2.0**; üretime gitmez.

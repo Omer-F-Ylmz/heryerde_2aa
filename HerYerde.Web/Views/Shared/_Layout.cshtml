@@ -36,6 +36,10 @@
         <meta property="og:url" content="@canonical" />
     }
     <meta property="og:image" content="@image" />
+    @if (Config["Seo:GoogleVerification"] is { Length: > 0 } verification)
+    {
+        <meta name="google-site-verification" content="@verification" />
+    }
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="@(title ?? "HerYerde")" />
     <meta name="twitter:description" content="@description" />
@@ -113,7 +117,7 @@
                 }
             </ul>
         </nav>
-        <span>HerYerde, @DateTime.UtcNow.Year · <span class="site-footer__note">Kapıda ödeme &amp; havale/EFT</span></span>
+        <span>HerYerde, @DateTime.UtcNow.Year · <span class="site-footer__note">Kapıda ödeme &amp; havale/EFT · Fiyatlara KDV dahildir</span></span>
         @if (Config["Legal:EtbisNo"] is { Length: > 0 } etbisNo)
         {
             <p class="store-footer__etbis">ETBİS'e kayıtlıdır · Kayıt no: <span class="store-footer__etbis-no">@etbisNo</span></p>

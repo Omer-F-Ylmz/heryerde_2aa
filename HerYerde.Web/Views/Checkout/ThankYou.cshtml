@@ -19,10 +19,76 @@
             </p>
         </div>
 
+        @if (TempData[HerYerde.Web.Controllers.CheckoutController.OrderMessageKey] is string orderMessage)
+        {
+            <p class="form-alert form-alert--notice" role="status">@orderMessage</p>
+        }
+        @if (Model.ErrorMessage is not null)
+        {
+            <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+        }
+
         <div class="thanks__card">
             <h2 class="heading-3">Sipariş durumu</h2>
             <partial name="Components/_StatusSteps" model="order.Status" />
+            @if (order.RefundDue is { } refundDue)
+            {
+                <p class="notice-form__sent">
+                    @Money.Tl(refundDue) tutarındaki ödemeniz @(order.RefundedAt is null ? "IBAN'ınıza iade edilecek." : "IBAN'ınıza iade edildi.")
+                </p>
+            }
         </div>
+
+        @if (Model.CanRequestReturn || Model.Returns is { Count: > 0 })
+        {
+            <div class="thanks__card">
+                <h2 class="heading-3">İade ve değişim</h2>
+                @foreach (var request in Model.Returns ?? [])
+                {
+                    <div class="return-line">
+                        <p class="summary__row">
+                            <span>@ReturnLabels.Type(request.Request.Type) · @request.Request.CreatedAt.ToString("dd.MM.yyyy")</span>
+                            <span class="summary__value">@ReturnLabels.Status(request.Request.Status)</span>
+                        </p>
+                        <p class="summary__note">
+                            @string.Join(", ", request.Items.Select(i => $"{i.OrderItem.ProductName} × {i.Item.Quantity}"))
+                            @if (request.Request.RejectReason is { } rejectReason)
+                            {
+                                <br /><span>Gerekçe: @rejectReason</span>
+                            }
+                        </p>
+                    </div>
+                }
+                @if (Model.CanRequestReturn)
+                {
+                    <p>Ürünü teslim aldığınız günden itibaren 14 gün içinde gerekçe göstermeden iade edebilir ya da bedenini/rengini değiştirebilirsiniz.</p>
+                    <p>
+                        <a class="btn btn--secondary" href="/siparis/@order.OrderNo/iade?t=@order.AccessToken">İade / değişim talebi aç</a>
+                    </p>
+                }
+            </div>
+        }
+
+        @if (Model.CanCancel)
+        {
+            <div class="thanks__card">
+                <h2 class="heading-3">Siparişi iptal et</h2>
+                <p>Siparişiniz hazırlanmaya başlamadan iptal edebilirsiniz.@(order.PaymentMethod == PaymentMethod.KrediKarti ? " Kartınızdan çekilen tutar aynı karta iade edilir." : "")</p>
+                <form method="post" action="/siparis/@order.OrderNo/iptal">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="t" value="@order.AccessToken" />
+                    @if (Model.CancelNeedsIban)
+                    {
+                        <div class="field">
+                            <label class="field__label" for="CancelIban">Geri ödeme için IBAN</label>
+                            <input class="field__input field__input--mono" id="CancelIban" name="iban" maxlength="40" autocomplete="off" placeholder="TR00 0000 0000 0000 0000 0000 00" required />
+                            <span class="field__hint">Havaleniz onaylandığı için ödemeniz bu IBAN'a en geç 14 gün içinde iade edilir.</span>
+                        </div>
+                    }
+                    <button class="btn btn--danger" type="submit">Siparişi iptal et</button>
+                </form>
+            </div>
+        }
 
         <div class="thanks__card">
             <h2 class="heading-3">Sipariş özeti</h2>
@@ -160,6 +226,7 @@
                 <p class="summary__note">
                     Siparişiniz <a href="/yasal/on-bilgilendirme-formu">ön bilgilendirme formu</a> ve
                     <a href="/yasal/mesafeli-satis-sozlesmesi">mesafeli satış sözleşmesi</a> (sürüm @version) kapsamındadır.
+                    <a href="/siparis/@order.OrderNo/sozlesme?t=@order.AccessToken">Onayladığınız metinleri PDF olarak indirin</a>.
                 </p>
             }
         </div>

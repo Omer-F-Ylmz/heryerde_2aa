@@ -73,7 +73,49 @@ public sealed record CheckoutPageViewModel(
 /// <summary>Bankanın 3D doğrulama sayfasına otomatik gönderilen form.</summary>
 public sealed record ThreeDsViewModel(ThreeDsForm Form);
 
-public sealed record ThankYouViewModel(OrderDetail Detail, string WhatsAppUrl, string Iban, string? TrackingUrl = null);
+/// <summary>Returns: siparişin iade/değişim talepleri; CanRequestReturn teslimden sonraki 14 günde, CanCancel hazırlanmadan önce.
+/// ErrorMessage başarısız müşteri işleminin (iptal) nedeni.</summary>
+public sealed record ThankYouViewModel(
+    OrderDetail Detail,
+    string WhatsAppUrl,
+    string Iban,
+    string? TrackingUrl = null,
+    IReadOnlyList<ReturnDetail>? Returns = null,
+    bool CanRequestReturn = false,
+    bool CanCancel = false,
+    string? ErrorMessage = null)
+{
+    /// <summary>Onaylı havalede iptal, geri ödeme için IBAN ister.</summary>
+    public bool CancelNeedsIban => Detail.Order is { PaymentMethod: PaymentMethod.HavaleEft, Status: OrderStatus.Onaylandi };
+}
+
+/// <summary>/siparis/{no}/iade formu.</summary>
+public sealed record ReturnRequestPageViewModel(ReturnForm Form, string? ErrorMessage);
+
+public sealed class ReturnRequestFormModel
+{
+    /// <summary>Sipariş erişim anahtarı ("t").</summary>
+    public Guid T { get; set; }
+
+    public ReturnType Type { get; set; } = ReturnType.Iade;
+
+    [StringLength(1000)]
+    public string? Reason { get; set; }
+
+    [StringLength(40)]
+    public string? Iban { get; set; }
+
+    public List<ReturnLineForm> Lines { get; set; } = [];
+}
+
+public sealed class ReturnLineForm
+{
+    public int OrderItemId { get; set; }
+    public int Quantity { get; set; }
+
+    [StringLength(60)]
+    public string? NewSku { get; set; }
+}
 
 public sealed record CartPageViewModel(CartView Cart, string? ErrorMessage);
 

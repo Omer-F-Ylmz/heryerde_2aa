@@ -53,4 +53,16 @@ public class Order : IEntity
 
     /// <summary>Fatura PDF'inin gizli depodaki göreli yolu (wwwroot dışında); indirme sipariş anahtarıyla.</summary>
     public string? InvoiceFile { get; set; }
+
+    /// <summary>Teslim edildi olarak işaretlendiği an; 14 günlük cayma/iade talebi süresi buradan sayılır.</summary>
+    public DateTime? DeliveredAt { get; set; }
+
+    /// <summary>Müşterinin iptal ettiği onaylı havale siparişinde elle geri ödenecek tutar; boşsa geri ödeme yok.</summary>
+    public decimal? RefundDue { get; set; }
+
+    /// <summary>Elle geri ödemenin yatırılacağı IBAN (boşluksuz).</summary>
+    public string? RefundIban { get; set; }
+
+    /// <summary>Yönetici elle geri ödemeyi yaptığını işaretlediği an.</summary>
+    public DateTime? RefundedAt { get; set; }
 }

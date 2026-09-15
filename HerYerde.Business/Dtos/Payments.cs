@@ -27,8 +27,9 @@ public sealed record PaymentCallback(
     string? MdStatus,
     string? Signature);
 
-/// <summary>Tam tutar iade: sağlayıcı aynı gün iptal, sonrasında iade uygular; kısmi iade yok.</summary>
-public sealed record PaymentRefundRequest(string PaymentId, string ConversationId, decimal Amount, string Ip);
+/// <summary>Tam tutar iadede sağlayıcı önce iptal dener (aynı gün), olmazsa iade; Partial (kalem iadesi) ise iptal denenmez,
+/// yalnız tutar kadar iade yapılır.</summary>
+public sealed record PaymentRefundRequest(string PaymentId, string ConversationId, decimal Amount, string Ip, bool Partial = false);
 
 public sealed record PaymentRefundResult(bool Success, string? ErrorMessage, string RawResponse);
 

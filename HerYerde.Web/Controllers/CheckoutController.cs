@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using HerYerde.Business;
 using HerYerde.Business.Abstract;
 using HerYerde.Business.Dtos;
+using HerYerde.Business.Rules;
 using HerYerde.Entities.Enums;
 using HerYerde.Web.Infrastructure;
 using HerYerde.Web.Models;
@@ -21,7 +22,10 @@ public partial class CheckoutController(
     IOptions<ShippingSettings> shipping,
     IOptions<IyzicoSettings> iyzico,
     IConfiguration configuration,
-    IPrivateFileStorage files) : Controller
+    IPrivateFileStorage files,
+    ILegalPdfArchive legalPdfs,
+    IReturnService returnService,
+    TimeProvider clock) : Controller
 {
     private ShopSettings Shop => shop.Value;
 
@@ -174,17 +178,108 @@ public partial class CheckoutController(
             return NotFound();
         }
 
-        var whatsAppBase = configuration["Shop:WhatsApp"] ?? "https://wa.me/";
-        var message = $"Merhaba, {result.Data.Order.OrderNo} numaralı siparişimi bildirmek istiyorum.";
-        return View(new ThankYouViewModel(
-            result.Data,
-            whatsAppBase + "?text=" + Uri.EscapeDataString(message),
-            Shop.Iban,
-            shipping.Value.TrackingUrl(result.Data.Order.Carrier, result.Data.Order.TrackingNo)));
+        return await ThankYouPageAsync(result.Data, null, cancellationToken);
     }
 
     /// <summary>Havale bildirimi sonucu; teşekkür sayfasında bir kez gösterilir.</summary>
     public const string NoticeKey = "havale-bildirimi";
+
+    /// <summary>Müşteri iptali ve iade talebi sonucu; teşekkür sayfasında bir kez gösterilir.</summary>
+    public const string OrderMessageKey = "siparis-islem";
+
+    /// <summary>Teslim edilmiş siparişin iade/değişim formu; talep açılamıyorsa sipariş sayfasına nedeniyle döner.</summary>
+    [HttpGet("siparis/{orderNo}/iade")]
+    public async Task<IActionResult> ReturnRequest(string orderNo, [FromQuery(Name = "t")] Guid t, CancellationToken cancellationToken)
+    {
+        var (status, form) = await returnService.GetFormAsync(orderNo, t, cancellationToken);
+        if (status == HttpStatusCode.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (status != HttpStatusCode.OK || form.Data!.Lines.All(l => l.Returnable == 0))
+        {
+            TempData[OrderMessageKey] = status == HttpStatusCode.OK ? "Bu siparişin tüm ürünleri için talep açılmış." : form.Message;
+            return SeeOther($"/siparis/{orderNo}/tesekkur?t={t}");
+        }
+
+        return View(new ReturnRequestPageViewModel(form.Data, null));
+    }
+
+    [HttpPost("siparis/{orderNo}/iade")]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(PrivateFileStorage.MaxBytes + 64_000)]
+    public async Task<IActionResult> ReturnRequest(string orderNo, ReturnRequestFormModel form, IFormFile? photo, CancellationToken cancellationToken)
+    {
+        string? stored = null;
+        string? error = null;
+        if (photo is { Length: > 0 })
+        {
+            using var buffer = new MemoryStream();
+            await photo.CopyToAsync(buffer, cancellationToken);
+            var bytes = buffer.ToArray();
+            if (photo.Length > PrivateFileStorage.MaxBytes || PrivateFileStorage.Kind(bytes) is not ("png" or "jpg" or "webp"))
+            {
+                error = "Fotoğraf PNG, JPEG ya da WebP olmalı, en çok 5 MB.";
+            }
+            else
+            {
+                stored = await files.SaveAsync("iadeler", PrivateFileStorage.Kind(bytes)!, bytes, cancellationToken);
+            }
+        }
+
+        var status = HttpStatusCode.BadRequest;
+        if (error is null)
+        {
+            var draft = new ReturnDraft(
+                form.Type,
+                form.Reason ?? string.Empty,
+                form.Lines.Select(l => new ReturnLine(l.OrderItemId, l.Quantity, form.Type == ReturnType.Degisim ? l.NewSku : null)).ToList(),
+                form.Iban,
+                stored);
+            (status, var result) = await returnService.RequestAsync(orderNo, form.T, draft, cancellationToken);
+            if (status == HttpStatusCode.Created)
+            {
+                TempData[OrderMessageKey] = result.Message;
+                return SeeOther($"/siparis/{orderNo}/tesekkur?t={form.T}");
+            }
+
+            files.Delete(stored);
+            error = result.Message;
+        }
+
+        var (found, page) = await returnService.GetFormAsync(orderNo, form.T, cancellationToken);
+        if (found != HttpStatusCode.OK)
+        {
+            return found == HttpStatusCode.NotFound ? NotFound() : SeeOther($"/siparis/{orderNo}/tesekkur?t={form.T}");
+        }
+
+        Response.StatusCode = (int)status;
+        return View(new ReturnRequestPageViewModel(page.Data!, error));
+    }
+
+    /// <summary>Müşteri iptali; başarısızsa sipariş sayfası nedeni ve durum koduyla yeniden çizilir.</summary>
+    [HttpPost("siparis/{orderNo}/iptal")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Cancel(string orderNo, [FromForm(Name = "t")] Guid t, [FromForm] string? iban, CancellationToken cancellationToken)
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        var (status, result) = await returnService.CancelByCustomerAsync(orderNo, t, iban, ip, cancellationToken);
+        var (found, detail) = await orderService.GetByOrderNoAsync(orderNo, cancellationToken);
+        if (status == HttpStatusCode.NotFound || found != HttpStatusCode.OK)
+        {
+            return NotFound();
+        }
+
+        if (status == HttpStatusCode.OK)
+        {
+            TempData[OrderMessageKey] = result.Message;
+            return SeeOther($"/siparis/{orderNo}/tesekkur?t={t}");
+        }
+
+        Response.StatusCode = (int)status;
+        return await ThankYouPageAsync(detail.Data!, result.Message, cancellationToken);
+    }
 
     /// <summary>Fatura yalnız siparişin anahtarıyla iner; başka siparişin anahtarı ya da anahtarsız istek 404.</summary>
     [HttpGet("siparis/{orderNo}/fatura")]
@@ -195,6 +290,19 @@ public partial class CheckoutController(
                && Guid.TryParse(t, out var supplied) && supplied == result.Data!.Order.AccessToken
                && files.Resolve(result.Data.Order.InvoiceFile) is { } path
             ? PhysicalFile(path, "application/pdf", $"fatura-{result.Data.Order.OrderNo}.pdf")
+            : NotFound();
+    }
+
+    /// <summary>Siparişte onaylanan sürümün ön bilgilendirme + sözleşme PDF'i; yalnız siparişin anahtarıyla, arşivlenmemiş eski sürümde 404.</summary>
+    [HttpGet("siparis/{orderNo}/sozlesme")]
+    public async Task<IActionResult> Contract(string orderNo, [FromQuery(Name = "t")] string? t, CancellationToken cancellationToken)
+    {
+        var (status, result) = await orderService.GetByOrderNoAsync(orderNo, cancellationToken);
+        return status == HttpStatusCode.OK
+               && Guid.TryParse(t, out var supplied) && supplied == result.Data!.Order.AccessToken
+               && result.Data.Order.LegalVersion is { } version
+               && await legalPdfs.ResolveAsync(LegalDocs.ArchivePath(version), cancellationToken) is { } path
+            ? PhysicalFile(path, "application/pdf", $"sozlesme-{result.Data.Order.OrderNo}.pdf")
             : NotFound();
     }
 
@@ -243,6 +351,25 @@ public partial class CheckoutController(
 
         TempData[NoticeKey] = result.Message;
         return SeeOther(thankYou);
+    }
+
+    private async Task<IActionResult> ThankYouPageAsync(OrderDetail detail, string? error, CancellationToken cancellationToken)
+    {
+        var order = detail.Order;
+        // Talep bağlantısı süre içindeyken ve talep edilmemiş adet kaldıkça görünür.
+        var canRequest = ReturnRules.CanRequest(order, clock.GetUtcNow().UtcDateTime)
+                         && (await returnService.GetFormAsync(order.OrderNo, order.AccessToken, cancellationToken)).Item2.Data?.Lines.Any(l => l.Returnable > 0) == true;
+        var whatsAppBase = configuration["Shop:WhatsApp"] ?? "https://wa.me/";
+        var message = $"Merhaba, {order.OrderNo} numaralı siparişimi bildirmek istiyorum.";
+        return View("ThankYou", new ThankYouViewModel(
+            detail,
+            whatsAppBase + "?text=" + Uri.EscapeDataString(message),
+            Shop.Iban,
+            shipping.Value.TrackingUrl(order.Carrier, order.TrackingNo),
+            await returnService.GetForOrderAsync(order.Id, cancellationToken),
+            canRequest,
+            ReturnRules.CanCustomerCancel(order.Status),
+            error));
     }
 
     private IActionResult Invalid(CheckoutFormViewModel form, CartView cart, string? message, bool setStatus = true)

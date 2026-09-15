@@ -12,18 +12,38 @@ namespace HerYerde.Web.Infrastructure;
 public sealed class SmtpNotificationSender : INotificationSender
 {
     private readonly NotificationSettings _settings;
+    private readonly ILegalPdfArchive _documents;
 
-    public SmtpNotificationSender(IOptions<NotificationSettings> settings) => _settings = settings.Value;
+    public SmtpNotificationSender(IOptions<NotificationSettings> settings, ILegalPdfArchive documents)
+    {
+        _settings = settings.Value;
+        _documents = documents;
+    }
 
     public bool IsConfigured => _settings.Host.Length > 0 && _settings.From.Length > 0;
 
-    public async Task SendAsync(string to, string subject, string htmlBody, CancellationToken cancellationToken = default)
+    /// <summary>Gönderilecek ileti; ek dosya varsa adıyla PDF olarak eklenir.</summary>
+    public static MimeMessage BuildMessage(string from, string to, string subject, string htmlBody, string? attachmentPath, string? attachmentName)
     {
         var message = new MimeMessage();
-        message.From.Add(MailboxAddress.Parse(_settings.From));
+        message.From.Add(MailboxAddress.Parse(from));
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
-        message.Body = new TextPart("html") { Text = htmlBody };
+        var body = new BodyBuilder { HtmlBody = htmlBody };
+        if (attachmentPath is not null)
+        {
+            body.Attachments.Add(attachmentName ?? Path.GetFileName(attachmentPath), File.ReadAllBytes(attachmentPath), new ContentType("application", "pdf"));
+        }
+
+        message.Body = body.ToMessageBody();
+        return message;
+    }
+
+    public async Task SendAsync(string to, string subject, string htmlBody, string? attachment = null, CancellationToken cancellationToken = default)
+    {
+        // Belge üretilemiyorsa (arşivlenmemiş eski sürüm) posta eksiz gider; gövdedeki sipariş bağlantısı kalır.
+        var file = attachment is null ? null : await _documents.ResolveAsync(attachment, cancellationToken);
+        var message = BuildMessage(_settings.From, to, subject, htmlBody, file, file is null ? null : "on-bilgilendirme-ve-sozlesme.pdf");
 
         using var client = new SmtpClient();
         await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.StartTlsWhenAvailable, cancellationToken);

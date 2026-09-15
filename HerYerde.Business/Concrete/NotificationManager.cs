@@ -56,7 +56,9 @@ public class NotificationManager : INotificationService
                 $"{_shop.BaseUrl}/siparis/{order.OrderNo}/tesekkur?t={order.AccessToken}",
                 _shop.Iban);
 
-            await QueueAsync(OutboxType.OrderPlaced, email, subject, body, cancellationToken);
+            // Onaylanan sürümün ön bilgilendirme + sözleşme PDF'i kalıcı veri saklayıcıyla (e-posta) tüketiciye iletilir.
+            await QueueAsync(OutboxType.OrderPlaced, email, subject, body, cancellationToken,
+                order.LegalVersion is { } version ? LegalDocs.ArchivePath(version) : null);
         }
 
         if (store && _notifications.StoreTo is { Length: > 0 } storeTo)
@@ -97,6 +99,30 @@ public class NotificationManager : INotificationService
         await QueueAsync(OutboxType.PaymentApproved, email, subject, body, cancellationToken);
     }
 
+    public async Task QueueReturnApprovedAsync(Order order, ReturnRequest request, CancellationToken cancellationToken = default)
+    {
+        if (order.Email is not { Length: > 0 } email)
+        {
+            return;
+        }
+
+        var (subject, body) = NotificationTemplates.ReturnApproved(order, request, _shop.ReturnAddress, _shop.ReturnCarrier, ThankYouUrl(order));
+        await QueueAsync(OutboxType.ReturnApproved, email, subject, body, cancellationToken);
+    }
+
+    public async Task QueueReturnRejectedAsync(Order order, ReturnRequest request, CancellationToken cancellationToken = default)
+    {
+        if (order.Email is not { Length: > 0 } email)
+        {
+            return;
+        }
+
+        var (subject, body) = NotificationTemplates.ReturnRejected(order, request, ThankYouUrl(order));
+        await QueueAsync(OutboxType.ReturnRejected, email, subject, body, cancellationToken);
+    }
+
+    private string ThankYouUrl(Order order) => $"{_shop.BaseUrl}/siparis/{order.OrderNo}/tesekkur?t={order.AccessToken}";
+
     public Task QueueAdminPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default)
     {
         var (subject, body) = NotificationTemplates.AdminPasswordReset($"{_shop.BaseUrl}/admin/auth/sifre-sifirla?t={token}");
@@ -135,7 +161,7 @@ public class NotificationManager : INotificationService
         {
             try
             {
-                await _sender.SendAsync(message.To, message.Subject, message.Body, cancellationToken);
+                await _sender.SendAsync(message.To, message.Subject, message.Body, message.Attachment, cancellationToken);
                 message.Status = OutboxStatus.Gonderildi;
                 message.SentAt = now;
                 message.NextTryAt = null;
@@ -187,7 +213,7 @@ public class NotificationManager : INotificationService
             ? _clock.GetUtcNow().UtcDateTime - createdAt
             : null;
 
-    private Task QueueAsync(string type, string to, string subject, string body, CancellationToken cancellationToken)
+    private Task QueueAsync(string type, string to, string subject, string body, CancellationToken cancellationToken, string? attachment = null)
         => _outboxDal.AddAsync(
             new OutboxMessage
             {
@@ -196,7 +222,8 @@ public class NotificationManager : INotificationService
                 Subject = subject,
                 Body = body,
                 Status = OutboxStatus.Bekliyor,
-                CreatedAt = _clock.GetUtcNow().UtcDateTime
+                CreatedAt = _clock.GetUtcNow().UtcDateTime,
+                Attachment = attachment
             },
             cancellationToken);
 }

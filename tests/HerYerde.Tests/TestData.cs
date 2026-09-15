@@ -54,7 +54,9 @@ public static class TestData
         FreeShippingOver = freeShippingOver ?? FreeShippingOver,
         Iban = Iban,
         MaxQtyPerLine = MaxQtyPerLine,
-        BaseUrl = BaseUrl
+        BaseUrl = BaseUrl,
+        ReturnAddress = ReturnAddress,
+        ReturnCarrier = ReturnCarrier
     };
 
     public static NotificationSettings NewNotificationSettings() => new()
@@ -128,6 +130,37 @@ public static class TestData
         new EfPaymentNoticeDal(context),
         Options.Create(NewShopSettings(freeShippingOver)),
         Options.Create(NewShippingSettings()),
+        clock ?? TestClock.Fixed);
+
+    public const string ReturnAddress = "HerYerde İade, Atatürk Cad. 5, Kadıköy/İstanbul";
+    public const string ReturnCarrier = "Yurtiçi Kargo, anlaşma kodu 123456";
+
+    public static PaymentManager NewPaymentManager(HerYerdeContext context, IPaymentProvider provider, TimeProvider? clock = null) => new(
+        new EfPaymentDal(context),
+        new EfOrderDal(context),
+        new EfOrderItemDal(context),
+        new EfCartItemDal(context),
+        new EfProductDal(context),
+        new EfProductVariantDal(context),
+        new EfUnitOfWork(context),
+        NewNotificationManager(context, clock: clock),
+        provider,
+        Options.Create(NewShopSettings()),
+        clock ?? TestClock.Fixed);
+
+    public static ReturnManager NewReturnManager(HerYerdeContext context, IPaymentProvider provider, TimeProvider? clock = null) => new(
+        new EfReturnRequestDal(context),
+        new EfReturnRequestItemDal(context),
+        new EfOrderDal(context),
+        new EfOrderItemDal(context),
+        new EfProductDal(context),
+        new EfProductVariantDal(context),
+        new EfPaymentDal(context),
+        provider,
+        NewPaymentManager(context, provider, clock),
+        NewOrderManager(context, clock),
+        NewNotificationManager(context, clock: clock),
+        new EfUnitOfWork(context),
         clock ?? TestClock.Fixed);
 
     /// <summary>Ev alanında varyantsız ürün.</summary>

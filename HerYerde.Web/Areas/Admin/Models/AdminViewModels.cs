@@ -417,3 +417,18 @@ public sealed class AuditListViewModel
 {
     public AdminAuditPage Page { get; set; } = null!;
 }
+
+/// <summary>/admin/iadeler/{id}: talep, sipariş, kalemler; başarısız işlemin nedeni.</summary>
+public sealed record ReturnDetailViewModel(ReturnDetail Detail, string? ErrorMessage)
+{
+    public ReturnRequest Request => Detail.Request;
+
+    public bool CanDecide => Request.Status == ReturnStatus.Bekliyor;
+
+    public bool CanReceive => Request.Status == ReturnStatus.Onaylandi;
+
+    /// <summary>Kartlı iade teslim alınınca kendiliğinden tamamlanır; havale/kapıda ödemede geri ödeme elle işaretlenir.</summary>
+    public bool CanMarkRefunded => Request is { Status: ReturnStatus.TeslimAlindi, Type: ReturnType.Iade, RefundedAt: null };
+
+    public int? RefundDaysLeft(DateTime now) => ReturnRules.RefundDaysLeft(Request, now);
+}

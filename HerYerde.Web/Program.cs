@@ -152,6 +152,7 @@ builder.Services.AddSingleton<IPrivateFileStorage>(services => new PrivateFileSt
 builder.Services.AddHostedService<CartCleanupHostedService>();
 builder.Services.AddHostedService<AuditLogCleanupHostedService>();
 builder.Services.AddHostedService<PersonalDataCleanupHostedService>();
+builder.Services.AddSingleton<ILegalPdfArchive, LegalPdfArchive>();
 builder.Services.AddSingleton<INotificationSender, SmtpNotificationSender>();
 builder.Services.AddHostedService<OutboxHostedService>();
 builder.Services.AddHttpClient<IPaymentProvider, IyzicoPaymentProvider>(client => client.Timeout = TimeSpan.FromSeconds(30));

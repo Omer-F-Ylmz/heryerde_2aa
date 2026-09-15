@@ -22,4 +22,13 @@ public sealed class ShopSettings
 
     /// <summary>Yönetimde düşük stok sayacı ve /admin/stok listesi bu adet ve altını sayar.</summary>
     public int LowStockAlertAt { get; set; } = 5;
+
+    /// <summary>Siparişin en geç kaç iş gününde kargoya verildiği; ürün sayfası ve sepette yazar, panoda gecikme uyarısının eşiği.</summary>
+    public int DispatchDays { get; set; } = 2;
+
+    /// <summary>Onaylanan iade/değişim ürününün gönderileceği adres; onay postasında yazar.</summary>
+    public string ReturnAddress { get; set; } = string.Empty;
+
+    /// <summary>İade gönderisinin kargo bilgisi (firma, anlaşma kodu); onay postasında yazar.</summary>
+    public string ReturnCarrier { get; set; } = string.Empty;
 }

@@ -10,4 +10,8 @@
     {
         <span class="price-block__now price-block__now--plain">@Money.Tl(Model.Price)</span>
     }
+    @if (Model.Large)
+    {
+        <span class="price-block__vat">Fiyatlara KDV dahildir</span>
+    }
 </p>

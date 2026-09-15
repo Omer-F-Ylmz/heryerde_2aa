@@ -53,6 +53,12 @@
                             </span>
                         }
                     </a>
+                    <a class="admin-nav__link @(section == "Returns" ? "is-current" : null)"
+                       href="/admin/iadeler"
+                       aria-current="@(section == "Returns" ? "page" : null)">
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+                        <span>İadeler</span>
+                    </a>
                     <a class="admin-nav__link @(section == "Report" ? "is-current" : null)"
                        href="/admin/rapor"
                        aria-current="@(section == "Report" ? "page" : null)">

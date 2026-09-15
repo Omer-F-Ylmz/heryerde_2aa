@@ -11,6 +11,9 @@ public interface IPrivateFileStorage
 
     Task<string> SaveAsync(string folder, string extension, byte[] content, CancellationToken cancellationToken = default);
 
+    /// <summary>Adı sunucunun belirlediği belgeyi (sözleşme arşivi) yazar; önce geçici dosyaya, sonra yerine taşır.</summary>
+    Task WriteAsync(string relativePath, byte[] content, CancellationToken cancellationToken = default);
+
     /// <summary>Göreli yol depo biçimindeyse ve dosya varsa tam yol; değilse null.</summary>
     string? Resolve(string? relativePath);
 
@@ -32,6 +35,15 @@ public sealed partial class PrivateFileStorage(string root) : IPrivateFileStorag
         var relative = $"{folder}/{Guid.NewGuid():n}.{extension}";
         await File.WriteAllBytesAsync(Path.Combine(root, relative), content, cancellationToken);
         return relative;
+    }
+
+    public async Task WriteAsync(string relativePath, byte[] content, CancellationToken cancellationToken = default)
+    {
+        var target = Path.Combine(root, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        var temporary = target + "." + Guid.NewGuid().ToString("n") + ".tmp";
+        await File.WriteAllBytesAsync(temporary, content, cancellationToken);
+        File.Move(temporary, target, overwrite: true);
     }
 
     public string? Resolve(string? relativePath)
@@ -80,7 +92,7 @@ public sealed partial class PrivateFileStorage(string root) : IPrivateFileStorag
         _ => "image/webp"
     };
 
-    /// <summary>Yalnız sunucunun ürettiği biçim: klasör/32 hex.uzantı; "../" gibi yollar geçmez.</summary>
-    [GeneratedRegex(@"^(faturalar|dekontlar|aktarimlar)/[0-9a-f]{32}\.(pdf|png|jpg|webp|xlsx)$")]
+    /// <summary>Yalnız sunucunun ürettiği biçim: klasör/32 hex.uzantı ya da sözleşme arşivinde sürüm adı; "../" gibi yollar geçmez.</summary>
+    [GeneratedRegex(@"^((faturalar|dekontlar|aktarimlar|iadeler)/[0-9a-f]{32}\.(pdf|png|jpg|webp|xlsx)|sozlesmeler/\d{4}-\d{2}-\d{2}(\.\d+)?\.pdf)$")]
     private static partial Regex StoredPath();
 }

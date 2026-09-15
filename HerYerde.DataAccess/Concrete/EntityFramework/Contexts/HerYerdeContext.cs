@@ -25,6 +25,8 @@ public class HerYerdeContext : DbContext
     public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
     public DbSet<SlugHistory> SlugHistories => Set<SlugHistory>();
     public DbSet<PaymentNotice> PaymentNotices => Set<PaymentNotice>();
+    public DbSet<ReturnRequest> ReturnRequests => Set<ReturnRequest>();
+    public DbSet<ReturnRequestItem> ReturnRequestItems => Set<ReturnRequestItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -192,6 +194,10 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.InvoiceNo).HasColumnName("invoice_no").HasMaxLength(40);
             e.Property(o => o.InvoiceDate).HasColumnName("invoice_date").HasColumnType("date");
             e.Property(o => o.InvoiceFile).HasColumnName("invoice_file").HasMaxLength(200);
+            e.Property(o => o.DeliveredAt).HasColumnName("delivered_at");
+            e.Property(o => o.RefundDue).HasColumnName("refund_due").HasPrecision(18, 2);
+            e.Property(o => o.RefundIban).HasColumnName("refund_iban").HasMaxLength(34);
+            e.Property(o => o.RefundedAt).HasColumnName("refunded_at");
             e.HasIndex(o => o.OrderNo).IsUnique().HasDatabaseName("ux_order_order_no");
             e.HasIndex(o => o.AccessToken).IsUnique().HasDatabaseName("ux_order_access_token");
             // Yönetim sipariş listesi: duruma göre süzüp en yeniden eskiye.
@@ -250,6 +256,43 @@ public class HerYerdeContext : DbContext
             e.HasOne<Order>().WithMany().HasForeignKey(n => n.OrderId).OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<ReturnRequest>(e =>
+        {
+            e.ToTable("return_request");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id");
+            e.Property(r => r.OrderId).HasColumnName("order_id");
+            e.Property(r => r.Type).HasColumnName("type").HasConversion<int>();
+            e.Property(r => r.Status).HasColumnName("status").HasConversion<int>();
+            e.Property(r => r.Reason).HasColumnName("reason").HasMaxLength(1000).IsRequired();
+            e.Property(r => r.PhotoFile).HasColumnName("photo_file").HasMaxLength(200);
+            e.Property(r => r.RefundIban).HasColumnName("refund_iban").HasMaxLength(34);
+            e.Property(r => r.CreatedAt).HasColumnName("created_at");
+            e.Property(r => r.DecidedAt).HasColumnName("decided_at");
+            e.Property(r => r.RejectReason).HasColumnName("reject_reason").HasMaxLength(500);
+            e.Property(r => r.ReceivedAt).HasColumnName("received_at");
+            e.Property(r => r.RefundAmount).HasColumnName("refund_amount").HasPrecision(18, 2);
+            e.Property(r => r.RefundedAt).HasColumnName("refunded_at");
+            e.HasIndex(r => r.OrderId).HasDatabaseName("ix_return_request_order_id");
+            // Yönetim listesi ve pano: bekleyen talepler duruma göre sayılır.
+            e.HasIndex(r => new { r.Status, r.CreatedAt }).HasDatabaseName("ix_return_request_status_created_at");
+            e.HasOne<Order>().WithMany().HasForeignKey(r => r.OrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReturnRequestItem>(e =>
+        {
+            e.ToTable("return_request_item", t => t.HasCheckConstraint("ck_return_request_item_quantity", "[quantity] >= 1"));
+            e.HasKey(i => i.Id);
+            e.Property(i => i.Id).HasColumnName("id");
+            e.Property(i => i.ReturnRequestId).HasColumnName("return_request_id");
+            e.Property(i => i.OrderItemId).HasColumnName("order_item_id");
+            e.Property(i => i.Quantity).HasColumnName("quantity");
+            e.Property(i => i.NewSku).HasColumnName("new_sku").HasMaxLength(60);
+            e.HasOne<ReturnRequest>().WithMany().HasForeignKey(i => i.ReturnRequestId).OnDelete(DeleteBehavior.Cascade);
+            // Sipariş silinince talep üzerinden zaten silinir; ikinci basamaklı yol SQL Server'da çakışır.
+            e.HasOne<OrderItem>().WithMany().HasForeignKey(i => i.OrderItemId).OnDelete(DeleteBehavior.NoAction);
+        });
+
         modelBuilder.Entity<OutboxMessage>(e =>
         {
             e.ToTable("outbox_message");
@@ -265,6 +308,7 @@ public class HerYerdeContext : DbContext
             e.Property(m => m.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("SYSUTCDATETIME()");
             e.Property(m => m.NextTryAt).HasColumnName("next_try_at");
             e.Property(m => m.SentAt).HasColumnName("sent_at");
+            e.Property(m => m.Attachment).HasColumnName("attachment").HasMaxLength(200);
             // Dağıtım turu: yalnız bekleyen ve sırası gelmiş kayıtlar okunur.
             e.HasIndex(m => new { m.Status, m.NextTryAt }).HasDatabaseName("ix_outbox_message_status_next_try_at");
         });

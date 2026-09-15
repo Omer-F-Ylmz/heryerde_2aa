@@ -343,6 +343,10 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTime?>("DeliveredAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("delivered_at");
+
                     b.Property<string>("District")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -399,6 +403,20 @@ namespace HerYerde.DataAccess.Migrations
                         .HasMaxLength(11)
                         .HasColumnType("nvarchar(11)")
                         .HasColumnName("phone");
+
+                    b.Property<decimal?>("RefundDue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("refund_due");
+
+                    b.Property<string>("RefundIban")
+                        .HasMaxLength(34)
+                        .HasColumnType("nvarchar(34)")
+                        .HasColumnName("refund_iban");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("refunded_at");
 
                     b.Property<DateTime?>("SeenAt")
                         .HasColumnType("datetime2")
@@ -502,6 +520,11 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnName("id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Attachment")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("attachment");
 
                     b.Property<string>("Body")
                         .IsRequired()
@@ -943,6 +966,118 @@ namespace HerYerde.DataAccess.Migrations
                         });
                 });
 
+            modelBuilder.Entity("HerYerde.Entities.Concrete.ReturnRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("decided_at");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("PhotoFile")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("photo_file");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime?>("ReceivedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("received_at");
+
+                    b.Property<decimal>("RefundAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("refund_amount");
+
+                    b.Property<string>("RefundIban")
+                        .HasMaxLength(34)
+                        .HasColumnType("nvarchar(34)")
+                        .HasColumnName("refund_iban");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("refunded_at");
+
+                    b.Property<string>("RejectReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("reject_reason");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int")
+                        .HasColumnName("status");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_return_request_order_id");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_return_request_status_created_at");
+
+                    b.ToTable("return_request", (string)null);
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.ReturnRequestItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("NewSku")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("new_sku");
+
+                    b.Property<int>("OrderItemId")
+                        .HasColumnType("int")
+                        .HasColumnName("order_item_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("ReturnRequestId")
+                        .HasColumnType("int")
+                        .HasColumnName("return_request_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderItemId");
+
+                    b.HasIndex("ReturnRequestId");
+
+                    b.ToTable("return_request_item", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_return_request_item_quantity", "[quantity] >= 1");
+                        });
+                });
+
             modelBuilder.Entity("HerYerde.Entities.Concrete.SlugHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -1073,6 +1208,30 @@ namespace HerYerde.DataAccess.Migrations
                     b.HasOne("HerYerde.Entities.Concrete.Product", null)
                         .WithMany()
                         .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.ReturnRequest", b =>
+                {
+                    b.HasOne("HerYerde.Entities.Concrete.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.ReturnRequestItem", b =>
+                {
+                    b.HasOne("HerYerde.Entities.Concrete.OrderItem", null)
+                        .WithMany()
+                        .HasForeignKey("OrderItemId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("HerYerde.Entities.Concrete.ReturnRequest", null)
+                        .WithMany()
+                        .HasForeignKey("ReturnRequestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

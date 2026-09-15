@@ -86,6 +86,17 @@
             <dt>Not</dt>
             <dd>@(order.Note ?? "—")</dd>
         </div>
+        @if (order.RefundDue is { } refundDue)
+        {
+            <div>
+                <dt>Geri ödeme</dt>
+                <dd>
+                    Müşteri iptali · @Money.Tl(refundDue)<br />
+                    <span class="cell-mono">@order.RefundIban</span><br />
+                    <span>@(order.RefundedAt is { } refundedAt ? "ödendi " + IstanbulTime.Format(refundedAt) : "bekliyor")</span>
+                </dd>
+            </div>
+        }
         @if (order.Carrier is { } carrier)
         {
             <div>
@@ -209,6 +220,13 @@
         @if (Model.NextStatus is null && !Model.CanCancel)
         {
             <p class="side-card__note">Bu sipariş kapandı; durumu değişmez.</p>
+        }
+        @if (order is { RefundDue: not null, RefundedAt: null })
+        {
+            <form method="post" action="/admin/orders/@order.Id/geri-odendi">
+                @Html.AntiForgeryToken()
+                <button class="btn btn--primary" type="submit">@Money.Tl(order.RefundDue.Value) IBAN'a ödendi</button>
+            </form>
         }
         @if (Model.CanAnonymize)
         {

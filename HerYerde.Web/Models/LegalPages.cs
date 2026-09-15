@@ -19,7 +19,11 @@ public static class LegalPages
         new("on-bilgilendirme-formu", "Ön bilgilendirme formu",
             "Sipariş vermeden önce: satıcı bilgileri, fiyat, kargo, ödeme, teslimat ve cayma hakkı."),
         new("teslimat-ve-iade", "Teslimat ve iade",
-            "Kargo ücreti, kapıda ödeme ve havale/EFT, teslim süresi, 14 gün cayma hakkı ve WhatsApp'tan iade.")
+            "Kargo ücreti, kapıda ödeme ve havale/EFT, teslim süresi, 14 gün cayma hakkı ve WhatsApp'tan iade."),
+        new("garanti-ve-tuketici-haklari", "Garanti ve tüketici hakları",
+            "Garanti koşulları, ayıplı üründe seçimlik haklar, cayma hakkı özeti, tüketici hakem heyeti ve tüketici mahkemesi."),
+        new("cayma-formu", "Cayma formu",
+            "14 gün içinde cayma hakkınızı kullanmak için örnek form: sitede doldurup PDF indirin ya da boş formu yazdırın.")
     ];
 
     public static LegalPage? Find(string slug) => All.FirstOrDefault(page => page.Slug == slug);

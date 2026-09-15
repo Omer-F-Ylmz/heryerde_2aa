@@ -683,6 +683,12 @@ public class OrderManager : IOrderService
         }
 
         order.Status = next;
+        if (next == OrderStatus.TeslimEdildi)
+        {
+            // 14 günlük cayma/iade talebi süresi teslim anından sayılır.
+            order.DeliveredAt = _clock.GetUtcNow().UtcDateTime;
+        }
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Sipariş durumu güncellendi."));
     }

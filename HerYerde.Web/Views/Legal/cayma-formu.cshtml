@@ -1,0 +1,65 @@
+@using HerYerde.Web.Models
+@model LegalPage
+@{
+    Layout = "_LegalLayout";
+}
+@section Toc {
+    <li><a class="legal__toc-link" href="#nasil">Formu nasıl kullanırım</a></li>
+    <li><a class="legal__toc-link" href="#form-metni">Form metni</a></li>
+    <li><a class="legal__toc-link" href="#doldur">Sitede doldurun</a></li>
+}
+
+<section id="nasil">
+    <h2>Formu nasıl kullanırım</h2>
+    <p>Siparişiniz size teslim edildiyse en kolay yol, sipariş sayfanızdaki <strong>İade / değişim talebi</strong> bağlantısıdır. Bu formu, cayma bildiriminizi yazılı olarak iletmek istediğinizde kullanın: aşağıda doldurup PDF olarak indirin ya da <a href="/yasal/cayma-formu/pdf">boş formu indirip</a> elle doldurun; ardından WhatsApp, e-posta ([MÜŞTERİ: e-posta adresi]) ya da KEP ([MÜŞTERİ: KEP adresi]) ile gönderin.</p>
+</section>
+
+<section id="form-metni">
+    <h2>Form metni</h2>
+    <p>Kime: [MÜŞTERİ: ticari unvan], [MÜŞTERİ: açık adres], [MÜŞTERİ: e-posta adresi]</p>
+    <p>Bu formla aşağıdaki malların satışına ilişkin sözleşmeden cayma hakkımı kullandığımı beyan ederim.</p>
+    <ul>
+        <li>Sipariş numarası ve sipariş/teslim tarihi</li>
+        <li>Cayma hakkına konu ürün(ler) ve bedeli</li>
+        <li>Tüketicinin adı soyadı ve adresi</li>
+        <li>Tüketicinin imzası (yalnız kâğıt üzerinde gönderiliyorsa) ve tarih</li>
+    </ul>
+</section>
+
+<section id="doldur">
+    <h2>Sitede doldurun</h2>
+    <form class="withdrawal-form" method="post" action="/yasal/cayma-formu/pdf">
+        @Html.AntiForgeryToken()
+        <div class="field-row">
+            <div class="field">
+                <label class="field__label" for="OrderNo">Sipariş numarası</label>
+                <input class="field__input field__input--mono" id="OrderNo" name="OrderNo" maxlength="30" autocomplete="off" placeholder="HY-20260915-0001" />
+            </div>
+            <div class="field">
+                <label class="field__label" for="OrderDate">Sipariş / teslim tarihi</label>
+                <input class="field__input" id="OrderDate" name="OrderDate" maxlength="40" autocomplete="off" />
+            </div>
+        </div>
+        <div class="field">
+            <label class="field__label" for="Items">Cayma hakkına konu ürün(ler)</label>
+            <textarea class="field__input" id="Items" name="Items" rows="3" maxlength="500"></textarea>
+        </div>
+        <div class="field">
+            <label class="field__label" for="Amount">Ürün(lerin) bedeli</label>
+            <input class="field__input" id="Amount" name="Amount" maxlength="40" inputmode="decimal" />
+        </div>
+        <div class="field">
+            <label class="field__label" for="FullName">Adınız soyadınız</label>
+            <input class="field__input" id="FullName" name="FullName" maxlength="120" autocomplete="name" />
+        </div>
+        <div class="field">
+            <label class="field__label" for="Address">Adresiniz</label>
+            <textarea class="field__input" id="Address" name="Address" rows="3" maxlength="300" autocomplete="street-address"></textarea>
+        </div>
+        <p class="field__hint">Yazdıklarınız kaydedilmez; yalnız indirdiğiniz PDF'e yazılır.</p>
+        <button class="btn btn--primary" type="submit">
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+            <span>PDF olarak indir</span>
+        </button>
+    </form>
+</section>

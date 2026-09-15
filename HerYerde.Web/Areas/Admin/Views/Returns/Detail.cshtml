@@ -1,0 +1,151 @@
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@inject TimeProvider Clock
+@model ReturnDetailViewModel
+@{
+    var request = Model.Request;
+    var order = Model.Detail.Order;
+    ViewData["Title"] = $"{ReturnLabels.Type(request.Type)} · {order.OrderNo}";
+    var daysLeft = Model.RefundDaysLeft(Clock.GetUtcNow().UtcDateTime);
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">@ReturnLabels.Type(request.Type) talebi</p>
+        <h1 class="display-2">@order.OrderNo</h1>
+        <p class="page-head__note">
+            @IstanbulTime.Format(request.CreatedAt) · <span class="tag @(request.Status == ReturnStatus.Bekliyor ? "tag--live" : "tag--draft")">@ReturnLabels.Status(request.Status)</span>
+            @if (daysLeft is { } left)
+            {
+                <span class="tag @(left <= 3 ? "tag--low" : "tag--draft")">Geri ödeme: @(left < 0 ? $"{-left} gün gecikti" : $"{left} gün kaldı")</span>
+            }
+        </p>
+    </div>
+    <div class="page-head__actions">
+        <a class="btn btn--ghost" href="/admin/orders/detail/@order.Id">Siparişi aç</a>
+        <a class="btn btn--ghost" href="/admin/iadeler">Listeye dön</a>
+    </div>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+<div class="surface-elevated form-card">
+    <dl class="order-facts">
+        <div>
+            <dt>Müşteri</dt>
+            <dd>@order.FullName<br />@order.Phone@(order.Email is null ? "" : " · " + order.Email)</dd>
+        </div>
+        <div>
+            <dt>Ödeme</dt>
+            <dd>@PaymentLabels.Method(order.PaymentMethod)
+                @if (request.RefundIban is { } refundIban)
+                {
+                    <br /><span class="cell-mono">@refundIban</span>
+                }
+            </dd>
+        </div>
+        <div>
+            <dt>Neden</dt>
+            <dd>@request.Reason</dd>
+        </div>
+        <div>
+            <dt>Fotoğraf</dt>
+            <dd>
+                @if (request.PhotoFile is not null)
+                {
+                    <a href="/admin/iadeler/@request.Id/foto" target="_blank" rel="noopener">Fotoğrafı aç</a>
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </dd>
+        </div>
+        @if (request.RejectReason is { } rejectReason)
+        {
+            <div>
+                <dt>Ret gerekçesi</dt>
+                <dd>@rejectReason</dd>
+            </div>
+        }
+        @if (request.ReceivedAt is { } receivedAt)
+        {
+            <div>
+                <dt>Teslim alındı</dt>
+                <dd>@IstanbulTime.Format(receivedAt)@(request.Type == ReturnType.Iade ? " · " + Money.Tl(request.RefundAmount) : "")@(request.RefundedAt is { } refundedAt ? " · geri ödendi " + IstanbulTime.Format(refundedAt) : "")</dd>
+            </div>
+        }
+    </dl>
+
+    <div class="table-wrap">
+        <table class="table">
+            <caption class="visually-hidden">Talep edilen kalemler</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ürün</th>
+                    <th scope="col">Stok kodu</th>
+                    <th scope="col" class="table__num">Adet</th>
+                    <th scope="col" class="table__num">Tutar</th>
+                    @if (request.Type == ReturnType.Degisim)
+                    {
+                        <th scope="col">İstenen</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var (item, orderItem) in Model.Detail.Items)
+            {
+                <tr>
+                    <th scope="row">@orderItem.ProductName</th>
+                    <td><span class="cell-mono">@orderItem.Sku</span></td>
+                    <td class="table__num">@item.Quantity</td>
+                    <td class="table__num">@Money.Tl(orderItem.UnitPrice * item.Quantity)</td>
+                    @if (request.Type == ReturnType.Degisim)
+                    {
+                        <td><span class="cell-mono">@item.NewSku</span></td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="order-actions">
+        @if (Model.CanDecide)
+        {
+            <form method="post" action="/admin/iadeler/@request.Id/onayla">
+                @Html.AntiForgeryToken()
+                <button class="btn btn--primary" type="submit">Onayla, iade adresini gönder</button>
+            </form>
+            <form class="reject-form" method="post" action="/admin/iadeler/@request.Id/reddet">
+                @Html.AntiForgeryToken()
+                <div class="field">
+                    <label class="field__label" for="reason">Ret gerekçesi</label>
+                    <input class="field__input" id="reason" name="reason" maxlength="500" required />
+                </div>
+                <button class="btn btn--danger" type="submit">Reddet</button>
+            </form>
+        }
+        @if (Model.CanReceive)
+        {
+            <form method="post" action="/admin/iadeler/@request.Id/teslim-al">
+                @Html.AntiForgeryToken()
+                <button class="btn btn--primary" type="submit">
+                    @(request.Type == ReturnType.Degisim
+                        ? "Ürün geldi, yeni ürünü ayır"
+                        : order.PaymentMethod == PaymentMethod.KrediKarti ? "Ürün geldi, karta iade et" : "Ürün geldi, stoğa al")
+                </button>
+            </form>
+        }
+        @if (Model.CanMarkRefunded)
+        {
+            <form method="post" action="/admin/iadeler/@request.Id/geri-odendi">
+                @Html.AntiForgeryToken()
+                <button class="btn btn--primary" type="submit">@Money.Tl(request.RefundAmount) IBAN'a ödendi</button>
+            </form>
+        }
+    </div>
+</div>

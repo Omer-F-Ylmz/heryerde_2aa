@@ -1,0 +1,118 @@
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@model ReturnRequestPageViewModel
+@{
+    var order = Model.Form.Order;
+    ViewData["Title"] = order.OrderNo + " iade / değişim";
+    ViewData["Robots"] = "noindex, nofollow";
+}
+@* Metinler [ÖNERİ] taslaktır. *@
+
+<div class="container section">
+    <header class="return-head">
+        <p class="eyebrow">Sipariş @order.OrderNo</p>
+        <h1 class="display-2 h-mark">İade ya da değişim</h1>
+        <p class="lead">Teslimden itibaren 14 gün içinde gerekçe göstermeden cayabilirsiniz. Talebinizi inceleyip iade adresini e-postayla göndeririz.</p>
+    </header>
+
+    <form class="form-card surface-elevated return-form" method="post" action="/siparis/@order.OrderNo/iade" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="t" value="@order.AccessToken" />
+
+        @if (Model.ErrorMessage is not null)
+        {
+            <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+        }
+
+        <fieldset class="pay">
+            <legend class="pay__legend">Ne istiyorsunuz?</legend>
+            <input class="pay__input" type="radio" id="type-iade" name="Type" value="@((int)ReturnType.Iade)" checked />
+            <label class="pay__option" for="type-iade">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+                <span>
+                    <span class="pay__title">İade</span>
+                    <span class="pay__note">Ürünü geri gönderirsiniz, ödediğiniz tutar iade edilir.</span>
+                </span>
+            </label>
+            <input class="pay__input" type="radio" id="type-degisim" name="Type" value="@((int)ReturnType.Degisim)" />
+            <label class="pay__option" for="type-degisim">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                <span>
+                    <span class="pay__title">Değişim</span>
+                    <span class="pay__note">Aynı ürünün başka bedeni ya da rengi; fiyat farkı yoktur, ücretsizdir.</span>
+                </span>
+            </label>
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend class="fieldset__legend">Ürünler</legend>
+            <p class="fieldset__note">Talep ettiğiniz adedi seçin; iade etmeyeceğiniz üründe 0 bırakın.</p>
+            @for (var i = 0; i < Model.Form.Lines.Count; i++)
+            {
+                var line = Model.Form.Lines[i];
+                <div class="return-item">
+                    <input type="hidden" name="Lines[@i].OrderItemId" value="@line.Item.Id" />
+                    <p class="return-item__name">
+                        <span>@line.Item.ProductName</span>
+                        <span class="cell-mono">@line.Item.Sku</span>
+                    </p>
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field__label" for="qty-@i">Adet</label>
+                            <select class="field__input" id="qty-@i" name="Lines[@i].Quantity" disabled="@(line.Returnable == 0)">
+                                @for (var q = 0; q <= line.Returnable; q++)
+                                {
+                                    <option value="@q">@q</option>
+                                }
+                            </select>
+                            @if (line.Returnable == 0)
+                            {
+                                <span class="field__hint">Bu ürün için talep açılmış.</span>
+                            }
+                        </div>
+                        @if (line.Alternatives.Count > 0)
+                        {
+                            <div class="field">
+                                <label class="field__label" for="sku-@i">Değişimde istediğiniz</label>
+                                <select class="field__input" id="sku-@i" name="Lines[@i].NewSku">
+                                    <option value="">Seçin (yalnız değişimde)</option>
+                                    @foreach (var variant in line.Alternatives)
+                                    {
+                                        <option value="@variant.Sku">@string.Join(" · ", new[] { variant.Size, variant.Color }.Where(v => !string.IsNullOrEmpty(v)))</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </fieldset>
+
+        <div class="field">
+            <label class="field__label" for="Reason">Nedeni</label>
+            <textarea class="field__input" id="Reason" name="Reason" rows="4" maxlength="1000" required></textarea>
+        </div>
+
+        @if (Model.Form.NeedsIban)
+        {
+            <div class="field">
+                <label class="field__label" for="Iban">Geri ödeme için IBAN</label>
+                <input class="field__input field__input--mono" id="Iban" name="Iban" maxlength="40" autocomplete="off" placeholder="TR00 0000 0000 0000 0000 0000 00" />
+                <span class="field__hint">İadede zorunlu; değişimde boş bırakabilirsiniz. Hesap sahibinin adı siparişteki adla aynı olmalı.</span>
+            </div>
+        }
+
+        <div class="field">
+            <label class="field__label" for="Photo">Fotoğraf (isteğe bağlı)</label>
+            <input class="field__input field__input--file" id="Photo" name="Photo" type="file" accept="image/png,image/jpeg,image/webp" />
+            <span class="field__hint">Hasarlı ya da farklı ürünse fotoğraf ekleyin; PNG, JPEG ya da WebP, en çok 5 MB.</span>
+        </div>
+
+        <p class="field__hint">Bu bilgiler talebinizi işlemek ve ödemenizi iade etmek için işlenir; ayrıntı <a href="/yasal/kvkk-aydinlatma#islenen-veriler">aydınlatma metninde</a>.</p>
+
+        <div class="form-card__foot">
+            <button class="btn btn--primary btn--lg" type="submit">Talebi gönder</button>
+            <a class="btn btn--ghost" href="/siparis/@order.OrderNo/tesekkur?t=@order.AccessToken">Siparişe dön</a>
+        </div>
+    </form>
+</div>

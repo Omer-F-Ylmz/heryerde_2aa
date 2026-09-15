@@ -30,3 +30,18 @@ public static class PaymentLabels
         _ => "Ödeme bekleniyor"
     };
 }
+
+/// <summary>İade/değişim talebinin müşteriye ve yöneticiye görünen adı.</summary>
+public static class ReturnLabels
+{
+    public static string Type(ReturnType type) => type == ReturnType.Degisim ? "Değişim" : "İade";
+
+    public static string Status(ReturnStatus status) => status switch
+    {
+        ReturnStatus.Onaylandi => "Onaylandı, ürün bekleniyor",
+        ReturnStatus.Reddedildi => "Reddedildi",
+        ReturnStatus.TeslimAlindi => "Ürün teslim alındı, geri ödeme yapılacak",
+        ReturnStatus.Tamamlandi => "Tamamlandı",
+        _ => "İnceleniyor"
+    };
+}

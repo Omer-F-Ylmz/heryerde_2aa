@@ -79,6 +79,30 @@ public static class NotificationTemplates
         return ($"Ödemeniz onaylandı · {order.OrderNo}", Page(body.ToString()));
     }
 
+    public static (string Subject, string Body) ReturnApproved(Order order, ReturnRequest request, string address, string carrier, string orderUrl)
+    {
+        var kind = request.Type == ReturnType.Degisim ? "Değişim" : "İade";
+        var body = new StringBuilder();
+        body.Append(Heading($"{kind} talebiniz onaylandı", $"{Encode(order.OrderNo)} numaralı siparişiniz için talebinizi onayladık."));
+        body.Append(Row("İade adresi", Encode(address)));
+        body.Append(Row("Kargo", Encode(carrier)));
+        body.Append(Paragraph("Ürünü faturası ve mümkünse orijinal ambalajıyla, en geç 10 gün içinde bu adrese gönderin. Ürün bize ulaşınca kontrol edip "
+            + (request.Type == ReturnType.Degisim ? "yeni ürününüzü kargoya veririz." : "ödemenizi en geç 14 gün içinde iade ederiz.")));
+        body.Append(Button(orderUrl, "Siparişimi görüntüle"));
+        return ($"{kind} talebiniz onaylandı · {order.OrderNo}", Page(body.ToString()));
+    }
+
+    public static (string Subject, string Body) ReturnRejected(Order order, ReturnRequest request, string orderUrl)
+    {
+        var kind = request.Type == ReturnType.Degisim ? "Değişim" : "İade";
+        var body = new StringBuilder();
+        body.Append(Heading($"{kind} talebiniz reddedildi", $"{Encode(order.OrderNo)} numaralı siparişiniz için talebinizi kabul edemedik."));
+        body.Append(Row("Gerekçe", Encode(request.RejectReason ?? "—")));
+        body.Append(Paragraph("Sorunuz varsa bu postayı yanıtlayabilir ya da WhatsApp'tan bize yazabilirsiniz. Uyuşmazlıkta tüketici hakem heyetine başvurma hakkınız saklıdır."));
+        body.Append(Button(orderUrl, "Siparişimi görüntüle"));
+        return ($"{kind} talebiniz reddedildi · {order.OrderNo}", Page(body.ToString()));
+    }
+
     /// <summary>Bağlantı 30 dakika geçerli ve tek kullanımlık; istenmediyse posta yok sayılabilir.</summary>
     public static (string Subject, string Body) AdminPasswordReset(string resetUrl)
     {

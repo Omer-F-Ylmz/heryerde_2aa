@@ -20,6 +20,43 @@ public sealed class IyzicoPaymentProviderTests
         Assert.Equal("26", form.Fields["paymentId"]);
     }
 
+    /// <summary>D13 A1: iptal ödemenin tamamını geri verir; kalem iadesinde (Partial) hiç denenmez, yalnız tutar kadar v2 iade gider.</summary>
+    [Theory]
+    [InlineData(true, "/v2/payment/refund")]
+    [InlineData(false, "/payment/cancel")]
+    public async Task Kismi_iadede_iptal_denenmez_tam_iadede_once_iptal(bool partial, string firstPath)
+    {
+        var handler = new RecordingHandler();
+        var provider = new IyzicoPaymentProvider(
+            new HttpClient(handler),
+            Microsoft.Extensions.Options.Options.Create(new HerYerde.Business.IyzicoSettings
+            {
+                ApiKey = "anahtar",
+                SecretKey = "gizli",
+                BaseUrl = "https://sandbox-api.iyzipay.com"
+            }));
+
+        var result = await provider.RefundAsync(new HerYerde.Business.Dtos.PaymentRefundRequest("pay-1", "conv-1", 450m, "10.0.0.1", partial));
+
+        Assert.True(result.Success);
+        Assert.Equal(firstPath, handler.Paths[0]);
+        Assert.Single(handler.Paths);
+    }
+
+    private sealed class RecordingHandler : HttpMessageHandler
+    {
+        public List<string> Paths { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Paths.Add(request.RequestUri!.AbsolutePath);
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"status\":\"success\"}")
+            });
+        }
+    }
+
     [Theory]
     [InlineData("<p>form yok</p>")]
     [InlineData("<form action=\"http://banka.test/3d\" method=\"post\"></form>")]

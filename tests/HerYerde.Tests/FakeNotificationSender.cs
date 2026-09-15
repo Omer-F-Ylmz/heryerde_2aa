@@ -11,7 +11,10 @@ public sealed class FakeNotificationSender : INotificationSender
 
     public List<(string To, string Subject, string Body)> Sent { get; } = [];
 
-    public Task SendAsync(string to, string subject, string htmlBody, CancellationToken cancellationToken = default)
+    /// <summary>Gönderilen postaların ek yolları (eksizler dahil değil).</summary>
+    public List<string> Attachments { get; } = [];
+
+    public Task SendAsync(string to, string subject, string htmlBody, string? attachment = null, CancellationToken cancellationToken = default)
     {
         if (Fails)
         {
@@ -19,6 +22,10 @@ public sealed class FakeNotificationSender : INotificationSender
         }
 
         Sent.Add((to, subject, htmlBody));
+        if (attachment is not null)
+        {
+            Attachments.Add(attachment);
+        }
         return Task.CompletedTask;
     }
 }

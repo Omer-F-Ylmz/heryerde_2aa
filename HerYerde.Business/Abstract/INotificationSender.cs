@@ -6,5 +6,6 @@ public interface INotificationSender
     /// <summary>SMTP ayarı tamamsa true; değilse gönderim atlanır ve kayıt kuyrukta bekler.</summary>
     bool IsConfigured { get; }
 
-    Task SendAsync(string to, string subject, string htmlBody, CancellationToken cancellationToken = default);
+    /// <summary><paramref name="attachment"/>: eklenecek belgenin gizli depodaki göreli yolu; üretilemiyorsa posta eksiz gider.</summary>
+    Task SendAsync(string to, string subject, string htmlBody, string? attachment = null, CancellationToken cancellationToken = default);
 }

@@ -146,19 +146,23 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
             : new PaymentAuthResult(false, Text(json, "paymentId"), 0m, "Sağlayıcı yanıtının imzası doğrulanamadı.", raw);
     }
 
-    /// <summary>Önce iptal (gün sonu mutabakatından önce, karta hiç yansımaz); iptal reddedilirse tam tutar iade (v2, paymentId ile).</summary>
+    /// <summary>Tam tutarda önce iptal (gün sonu mutabakatından önce, karta hiç yansımaz); iptal reddedilirse ya da iade kısmiyse
+    /// tutar kadar iade (v2, paymentId ile). İptal ödemenin tamamını geri verdiği için kısmi iadede hiç denenmez.</summary>
     public async Task<PaymentRefundResult> RefundAsync(PaymentRefundRequest request, CancellationToken cancellationToken = default)
     {
-        var (cancel, cancelRaw) = await PostAsync(CancelPath, new JsonObject
+        if (!request.Partial)
         {
-            ["locale"] = "tr",
-            ["conversationId"] = request.ConversationId,
-            ["paymentId"] = request.PaymentId,
-            ["ip"] = request.Ip
-        }, cancellationToken);
-        if (cancel is not null && Text(cancel, "status") == "success")
-        {
-            return new PaymentRefundResult(true, null, cancelRaw);
+            var (cancel, cancelRaw) = await PostAsync(CancelPath, new JsonObject
+            {
+                ["locale"] = "tr",
+                ["conversationId"] = request.ConversationId,
+                ["paymentId"] = request.PaymentId,
+                ["ip"] = request.Ip
+            }, cancellationToken);
+            if (cancel is not null && Text(cancel, "status") == "success")
+            {
+                return new PaymentRefundResult(true, null, cancelRaw);
+            }
         }
 
         var (refund, refundRaw) = await PostAsync(RefundPath, new JsonObject

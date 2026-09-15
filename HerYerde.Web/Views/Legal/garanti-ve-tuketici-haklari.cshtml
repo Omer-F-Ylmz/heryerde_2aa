@@ -1,0 +1,43 @@
+@using HerYerde.Web.Models
+@model LegalPage
+@{
+    Layout = "_LegalLayout";
+}
+@section Toc {
+    <li><a class="legal__toc-link" href="#garanti">Garanti koşulları</a></li>
+    <li><a class="legal__toc-link" href="#ayipli-urun">Ayıplı ürün ve seçimlik haklar</a></li>
+    <li><a class="legal__toc-link" href="#cayma">Cayma hakkı özeti</a></li>
+    <li><a class="legal__toc-link" href="#basvuru">Hakem heyeti ve mahkeme</a></li>
+}
+
+<section id="garanti">
+    <h2>Garanti koşulları</h2>
+    <ul>
+        <li>Garanti belgesi zorunlu ürünlerde (küçük ev aletleri) garanti süresi teslimden itibaren en az 2 yıldır; belge ürünle birlikte verilir.</li>
+        <li>Garanti kapsamı ve servis bilgisi: [MÜŞTERİ: marka/üretici garanti koşulları, yetkili servis adı ve iletişim bilgisi].</li>
+        <li>Kullanım hatası, düşürme, sıvı teması ve yetkisiz müdahale kaynaklı arızalar garanti dışındadır: [MÜŞTERİ: garanti dışı haller listesi].</li>
+        <li>Tamir süresi en çok 20 iş günüdür; bu süre içinde giderilmeyen arızada ürünün değiştirilmesini, bedel iadesini ya da indirim isteyebilirsiniz.</li>
+    </ul>
+</section>
+
+<section id="ayipli-urun">
+    <h2>Ayıplı ürün ve seçimlik haklar</h2>
+    <p>Teslim aldığınız ürün ayıplıysa (hasarlı, eksik, tanıtılandan farklı) 6502 sayılı Kanun m. 11 uyarınca şu haklardan birini kullanabilirsiniz:</p>
+    <ul>
+        <li>satılanı geri vermeye hazır olduğunuzu bildirerek sözleşmeden dönme,</li>
+        <li>ayıp oranında bedelden indirim,</li>
+        <li>aşırı masraf gerektirmiyorsa ücretsiz onarım,</li>
+        <li>imkân varsa ayıpsız bir misliyle değiştirme.</li>
+    </ul>
+    <p>Ayıba karşı sorumluluk süresi teslimden itibaren 2 yıldır. Bildirimi WhatsApp'tan ya da sipariş sayfanızdaki iade/değişim talebiyle yapabilirsiniz.</p>
+</section>
+
+<section id="cayma">
+    <h2>Cayma hakkı özeti</h2>
+    <p>Ürünü teslim aldığınız günden itibaren 14 gün içinde gerekçe göstermeden cayabilirsiniz. Sipariş sayfanızdan iade talebi açabilir ya da <a href="/yasal/cayma-formu">cayma formunu</a> doldurup gönderebilirsiniz. Ödemeniz bildirimden itibaren en geç 14 gün içinde iade edilir. İstisnalar <a href="/yasal/mesafeli-satis-sozlesmesi#cayma-istisnalari">mesafeli satış sözleşmesinde</a> yazılıdır.</p>
+</section>
+
+<section id="basvuru">
+    <h2>Hakem heyeti ve mahkeme</h2>
+    <p>Şikâyetlerinizi önce [MÜŞTERİ: e-posta adresi] ya da [MÜŞTERİ: telefon] üzerinden bize iletin. Uyuşmazlıkta, Ticaret Bakanlığınca her yıl belirlenen parasal sınırın altındaki başvurular için yerleşim yerinizdeki ya da işlemi yaptığınız yerdeki il veya ilçe tüketici hakem heyetine; sınırın üstündeki uyuşmazlıklar için tüketici mahkemesine başvurabilirsiniz. Hakem heyeti başvurusu e-Devlet'teki TÜBİS üzerinden de yapılabilir.</p>
+</section>

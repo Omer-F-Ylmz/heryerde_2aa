@@ -76,7 +76,7 @@ public static class RateLimitPolicy
                                     ? ("yorum", settings.ReviewPerDay)
                                     : isPost && path.StartsWithSegments("/siparis-sorgula")
                                         ? ("siparis-sorgula", settings.OrderLookupPerMinute)
-                                        : isPost && path.StartsWithSegments("/siparis") && path.Value!.EndsWith("/odeme-bildir", StringComparison.OrdinalIgnoreCase)
+                                        : isPost && path.StartsWithSegments("/siparis") && IsOrderActionPost(path)
                                             ? ("odeme-bildir", settings.PaymentNoticePerMinute)
                                             : ("genel", settings.GeneralPerMinute);
 
@@ -87,6 +87,12 @@ public static class RateLimitPolicy
             QueueLimit = 0
         });
     }
+
+    /// <summary>Müşterinin sipariş sayfasından yaptığı işlemler (havale bildirimi, iade talebi, iptal) aynı kovada.</summary>
+    private static bool IsOrderActionPost(PathString path)
+        => path.Value!.EndsWith("/odeme-bildir", StringComparison.OrdinalIgnoreCase)
+           || path.Value.EndsWith("/iade", StringComparison.OrdinalIgnoreCase)
+           || path.Value.EndsWith("/iptal", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>/urun/{slug}/yorum</summary>
     private static bool IsReviewPost(PathString path)

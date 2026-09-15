@@ -20,6 +20,12 @@ public interface INotificationService
     /// <summary>Havale onaylandı: yalnız müşteriye (e-postası varsa). Kaydetmez.</summary>
     Task QueuePaymentApprovedAsync(Order order, CancellationToken cancellationToken = default);
 
+    /// <summary>İade/değişim talebi onaylandı: müşteriye (e-postası varsa) iade adresi ve kargo bilgisi. Kaydetmez.</summary>
+    Task QueueReturnApprovedAsync(Order order, ReturnRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>İade/değişim talebi reddedildi: müşteriye (e-postası varsa) gerekçe. Kaydetmez.</summary>
+    Task QueueReturnRejectedAsync(Order order, ReturnRequest request, CancellationToken cancellationToken = default);
+
     /// <summary>Yönetici parola sıfırlama bağlantısı; anahtar yalnız postada açık, veritabanında özeti durur. Kaydetmez.</summary>
     Task QueueAdminPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default);
 
