@@ -22,6 +22,10 @@
         </div>
 
         <form method="post" asp-area="Admin" asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]">
+            @if (TempData[HerYerde.Web.Areas.Admin.Controllers.AuthController.LoginNoticeKey] is string notice)
+            {
+                <p class="form-alert form-alert--notice" role="status">@notice</p>
+            }
             <div asp-validation-summary="ModelOnly" class="form-alert" role="alert"></div>
 
             <div class="field">
@@ -42,6 +46,6 @@
             </button>
         </form>
 
-        <p class="gate__note">Beş hatalı denemeden sonra hesap 15 dakika kilitlenir.</p>
+        <p class="gate__note">Beş hatalı denemeden sonra hesap 15 dakika kilitlenir. <a href="/admin/auth/sifremi-unuttum">Parolamı unuttum</a></p>
     </div>
 </section>

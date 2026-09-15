@@ -143,6 +143,11 @@ builder.Services.AddSingleton<IProductImageStorage>(services => new ProductImage
     builder.Configuration["Uploads:Root"] is { Length: > 0 } uploadsRoot
         ? uploadsRoot
         : services.GetRequiredService<IWebHostEnvironment>().WebRootPath));
+// Fatura ve dekontlar wwwroot dışında: statik dosya ara katmanı onlara hiç ulaşmaz.
+builder.Services.AddSingleton<IPrivateFileStorage>(services => new PrivateFileStorage(
+    builder.Configuration["PrivateFiles:Root"] is { Length: > 0 } privateRoot
+        ? privateRoot
+        : Path.Combine(services.GetRequiredService<IWebHostEnvironment>().ContentRootPath, "private")));
 builder.Services.AddHostedService<CartCleanupHostedService>();
 builder.Services.AddHostedService<AuditLogCleanupHostedService>();
 builder.Services.AddHostedService<PersonalDataCleanupHostedService>();
@@ -160,7 +165,8 @@ builder.Services
         options.LoginPath = "/admin/auth/login";
         options.LogoutPath = "/admin/auth/logout";
         options.AccessDeniedPath = "/admin/auth/login";
-        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        // 12 saat, kullanıldıkça uzar: gün boyu açık panel düşmez, unutulmuş tarayıcı ertesi gün kapalıdır.
+        options.ExpireTimeSpan = TimeSpan.FromHours(12);
         options.SlidingExpiration = true;
         // Parola değiştiğinde damga ilerler; eski damgayı taşıyan çerezler ilk istekte düşer.
         options.Events.OnValidatePrincipal = AdminPolicy.ValidateStampAsync;
@@ -208,6 +214,7 @@ app.UseOutputCache();
 app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();
+app.Use(AdminPolicy.RequirePasswordChangeAsync);
 
 // /health canlılık: süreç ayakta mı (konteyner sağlık denetimi); /health/ready trafiği karşılayabilir mi.
 app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
@@ -231,8 +238,9 @@ if (BackupCommand.BackupFolderFrom(args) is { } backupFolder)
         app.Configuration.GetConnectionString("Default")!,
         app.Services.GetRequiredService<IProductImageStorage>().UploadsPath,
         backupFolder,
-        app.Services.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime);
-    Console.WriteLine($"Yedek: {backup.Database}, arşiv: {backup.Archive ?? "(uploads yok)"}, silinen: {backup.Removed.Count}.");
+        app.Services.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime,
+        app.Services.GetRequiredService<IPrivateFileStorage>().RootPath);
+    Console.WriteLine($"Yedek: {backup.Database}, arşiv: {backup.Archive ?? "(uploads yok)"}, belgeler: {backup.DocumentsArchive ?? "(belge yok)"}, silinen: {backup.Removed.Count}.");
     return;
 }
 
@@ -249,6 +257,15 @@ await DatabaseMigrator.ApplyAsync(
     app.Services.GetRequiredService<ILogger<Program>>());
 await SeedFirstAdminAsync(app);
 await SeedCatalogAsync(app);
+
+// Yönetici kurtarma: geçici parolayı konsola yazıp çıkar, sunucu açılmaz.
+if (AdminResetCommand.EmailFrom(args) is { } resetEmail)
+{
+    var temporary = await AdminResetCommand.RunAsync(app.Services, resetEmail);
+    Console.WriteLine($"Geçici parola: {temporary}");
+    Console.WriteLine("İlk girişte parola değiştirilmeden panel açılmaz; iki adımlı doğrulama kapatıldı, açık oturumlar düştü.");
+    return;
+}
 
 // Tek seferlik ithal: ürünleri ve görselleri kurup çıkar, sunucu açılmaz.
 if (ImportCommand.DirectoryFrom(args) is { } importDirectory)
@@ -312,6 +329,31 @@ public static class AdminPolicy
 
     /// <summary>Çerezdeki parola damgası; veritabanındakiyle uymazsa oturum geçersizdir.</summary>
     public const string StampClaim = "heryerde:pwd";
+
+    /// <summary>Geçici parolayla girildi: parola değişene kadar yalnız /admin/sifre açılır.</summary>
+    public const string MustChangeClaim = "heryerde:must-change";
+
+    /// <summary>Parola doğru, iki adımlı kod bekleniyor: değer çerezin kesildiği an (ticks). Bu çerezle panel açılmaz.</summary>
+    public const string PendingSecondFactorClaim = "heryerde:2fa";
+
+    public const string ChangePasswordPath = "/admin/sifre";
+
+    public static Task RequirePasswordChangeAsync(HttpContext context, RequestDelegate next)
+    {
+        var path = context.Request.Path;
+        if (context.User.HasClaim(c => c.Type == MustChangeClaim)
+            && path.StartsWithSegments("/admin")
+            && !path.StartsWithSegments(ChangePasswordPath)
+            && !path.StartsWithSegments("/admin/auth"))
+        {
+            // Çerez kimlik doğrulamasının giriş yönlendirmesi gibi mutlak adres.
+            var request = context.Request;
+            context.Response.Redirect($"{request.Scheme}://{request.Host}{request.PathBase}{ChangePasswordPath}");
+            return Task.CompletedTask;
+        }
+
+        return next(context);
+    }
 
     public static async Task ValidateStampAsync(CookieValidatePrincipalContext context)
     {

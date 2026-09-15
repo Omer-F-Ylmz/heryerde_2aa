@@ -9,7 +9,17 @@ public static class PaymentLabels
     {
         PaymentMethod.HavaleEft => "Havale / EFT",
         PaymentMethod.KrediKarti => "Kredi kartı",
+        PaymentMethod.NakitElden => "Nakit (elden)",
         _ => "Kapıda ödeme"
+    };
+
+    public static string Source(OrderSource source) => source switch
+    {
+        OrderSource.WhatsApp => "WhatsApp",
+        OrderSource.Instagram => "Instagram",
+        OrderSource.Telefon => "Telefon",
+        OrderSource.Magaza => "Mağaza",
+        _ => "Site"
     };
 
     public static string Status(PaymentStatus status) => status switch

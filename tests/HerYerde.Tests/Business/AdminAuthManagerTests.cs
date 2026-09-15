@@ -15,7 +15,7 @@ public sealed class AdminAuthManagerTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     private static AdminAuthManager NewManager(HerYerde.DataAccess.Concrete.EntityFramework.Contexts.HerYerdeContext context)
-        => new(new EfAdminUserDal(context), new EfUnitOfWork(context));
+        => TestData.NewAdminAuthManager(context);
 
     [Fact]
     public async Task Bes_hatali_denemeden_sonra_dogru_parola_bile_kilide_takilir()

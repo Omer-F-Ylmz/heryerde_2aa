@@ -27,6 +27,12 @@ public static class OrderRules
     /// <summary>Kişisel veri yalnız sipariş kapandıktan sonra (teslim ya da iptal) anonimleştirilir; açık siparişte
     /// teyit ve teslimat için gerekir.</summary>
     public static bool CanAnonymize(OrderStatus status) => status is OrderStatus.TeslimEdildi or OrderStatus.IptalEdildi;
+
+    /// <summary>Adres, telefon, not ve adet yalnız paket hazırlanmaya başlamadan değişir.</summary>
+    public static bool CanEdit(OrderStatus status) => status is OrderStatus.Beklemede or OrderStatus.Onaylandi;
+
+    /// <summary>Kart iadesi paket kargoya verilmeden yapılır; sonrası ürün iadesidir, stok ürün dönünce girer.</summary>
+    public static bool CanRefund(OrderStatus status) => status is OrderStatus.Beklemede or OrderStatus.Onaylandi or OrderStatus.Hazirlaniyor;
 }
 
 /// <summary>Sipariş numarası: "HY-yyyyMMdd-####". Sıra veritabanı SEQUENCE'ından gelir; geneldir,

@@ -29,8 +29,9 @@ EXPOSE 8080
 COPY --from=build /app .
 # --ithal varsayılan tabloyu depo köküne göre arar; imajda depo kökü /app.
 COPY docs/ithal-1.md docs/ithal-2.md ./docs/
-# Serilog dosya sink'i /app/logs'a, yüklenen görseller /app/wwwroot/uploads'a (kalıcı volume) yazar; uygulama kullanıcısı root değil.
-RUN mkdir -p /app/logs /app/wwwroot/uploads && chown $APP_UID /app/logs /app/wwwroot/uploads
+# Serilog dosya sink'i /app/logs'a, yüklenen görseller /app/wwwroot/uploads'a, fatura/dekont /app/private'a (kalıcı volume)
+# yazar; uygulama kullanıcısı root değil.
+RUN mkdir -p /app/logs /app/wwwroot/uploads /app/private && chown $APP_UID /app/logs /app/wwwroot/uploads /app/private
 USER $APP_UID
 # İmajda curl/wget yok; aynı dll /health'e tek istek atıp çıkış koduyla bildirir.
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD ["dotnet", "HerYerde.Web.dll", "--healthcheck"]

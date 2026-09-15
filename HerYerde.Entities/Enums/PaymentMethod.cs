@@ -10,5 +10,8 @@ public enum PaymentMethod
     HavaleEft = 2,
 
     /// <summary>Kredi kartı: İyzico 3D Secure; anahtar tanımlıysa açık.</summary>
-    KrediKarti = 3
+    KrediKarti = 3,
+
+    /// <summary>Mağazada ya da elden teslimde nakit; yalnız yönetimden girilen siparişte seçilir.</summary>
+    NakitElden = 4
 }

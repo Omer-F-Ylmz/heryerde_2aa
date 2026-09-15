@@ -13,4 +13,7 @@ public class AdminAuditLog : IEntity
     public int? EntityId { get; set; }
     public DateTime At { get; set; }
     public string? Ip { get; set; }
+
+    /// <summary>Değişikliğin eskiden yeniye özeti ("adres: A → B"); yalnız düzenleme gibi ayrıntı gereken işlemlerde dolu.</summary>
+    public string? Detail { get; set; }
 }

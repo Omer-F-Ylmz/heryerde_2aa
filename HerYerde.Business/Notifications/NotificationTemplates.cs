@@ -69,6 +69,26 @@ public static class NotificationTemplates
         return ($"Yeni sipariş · {order.OrderNo}", Page(body.ToString()));
     }
 
+    public static (string Subject, string Body) PaymentApproved(Order order, string thankYouUrl)
+    {
+        var body = new StringBuilder();
+        body.Append(Heading("Ödemeniz onaylandı", $"{Encode(order.OrderNo)} numaralı siparişinizin havalesi hesabımıza geçti."));
+        body.Append(Row("Tutar", Tl(order.Total)));
+        body.Append(Paragraph("Siparişiniz hazırlanmak üzere sıraya alındı; kargoya verilince ayrıca haber vereceğiz."));
+        body.Append(Button(thankYouUrl, "Siparişimi görüntüle"));
+        return ($"Ödemeniz onaylandı · {order.OrderNo}", Page(body.ToString()));
+    }
+
+    /// <summary>Bağlantı 30 dakika geçerli ve tek kullanımlık; istenmediyse posta yok sayılabilir.</summary>
+    public static (string Subject, string Body) AdminPasswordReset(string resetUrl)
+    {
+        var body = new StringBuilder();
+        body.Append(Heading("Parola sıfırlama", "Yönetim paneli için parola sıfırlama istendi."));
+        body.Append(Paragraph("Bağlantı 30 dakika geçerlidir ve bir kez kullanılabilir. Bu isteği siz yapmadıysanız postayı yok sayın; parolanız değişmez."));
+        body.Append(Button(resetUrl, "Yeni parola belirle"));
+        return ("Yönetim parolası sıfırlama", Page(body.ToString()));
+    }
+
     /// <summary>Müşterinin yazdığı her alan kaçışlanır; mesajdaki satır sonları korunur.</summary>
     public static (string Subject, string Body) ContactMessage(ContactMessage message, string adminUrl)
     {

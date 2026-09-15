@@ -15,4 +15,7 @@ public interface IPaymentProvider
 
     /// <summary>3D doğrulaması geçen ödemeyi tamamlar (çekim).</summary>
     Task<PaymentAuthResult> CompleteThreeDsAsync(PaymentCallback callback, CancellationToken cancellationToken = default);
+
+    /// <summary>Çekilmiş ödemenin tamamını geri verir.</summary>
+    Task<PaymentRefundResult> RefundAsync(PaymentRefundRequest request, CancellationToken cancellationToken = default);
 }

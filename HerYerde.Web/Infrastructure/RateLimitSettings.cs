@@ -28,6 +28,9 @@ public sealed class RateLimitSettings
     /// <summary>Sipariş sorgulama: numara + telefon denemesi; tahmin yoluyla sipariş bulmayı yavaşlatır.</summary>
     public int OrderLookupPerMinute { get; set; } = 10;
 
+    /// <summary>Havale bildirimi (dekont yüklemesi olabilir).</summary>
+    public int PaymentNoticePerMinute { get; set; } = 5;
+
     public int GeneralPerMinute { get; set; } = 300;
 }
 
@@ -53,7 +56,11 @@ public static class RateLimitPolicy
         var path = context.Request.Path;
         var isPost = HttpMethods.IsPost(context.Request.Method);
 
+        // Parola sıfırlama ve iki adımlı kod girişle aynı kovada: tahmin denemeleri toplamda sınırlanır.
         var (bucket, permit) = path.StartsWithSegments("/admin/auth/login")
+                               || isPost && (path.StartsWithSegments("/admin/auth/iki-adim")
+                                             || path.StartsWithSegments("/admin/auth/sifremi-unuttum")
+                                             || path.StartsWithSegments("/admin/auth/sifre-sifirla"))
             ? ("admin-giris", settings.AdminLoginPerMinute)
             : isPost && path.StartsWithSegments("/admin/products/addimage")
                 ? ("yukleme", settings.UploadPerMinute)
@@ -69,7 +76,9 @@ public static class RateLimitPolicy
                                     ? ("yorum", settings.ReviewPerDay)
                                     : isPost && path.StartsWithSegments("/siparis-sorgula")
                                         ? ("siparis-sorgula", settings.OrderLookupPerMinute)
-                                        : ("genel", settings.GeneralPerMinute);
+                                        : isPost && path.StartsWithSegments("/siparis") && path.Value!.EndsWith("/odeme-bildir", StringComparison.OrdinalIgnoreCase)
+                                            ? ("odeme-bildir", settings.PaymentNoticePerMinute)
+                                            : ("genel", settings.GeneralPerMinute);
 
         return RateLimitPartition.GetFixedWindowLimiter($"{bucket}:{client}", _ => new FixedWindowRateLimiterOptions
         {

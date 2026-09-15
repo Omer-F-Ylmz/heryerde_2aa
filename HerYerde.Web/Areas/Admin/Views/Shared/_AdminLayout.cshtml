@@ -3,7 +3,8 @@
 @inject IProductService ProductService
 @inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
 @{
-    var signedIn = User.Identity?.IsAuthenticated == true;
+    // İki adımlı kod bekleyen çerez de kimlik taşır ama panel yetkisi yoktur: çerçeve yalnız tam girişte.
+    var signedIn = User.HasClaim(AdminPolicy.ClaimType, AdminPolicy.ClaimValue);
     var section = ViewContext.RouteData.Values["controller"] as string;
     // Rozetler yalnız girişten sonra sorulur; çıkış ekranında veritabanına gidilmez.
     var unseen = signedIn ? (await OrderService.UnseenCountAsync()).Item2.Data : 0;

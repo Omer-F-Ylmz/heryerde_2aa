@@ -17,6 +17,12 @@ public interface INotificationService
     /// <summary>Sipariş kargoya verildi: yalnız müşteriye. Kaydetmez.</summary>
     Task QueueOrderShippedAsync(Order order, CancellationToken cancellationToken = default);
 
+    /// <summary>Havale onaylandı: yalnız müşteriye (e-postası varsa). Kaydetmez.</summary>
+    Task QueuePaymentApprovedAsync(Order order, CancellationToken cancellationToken = default);
+
+    /// <summary>Yönetici parola sıfırlama bağlantısı; anahtar yalnız postada açık, veritabanında özeti durur. Kaydetmez.</summary>
+    Task QueueAdminPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default);
+
     /// <summary>İletişim formu mesajı: yalnız mağazaya; StoreTo boşsa atlanır. Kaydetmez.</summary>
     Task QueueContactMessageAsync(ContactMessage message, CancellationToken cancellationToken = default);
 

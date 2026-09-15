@@ -381,7 +381,8 @@ public sealed class CardPaymentTests : IAsyncLifetime
         Assert.Contains("pay-1", html);
         Assert.Contains("iyzico", html);
         Assert.Contains("Ödeme alındı", html);
-        Assert.DoesNotContain("İade et", html);
+        // D11: kartla ödenmiş, kargoya verilmemiş siparişte tam tutar iade düğmesi çıkar (bkz. CardRefundTests).
+        Assert.Contains("İade et", html);
     }
 
     [Fact]

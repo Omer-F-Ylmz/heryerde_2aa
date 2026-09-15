@@ -32,6 +32,8 @@ services:
       Legal__EtbisNo: ${HERYERDE_ETBIS_NO:-}
     volumes:
       - heryerde-uploads:/app/wwwroot/uploads
+      # Fatura ve dekontlar: wwwroot dışında, statik olarak sunulmaz.
+      - heryerde-private:/app/private
     depends_on:
       db:
         condition: service_healthy
@@ -42,7 +44,7 @@ services:
       timeout: 5s
       retries: 3
 
-  # Gecelik yedek: her gün 00:00 UTC (03:00 İstanbul) .bak + uploads arşivi, klasörde 14'er dosya kalır.
+  # Gecelik yedek: her gün 00:00 UTC (03:00 İstanbul) .bak + uploads ve belgeler arşivi, klasörde 14'er dosya kalır.
   # Elle: docker compose -f docker-compose.prod.yml run --rm backup "dotnet HerYerde.Web.dll --yedek-al /backups"
   backup:
     build:
@@ -58,6 +60,7 @@ services:
     volumes:
       - ./backups:/backups
       - heryerde-uploads:/app/wwwroot/uploads:ro
+      - heryerde-private:/app/private:ro
     depends_on:
       db:
         condition: service_healthy
@@ -85,3 +88,4 @@ services:
 volumes:
   heryerde-mssql:
   heryerde-uploads:
+  heryerde-private:

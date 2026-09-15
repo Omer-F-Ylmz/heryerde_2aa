@@ -13,3 +13,12 @@
   geçilebilir; API (`ResizeOptions` + `WebpEncoder`) aynı kaldığı için değişiklik yalnız sürüm satırıdır.
 - Yükleme yolu ImageSharp'ın çözücüsüne güvenmiyor: dosya türü `ImageFile.Kind` ile sihirli baytlardan
   okunuyor, 8 MB üstü içerik çözücüye hiç verilmiyor.
+
+## QRCoder 1.8.0
+
+Yönetici iki adımlı doğrulama kurulumunda `otpauth://` adresinin QR kodunu PNG olarak üretmek için kullanılıyor
+(`HerYerde.Web/Areas/Admin/Controllers/AuthController.cs`). Görsel sayfaya `data:` adresiyle gömülür; dış servis yok.
+
+- Lisans: **MIT**. Ticari kullanım serbest, bildirim metninin korunması yeterli:
+  <https://github.com/codebude/QRCoder/blob/master/LICENSE.txt>
+- Yalnız `QRCodeGenerator` + `PngByteQRCode` kullanılıyor (System.Drawing bağımlılığı olmayan yol; Linux imajında çalışır).

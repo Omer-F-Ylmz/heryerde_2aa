@@ -11,7 +11,10 @@ public sealed class UploadFactory : AdminWebFactory
     public string Root { get; } = Path.Combine(Path.GetTempPath(), "heryerde-yukleme-" + Guid.NewGuid().ToString("n"));
 
     protected override void Configure(Dictionary<string, string?> settings)
-        => settings["Uploads:Root"] = Root;
+    {
+        settings["Uploads:Root"] = Root;
+        settings["PrivateFiles:Root"] = Path.Combine(Root, "private");
+    }
 
     protected override void Dispose(bool disposing)
     {

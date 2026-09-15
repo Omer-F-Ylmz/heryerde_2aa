@@ -84,6 +84,25 @@ public class NotificationManager : INotificationService
         await QueueAsync(OutboxType.OrderShipped, email, subject, body, cancellationToken);
     }
 
+    public async Task QueuePaymentApprovedAsync(Order order, CancellationToken cancellationToken = default)
+    {
+        if (order.Email is not { Length: > 0 } email)
+        {
+            return;
+        }
+
+        var (subject, body) = NotificationTemplates.PaymentApproved(
+            order,
+            $"{_shop.BaseUrl}/siparis/{order.OrderNo}/tesekkur?t={order.AccessToken}");
+        await QueueAsync(OutboxType.PaymentApproved, email, subject, body, cancellationToken);
+    }
+
+    public Task QueueAdminPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default)
+    {
+        var (subject, body) = NotificationTemplates.AdminPasswordReset($"{_shop.BaseUrl}/admin/auth/sifre-sifirla?t={token}");
+        return QueueAsync(OutboxType.AdminPasswordReset, email, subject, body, cancellationToken);
+    }
+
     public async Task QueueContactMessageAsync(ContactMessage message, CancellationToken cancellationToken = default)
     {
         if (_notifications.StoreTo is not { Length: > 0 } storeTo)

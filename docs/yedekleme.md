@@ -7,6 +7,7 @@ Barındırma kararından bağımsızdır: prod `docker-compose.prod.yml` ile kal
 |---|---|---|
 | Veritabanı | `backups/heryerde-yyyyMMdd-HHmmss.bak` | SQL Server `BACKUP DATABASE … WITH COPY_ONLY, CHECKSUM` |
 | Yüklenen ürün görselleri | `backups/uploads-yyyyMMdd-HHmmss.tar.gz` | `heryerde-uploads` volume'unun (`/app/wwwroot/uploads`) arşivi, `.ithal.json` dahil |
+| Fatura PDF'leri ve havale dekontları | `backups/belgeler-yyyyMMdd-HHmmss.tar.gz` | `heryerde-private` volume'unun (`/app/private`, wwwroot dışı) arşivi; kişisel veri içerir |
 
 Saat damgası UTC'dir. Her türden **en yeni 14 dosya** kalır (gecelik yedekte 14 gün); 15.'si yedek alınırken silinir.
 Loglar (`/app/logs`, 14 gün) ve kod yedeklenmez: kod git'te, imaj her an yeniden üretilir.
@@ -24,7 +25,7 @@ yedek için `db_backupoperator`, prova geri yüklemesi için `dbcreator` rolü g
 Migration'lı bir sürüm yayınlamadan önce mutlaka:
 ```sh
 docker compose -f docker-compose.prod.yml run --rm backup "dotnet HerYerde.Web.dll --yedek-al /backups"
-# Yedek: /backups/heryerde-20260915-000000.bak, arşiv: /backups/uploads-20260915-000000.tar.gz, silinen: 0.
+# Yedek: /backups/heryerde-20260915-000000.bak, arşiv: /backups/uploads-20260915-000000.tar.gz, belgeler: /backups/belgeler-20260915-000000.tar.gz, silinen: 0.
 ```
 Komut uygulamayı açmaz, geçiş (migration) uygulamaz; yalnız yedek alıp çıkar.
 
@@ -49,6 +50,7 @@ Komut uygulamayı açmaz, geçiş (migration) uygulamaz; yalnız yedek alıp ç�
    docker compose -f docker-compose.prod.yml stop web
    docker run --rm -v "$(docker volume ls -q | grep heryerde-uploads):/hedef" -v "$PWD/backups:/yedek:ro" alpine \
      sh -c 'tar -xzf /yedek/uploads-20260915-000000.tar.gz -C /hedef'
+   # Fatura ve dekontlar aynı yolla heryerde-private volume'una: belgeler-20260915-000000.tar.gz
    docker compose -f docker-compose.prod.yml start web
    ```
 5. `pwsh tools/smoke.ps1 -BaseUrl https://alanadi.com` ile vitrini denetle.

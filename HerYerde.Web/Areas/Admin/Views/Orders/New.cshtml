@@ -1,0 +1,114 @@
+@using HerYerde.Entities.Enums
+@model ManualOrderFormViewModel
+@{
+    ViewData["Title"] = "Yeni sipariş";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Satış</p>
+        <h1 class="display-2">Yeni sipariş</h1>
+        <p class="page-head__note">WhatsApp, Instagram, telefon ya da mağazadan gelen sipariş. Stok kaydedince düşer; yetmeyen kalem varsa hiçbiri düşmez.</p>
+    </div>
+    <a class="btn btn--ghost" asp-area="Admin" asp-controller="Orders" asp-action="Index">Listeye dön</a>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+<form class="manual-order" method="post" action="/admin/orders/new">
+    @Html.AntiForgeryToken()
+    <div class="form-card surface-elevated manual-order__main">
+        <fieldset class="fieldset">
+            <legend class="fieldset__legend">Kalemler</legend>
+            <p class="fieldset__note">Varyantlı üründe stok kodu (SALVAR-M), varyantsız üründe ürün adresindeki kısa ad (celik-tencere). Fiyat üründen gelir; kampanya varsa kampanya fiyatı.</p>
+            <ol class="manual-order__lines">
+                @for (var i = 0; i < Model.Lines.Count; i++)
+                {
+                    <li class="field-row manual-order__line">
+                        <div class="field">
+                            <label class="@(i == 0 ? "field__label" : "visually-hidden")" for="Lines_@(i)__Code">Stok kodu / ürün<span class="visually-hidden"> @(i + 1)</span></label>
+                            <input class="field__input field__input--mono" id="Lines_@(i)__Code" name="Lines[@i].Code" value="@Model.Lines[i].Code" autocomplete="off" spellcheck="false" />
+                        </div>
+                        <div class="field">
+                            <label class="@(i == 0 ? "field__label" : "visually-hidden")" for="Lines_@(i)__Quantity">Adet<span class="visually-hidden"> @(i + 1)</span></label>
+                            <input class="field__input" id="Lines_@(i)__Quantity" name="Lines[@i].Quantity" value="@Model.Lines[i].Quantity" type="number" min="1" step="1" inputmode="numeric" />
+                        </div>
+                    </li>
+                }
+            </ol>
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend class="fieldset__legend">Müşteri ve teslimat</legend>
+            <div class="field-row">
+                <div class="field">
+                    <label class="field__label" asp-for="FullName"></label>
+                    <input class="field__input" asp-for="FullName" autocomplete="off" required />
+                </div>
+                <div class="field">
+                    <label class="field__label" asp-for="Phone"></label>
+                    <input class="field__input" asp-for="Phone" type="tel" inputmode="tel" autocomplete="off" placeholder="05XX XXX XX XX" required />
+                </div>
+            </div>
+            <div class="field">
+                <label class="field__label" asp-for="Email"></label>
+                <input class="field__input" asp-for="Email" type="email" inputmode="email" autocomplete="off" />
+            </div>
+            <div class="field">
+                <label class="field__label" asp-for="Address"></label>
+                <textarea class="field__input field__input--area" asp-for="Address" rows="2" required></textarea>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label class="field__label" asp-for="City"></label>
+                    <input class="field__input" asp-for="City" autocomplete="off" required />
+                </div>
+                <div class="field">
+                    <label class="field__label" asp-for="District"></label>
+                    <input class="field__input" asp-for="District" autocomplete="off" required />
+                </div>
+            </div>
+            <div class="field">
+                <label class="field__label" asp-for="Note"></label>
+                <textarea class="field__input field__input--area" asp-for="Note" rows="2"></textarea>
+            </div>
+        </fieldset>
+    </div>
+
+    <aside class="form-card surface-elevated manual-order__side">
+        <div class="field">
+            <label class="field__label" asp-for="Source"></label>
+            <select class="field__input" asp-for="Source">
+                @foreach (var source in new[] { OrderSource.WhatsApp, OrderSource.Instagram, OrderSource.Telefon, OrderSource.Magaza })
+                {
+                    <option value="@((int)source)" selected="@(Model.Source == source)">@PaymentLabels.Source(source)</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="PaymentMethod"></label>
+            <select class="field__input" asp-for="PaymentMethod">
+                @foreach (var method in new[] { PaymentMethod.KapidaOdeme, PaymentMethod.HavaleEft, PaymentMethod.NakitElden })
+                {
+                    <option value="@((int)method)" selected="@(Model.PaymentMethod == method)">@PaymentLabels.Method(method)</option>
+                }
+            </select>
+            <span class="field__hint">Kart yönetimden alınmaz; müşteri siteden öder.</span>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="ShippingFeeOverride"></label>
+            <input class="field__input" asp-for="ShippingFeeOverride" type="number" step="0.01" min="0" inputmode="decimal" />
+            <span class="field__hint">Mağazadan teslimde 0 yazın.</span>
+        </div>
+        <label class="switch">
+            <input asp-for="NotifyCustomer" type="checkbox" />
+            <span>Müşteriye sipariş postası gönder</span>
+        </label>
+        <div class="form-card__foot">
+            <button class="btn btn--primary btn--block" type="submit">Siparişi aç</button>
+        </div>
+    </aside>
+</form>

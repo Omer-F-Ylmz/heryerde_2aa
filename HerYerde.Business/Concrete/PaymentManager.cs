@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using HerYerde.Business.Abstract;
 using HerYerde.Business.Dtos;
+using HerYerde.Business.Rules;
 using HerYerde.Core.DataAccess;
 using HerYerde.Core.Utilities.Results;
 using HerYerde.DataAccess.Abstract;
@@ -165,6 +166,70 @@ public class PaymentManager : IPaymentService
         return closed
             ? (HttpStatusCode.PaymentRequired, new ErrorDataResult<Order>(failure))
             : Outcome((await _paymentDal.GetAsync(p => p.Id == payment.Id, cancellationToken))!.Status, order);
+    }
+
+    public async Task<(HttpStatusCode, IResult)> RefundAsync(int orderId, string ip, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderDal.GetTrackedAsync(o => o.Id == orderId, cancellationToken);
+        if (order is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Sipariş bulunamadı."));
+        }
+
+        var payment = (await _paymentDal.GetListAsync(p => p.OrderId == orderId, cancellationToken)).MaxBy(p => p.Id);
+        if (payment?.Status != PaymentStatus.Basarili || payment.PaymentId is null)
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult("İade edilecek kart ödemesi yok (zaten iade edilmiş olabilir)."));
+        }
+
+        if (!OrderRules.CanRefund(order.Status))
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult("Kargoya verilmiş siparişte kart iadesi ürün geri gelince yapılır."));
+        }
+
+        try
+        {
+            await _unitOfWork.InTransactionAsync(async () =>
+            {
+                // Koşullu UPDATE satırı kilitler: eşzamanlı ikinci iade burada 0 alır ve sağlayıcıya hiç gitmez.
+                var moment = _clock.GetUtcNow().UtcDateTime;
+                if (await _paymentDal.TryRefundAsync(payment.Id, moment, cancellationToken) == 0)
+                {
+                    throw new AlreadyClosedException();
+                }
+
+                var refund = await _provider.RefundAsync(
+                    new PaymentRefundRequest(payment.PaymentId, payment.ConversationId, payment.Amount, ip),
+                    cancellationToken);
+                if (!refund.Success)
+                {
+                    throw new CaptureRejectedException("İade yapılamadı: " + (refund.ErrorMessage ?? "sağlayıcı yanıt vermedi."), null);
+                }
+
+                foreach (var item in await _orderItemDal.GetListAsync(i => i.OrderId == order.Id, cancellationToken))
+                {
+                    if (await _variantDal.IncrementStockBySkuAsync(item.Sku, item.Quantity, cancellationToken) == 0)
+                    {
+                        await _productDal.IncrementStockBySlugAsync(item.Sku, item.Quantity, cancellationToken);
+                    }
+                }
+
+                var tracked = (await _paymentDal.GetTrackedAsync(p => p.Id == payment.Id, cancellationToken))!;
+                tracked.RawResponse = MaskRaw(refund.RawResponse) ?? tracked.RawResponse;
+                order.Status = OrderStatus.IptalEdildi;
+                return await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+        }
+        catch (AlreadyClosedException)
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult("Bu ödeme zaten iade edildi."));
+        }
+        catch (CaptureRejectedException rejected)
+        {
+            return (HttpStatusCode.BadGateway, new ErrorResult(rejected.Message));
+        }
+
+        return (HttpStatusCode.OK, new SuccessResult("Ödeme iade edildi, sipariş iptal edildi, stok geri alındı."));
     }
 
     /// <summary>İşlem içinde: önce kayıt kilitlenip kapatılır (ikinci dönüş burada 0 alır), stok düşer, sonra çekim.

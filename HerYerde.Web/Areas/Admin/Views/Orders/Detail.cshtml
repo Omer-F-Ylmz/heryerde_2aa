@@ -10,9 +10,13 @@
     <div>
         <p class="eyebrow">Sipariş</p>
         <h1 class="display-2">@order.OrderNo</h1>
-        <p class="page-head__note">@IstanbulTime.Format(order.CreatedAt) · <partial name="Components/_StatusPill" model="order.Status" /></p>
+        <p class="page-head__note">@IstanbulTime.Format(order.CreatedAt) · <partial name="Components/_StatusPill" model="order.Status" />@(order.Source == OrderSource.Site ? "" : " · " + PaymentLabels.Source(order.Source))</p>
     </div>
     <div class="page-head__actions">
+        @if (Model.CanEdit)
+        {
+            <a class="btn btn--ghost" href="/admin/orders/@order.Id/duzenle">Düzenle</a>
+        }
         <a class="btn btn--cta" href="@Model.WhatsAppUrl" rel="noopener" target="_blank">
             <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
             <span>WhatsApp'tan yaz</span>
@@ -45,6 +49,36 @@
                     <br />
                     <span>@PaymentLabels.Status(payment.Status) · @payment.Provider</span><br />
                     <span class="cell-mono">@(payment.PaymentId ?? "—")</span>
+                }
+                @foreach (var notice in Model.Detail.Notices ?? [])
+                {
+                    <br />
+                    <span class="notice-line">
+                        Bildirim: @notice.SenderName · @Money.Tl(notice.Amount) · @notice.PaidOn.ToString("dd.MM.yyyy")
+                        @if (notice.ReceiptFile is not null)
+                        {
+                            <a href="/admin/orders/@order.Id/dekont/@notice.Id">dekont</a>
+                        }
+                        @(notice.ApprovedAt is null ? " · bekliyor" : " · onaylandı")
+                    </span>
+                }
+            </dd>
+        </div>
+        <div>
+            <dt>Fatura</dt>
+            <dd>
+                @if (order.InvoiceNo is { } invoiceNo)
+                {
+                    <span class="cell-mono">@invoiceNo</span>
+                    <span> · @(order.InvoiceDate?.ToString("dd.MM.yyyy"))</span>
+                    @if (order.InvoiceFile is not null)
+                    {
+                        <br /><a href="/admin/orders/@order.Id/fatura">PDF'i aç</a>
+                    }
+                }
+                else
+                {
+                    <span>—</span>
                 }
             </dd>
         </div>
@@ -126,7 +160,14 @@
     </p>
 
     <div class="order-actions">
-        @if (Model.NextStatus is { } next)
+        @if (Model.CanApproveTransfer)
+        {
+            <form method="post" action="/admin/orders/@order.Id/havale-onayla">
+                @Html.AntiForgeryToken()
+                <button class="btn btn--primary" type="submit">Havale geldi, onayla</button>
+            </form>
+        }
+        else if (Model.NextStatus is { } next)
         {
             <form class="@(Model.NeedsShipment ? "shipment" : null)"
                   asp-area="Admin" asp-controller="Orders" asp-action="ChangeStatus" asp-route-id="@order.Id" method="post">
@@ -158,6 +199,13 @@
                 <button class="btn btn--danger" type="submit">Siparişi iptal et</button>
             </form>
         }
+        @if (Model.CanRefund)
+        {
+            <form method="post" action="/admin/orders/@order.Id/iade">
+                @Html.AntiForgeryToken()
+                <button class="btn btn--danger" type="submit">İade et (@Money.Tl(Model.Detail.Payment!.Amount))</button>
+            </form>
+        }
         @if (Model.NextStatus is null && !Model.CanCancel)
         {
             <p class="side-card__note">Bu sipariş kapandı; durumu değişmez.</p>
@@ -170,6 +218,29 @@
         }
     </div>
 </div>
+
+<form class="form-card surface-elevated invoice-form" method="post" action="/admin/orders/@order.Id/fatura" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <h2 class="heading-3">@(order.InvoiceNo is null ? "Fatura ekle" : "Faturayı değiştir")</h2>
+    <p class="fieldset__note">Muhasebe programında kesilen faturanın PDF'i. Müşteri sipariş sayfasından indirir.</p>
+    <div class="field-row field-row--three">
+        <div class="field">
+            <label class="field__label" for="invoiceNo">Fatura no</label>
+            <input class="field__input field__input--mono" id="invoiceNo" name="invoiceNo" value="@order.InvoiceNo" maxlength="40" autocomplete="off" required />
+        </div>
+        <div class="field">
+            <label class="field__label" for="invoiceDate">Fatura tarihi</label>
+            <input class="field__input" id="invoiceDate" name="invoiceDate" type="date" value="@(order.InvoiceDate?.ToString("yyyy-MM-dd"))" required />
+        </div>
+        <div class="field">
+            <label class="field__label" for="invoiceFile">PDF (en çok 5 MB)</label>
+            <input class="field__input field__input--file" id="invoiceFile" name="file" type="file" accept="application/pdf" required />
+        </div>
+    </div>
+    <div class="form-card__foot">
+        <button class="btn btn--secondary" type="submit">Faturayı kaydet</button>
+    </div>
+</form>
 
 @functions {
     private static string NextLabel(OrderStatus next) => next switch

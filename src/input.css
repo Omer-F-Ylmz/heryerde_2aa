@@ -3953,3 +3953,171 @@
     }
   }
 }
+
+/* --- D11 yönetim operasyonu: manuel sipariş, iki adımlı doğrulama, havale bildirimi, fatura --- */
+@layer components {
+  /* Tek kartlı giriş kapısı (parola sıfırlama, iki adımlı kod): açıklama sütunu yok */
+  .gate--single {
+    justify-items: center;
+  }
+
+  .gate--single .gate__card {
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .field__input--code {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.24em;
+    font-size: 20px;
+  }
+
+  .totp-setup {
+    display: grid;
+    gap: 24px;
+  }
+
+  .totp-setup__steps {
+    margin: 0;
+    padding-left: 24px;
+    list-style: decimal;
+    line-height: 1.7;
+  }
+
+  .totp-setup__steps li + li {
+    margin-top: 8px;
+  }
+
+  .totp-setup__qr {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+  }
+
+  .totp-setup__qr img {
+    border: 1px solid var(--c-neutral-200);
+    border-radius: 8px;
+    background: #ffffff;
+  }
+
+  .totp-setup__secret {
+    word-break: break-all;
+  }
+
+  .totp-setup__state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 24px;
+  }
+
+  .recovery-codes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 24px;
+    margin: 16px 0 24px;
+    padding: 16px 16px 16px 40px;
+    border: 1px dashed var(--c-neutral-200);
+    border-radius: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .account-security {
+    margin-top: 24px;
+  }
+
+  .account-security .form-card__foot {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .manual-order {
+    display: grid;
+    gap: 24px;
+  }
+
+  .manual-order__lines {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Kod ve adet 390'da da yan yana: satır başına tek bakış; etiket yalnız ilk satırda görünür */
+  .manual-order__line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 88px;
+    align-items: end;
+    gap: 8px;
+  }
+
+  .manual-order__line .field {
+    margin-bottom: 0;
+  }
+
+  .manual-order__side .form-card__foot {
+    border-top: 0;
+  }
+
+  .invoice-form {
+    margin-top: 24px;
+  }
+
+  .notice-line {
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .audit-detail {
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .notice-form {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .notice-form__sent {
+    margin: 24px 0 0;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--c-neutral-200);
+    background: var(--c-neutral-50);
+    line-height: 1.6;
+  }
+
+  .notice-form__toggle {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--c-brand-700);
+    margin-bottom: 16px;
+  }
+
+  .notice-form__toggle:hover {
+    color: var(--c-brand-900);
+  }
+
+  .notice-form__toggle:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  @media (min-width: 1024px) {
+    /* kırık simetri: kalemler ve müşteri geniş sütunda, kanal/ödeme dar yan sütunda ve bir kademe aşağıda */
+    .manual-order {
+      grid-template-columns: 8fr 4fr;
+      align-items: start;
+    }
+
+    .manual-order__side {
+      position: sticky;
+      top: 32px;
+      margin-top: 32px;
+    }
+  }
+}

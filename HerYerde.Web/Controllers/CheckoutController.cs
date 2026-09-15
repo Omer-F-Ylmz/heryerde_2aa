@@ -20,7 +20,8 @@ public partial class CheckoutController(
     IOptions<ShopSettings> shop,
     IOptions<ShippingSettings> shipping,
     IOptions<IyzicoSettings> iyzico,
-    IConfiguration configuration) : Controller
+    IConfiguration configuration,
+    IPrivateFileStorage files) : Controller
 {
     private ShopSettings Shop => shop.Value;
 
@@ -180,6 +181,68 @@ public partial class CheckoutController(
             whatsAppBase + "?text=" + Uri.EscapeDataString(message),
             Shop.Iban,
             shipping.Value.TrackingUrl(result.Data.Order.Carrier, result.Data.Order.TrackingNo)));
+    }
+
+    /// <summary>Havale bildirimi sonucu; teşekkür sayfasında bir kez gösterilir.</summary>
+    public const string NoticeKey = "havale-bildirimi";
+
+    /// <summary>Fatura yalnız siparişin anahtarıyla iner; başka siparişin anahtarı ya da anahtarsız istek 404.</summary>
+    [HttpGet("siparis/{orderNo}/fatura")]
+    public async Task<IActionResult> Invoice(string orderNo, [FromQuery(Name = "t")] string? t, CancellationToken cancellationToken)
+    {
+        var (status, result) = await orderService.GetByOrderNoAsync(orderNo, cancellationToken);
+        return status == HttpStatusCode.OK
+               && Guid.TryParse(t, out var supplied) && supplied == result.Data!.Order.AccessToken
+               && files.Resolve(result.Data.Order.InvoiceFile) is { } path
+            ? PhysicalFile(path, "application/pdf", $"fatura-{result.Data.Order.OrderNo}.pdf")
+            : NotFound();
+    }
+
+    [HttpPost("siparis/{orderNo}/odeme-bildir")]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(PrivateFileStorage.MaxBytes + 64_000)]
+    public async Task<IActionResult> PaymentNotice(
+        string orderNo,
+        [FromForm(Name = "t")] Guid t,
+        [FromForm] string? senderName,
+        [FromForm] DateTime? paidOn,
+        [FromForm] decimal amount,
+        IFormFile? receipt,
+        CancellationToken cancellationToken)
+    {
+        var thankYou = $"/siparis/{orderNo}/tesekkur?t={t}";
+        string? stored = null;
+        if (receipt is { Length: > 0 })
+        {
+            using var buffer = new MemoryStream();
+            await receipt.CopyToAsync(buffer, cancellationToken);
+            var bytes = buffer.ToArray();
+            if (receipt.Length > PrivateFileStorage.MaxBytes || PrivateFileStorage.Kind(bytes) is not { } kind)
+            {
+                TempData[NoticeKey] = "Dekont PDF ya da fotoğraf (PNG, JPEG, WebP) olmalı, en çok 5 MB.";
+                return SeeOther(thankYou);
+            }
+
+            stored = await files.SaveAsync("dekontlar", kind, bytes, cancellationToken);
+        }
+
+        var (status, result) = await orderService.SubmitPaymentNoticeAsync(
+            orderNo,
+            t,
+            new PaymentNoticeDraft(senderName ?? string.Empty, paidOn ?? DateTime.MinValue, amount, stored),
+            cancellationToken);
+
+        if (status != HttpStatusCode.Created)
+        {
+            files.Delete(stored);
+            if (status == HttpStatusCode.NotFound)
+            {
+                return NotFound();
+            }
+        }
+
+        TempData[NoticeKey] = result.Message;
+        return SeeOther(thankYou);
     }
 
     private IActionResult Invalid(CheckoutFormViewModel form, CartView cart, string? message, bool setStatus = true)

@@ -60,6 +60,64 @@
                     </button>
                     <span class="iban__done" data-iban-done hidden role="status">Kopyalandı</span>
                 </div>
+                @if (TempData[HerYerde.Web.Controllers.CheckoutController.NoticeKey] is string noticeMessage)
+                {
+                    <p class="form-alert form-alert--notice" role="status">@noticeMessage</p>
+                }
+                @if (Model.Detail.Notices is { Count: > 0 } notices)
+                {
+                    <p class="notice-form__sent">
+                        Bildiriminiz alındı (@Money.Tl(notices[^1].Amount) · @notices[^1].PaidOn.ToString("dd.MM.yyyy")).
+                        @(order.Status == OrderStatus.Beklemede ? "Hesabımıza geçince siparişiniz onaylanır." : "Ödemeniz onaylandı.")
+                    </p>
+                }
+                @if (order.Status == OrderStatus.Beklemede)
+                {
+                    <details class="notice-form" open="@(Model.Detail.Notices is not { Count: > 0 })">
+                        <summary class="notice-form__toggle">@(Model.Detail.Notices is { Count: > 0 } ? "Başka bir havale bildir" : "Havaleyi yaptım, bildir")</summary>
+                        <form method="post" action="/siparis/@order.OrderNo/odeme-bildir" enctype="multipart/form-data">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="t" value="@order.AccessToken" />
+                            <div class="field">
+                                <label class="field__label" for="SenderName">Gönderen ad soyad</label>
+                                <input class="field__input" id="SenderName" name="SenderName" autocomplete="name" maxlength="120" required />
+                            </div>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label class="field__label" for="PaidOn">Havale tarihi</label>
+                                    <input class="field__input" id="PaidOn" name="PaidOn" type="date" required />
+                                </div>
+                                <div class="field">
+                                    <label class="field__label" for="Amount">Tutar (₺)</label>
+                                    <input class="field__input" id="Amount" name="Amount" type="number" step="0.01" min="0.01" inputmode="decimal" value="@order.Total.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" required />
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="field__label" for="Receipt">Dekont (isteğe bağlı)</label>
+                                <input class="field__input field__input--file" id="Receipt" name="Receipt" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" />
+                                <span class="field__hint">PDF ya da fotoğraf, en çok 5 MB.</span>
+                            </div>
+                            <button class="btn btn--primary" type="submit">Bildirimi gönder</button>
+                        </form>
+                    </details>
+                }
+            </div>
+        }
+
+        @if (order.InvoiceFile is not null)
+        {
+            <div class="thanks__card">
+                <h2 class="heading-3">Fatura</h2>
+                <p class="summary__row">
+                    <span>@order.InvoiceNo</span>
+                    <span class="summary__value">@(order.InvoiceDate?.ToString("dd.MM.yyyy"))</span>
+                </p>
+                <p>
+                    <a class="btn btn--secondary" href="/siparis/@order.OrderNo/fatura?t=@order.AccessToken">
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                        <span>Faturayı indir</span>
+                    </a>
+                </p>
             </div>
         }
 

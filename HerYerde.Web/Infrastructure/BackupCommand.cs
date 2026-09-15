@@ -5,7 +5,7 @@ using Microsoft.Data.SqlClient;
 
 namespace HerYerde.Web.Infrastructure;
 
-public sealed record BackupSummary(string Database, string? Archive, IReadOnlyList<string> Removed);
+public sealed record BackupSummary(string Database, string? Archive, IReadOnlyList<string> Removed, string? DocumentsArchive = null);
 
 public sealed record RestoreSummary(string Database, int Products);
 
@@ -31,6 +31,7 @@ public static class BackupCommand
         string uploadsPath,
         string folder,
         DateTime utcNow,
+        string? documentsPath = null,
         CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(folder);
@@ -47,17 +48,31 @@ public static class BackupCommand
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
 
-        string? archive = null;
-        if (Directory.Exists(uploadsPath))
+        var archive = await ArchiveAsync(uploadsPath, Path.Combine(folder, $"uploads-{stamp}.tar.gz"), cancellationToken);
+        // Fatura ve dekontlar (gizli depo, wwwroot dışında) ayrı arşivde.
+        var documents = documentsPath is null
+            ? null
+            : await ArchiveAsync(documentsPath, Path.Combine(folder, $"belgeler-{stamp}.tar.gz"), cancellationToken);
+
+        var removed = Rotate(folder, "heryerde-*.bak")
+            .Concat(Rotate(folder, "uploads-*.tar.gz"))
+            .Concat(Rotate(folder, "belgeler-*.tar.gz"))
+            .ToList();
+        return new BackupSummary(database, archive, removed, documents);
+    }
+
+    /// <summary>Klasör yoksa arşiv yazılmaz, null döner.</summary>
+    private static async Task<string?> ArchiveAsync(string source, string archive, CancellationToken cancellationToken)
+    {
+        if (!Directory.Exists(source))
         {
-            archive = Path.Combine(folder, $"uploads-{stamp}.tar.gz");
-            await using var file = File.Create(archive);
-            await using var gzip = new GZipStream(file, CompressionLevel.Optimal);
-            await TarFile.CreateFromDirectoryAsync(uploadsPath, gzip, includeBaseDirectory: false, cancellationToken);
+            return null;
         }
 
-        var removed = Rotate(folder, "heryerde-*.bak").Concat(Rotate(folder, "uploads-*.tar.gz")).ToList();
-        return new BackupSummary(database, archive, removed);
+        await using var file = File.Create(archive);
+        await using var gzip = new GZipStream(file, CompressionLevel.Optimal);
+        await TarFile.CreateFromDirectoryAsync(source, gzip, includeBaseDirectory: false, cancellationToken);
+        return archive;
     }
 
     /// <summary>Prova veritabanı varsa üzerine yazılır; canlı veritabanına dokunulmaz.</summary>

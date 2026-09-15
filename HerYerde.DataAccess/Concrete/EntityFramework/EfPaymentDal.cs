@@ -19,4 +19,11 @@ public class EfPaymentDal : EfEntityRepositoryBase<Payment, HerYerdeContext>, IP
             .ExecuteUpdateAsync(s => s
                 .SetProperty(p => p.Status, status)
                 .SetProperty(p => p.UpdatedAt, moment), cancellationToken);
+
+    public Task<int> TryRefundAsync(int paymentId, DateTime moment, CancellationToken cancellationToken = default)
+        => Context.Payments
+            .Where(p => p.Id == paymentId && p.Status == PaymentStatus.Basarili)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(p => p.Status, PaymentStatus.Iade)
+                .SetProperty(p => p.UpdatedAt, moment), cancellationToken);
 }

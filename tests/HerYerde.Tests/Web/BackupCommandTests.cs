@@ -96,6 +96,29 @@ public sealed class BackupCommandTests : IAsyncLifetime
         Assert.Contains(entries, name => name.EndsWith("products/7/a-800.webp", StringComparison.Ordinal));
     }
 
+    /// <summary>D11: fatura ve dekontlar wwwroot dışındaki gizli klasörde; yedek onları ayrı arşive alır.</summary>
+    [Fact]
+    public async Task Gizli_belgeler_ayri_arsive_girer()
+    {
+        var documents = Path.Combine(_uploads, "gizli");
+        Directory.CreateDirectory(Path.Combine(documents, "faturalar"));
+        await File.WriteAllTextAsync(Path.Combine(documents, "faturalar", "f.pdf"), "%PDF-");
+
+        var summary = await BackupCommand.BackupAsync(TestDb.ConnectionString, Path.Combine(_uploads, "yok"), _folder, Moment, documents);
+
+        Assert.Null(summary.Archive);
+        Assert.Equal(Path.Combine(_folder, "belgeler-20260915-000000.tar.gz"), summary.DocumentsArchive);
+        await using var gzip = new GZipStream(File.OpenRead(summary.DocumentsArchive!), CompressionMode.Decompress);
+        await using var reader = new TarReader(gzip);
+        var entry = await reader.GetNextEntryAsync();
+        while (entry is not null && !entry.Name.Replace('\\', '/').EndsWith("faturalar/f.pdf", StringComparison.Ordinal))
+        {
+            entry = await reader.GetNextEntryAsync();
+        }
+
+        Assert.NotNull(entry);
+    }
+
     /// <summary>SQL Server hizmet hesabı (CI'da konteynerdeki mssql) da yazabilsin diye klasör herkese açık kurulur.</summary>
     private static string SharedFolder()
     {

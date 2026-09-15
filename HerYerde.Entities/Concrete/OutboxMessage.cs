@@ -33,4 +33,6 @@ public static class OutboxType
     public const string OrderShipped = "siparis-kargoda";
     public const string NewOrderForStore = "yeni-siparis";
     public const string ContactMessage = "iletisim-mesaji";
+    public const string AdminPasswordReset = "yonetici-sifre-sifirlama";
+    public const string PaymentApproved = "havale-onaylandi";
 }

@@ -1,0 +1,89 @@
+@using HerYerde.Web.Models
+@model OrderEditViewModel
+@{
+    ViewData["Title"] = "Düzenle · " + Model.Order.OrderNo;
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Sipariş düzenle</p>
+        <h1 class="display-2">@Model.Order.OrderNo</h1>
+        <p class="page-head__note">Hazırlanmaya geçmeden değişir. Adet artarsa stok düşer, azalırsa geri döner; her değişiklik denetim izine eskiden yeniye yazılır.</p>
+    </div>
+    <a class="btn btn--ghost" asp-area="Admin" asp-controller="Orders" asp-action="Detail" asp-route-id="@Model.Order.Id">Vazgeç</a>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+<form class="form-card surface-elevated" method="post" action="/admin/orders/@Model.Order.Id/duzenle">
+    @Html.AntiForgeryToken()
+    <fieldset class="fieldset">
+        <legend class="fieldset__legend">Teslimat</legend>
+        <div class="field">
+            <label class="field__label" for="Address">Adres</label>
+            <textarea class="field__input field__input--area" id="Address" name="Address" rows="2" required>@Model.Address</textarea>
+        </div>
+        <div class="field-row field-row--three">
+            <div class="field">
+                <label class="field__label" for="City">İl</label>
+                <input class="field__input" id="City" name="City" value="@Model.City" required />
+            </div>
+            <div class="field">
+                <label class="field__label" for="District">İlçe</label>
+                <input class="field__input" id="District" name="District" value="@Model.District" required />
+            </div>
+            <div class="field">
+                <label class="field__label" for="Phone">Cep telefonu</label>
+                <input class="field__input" id="Phone" name="Phone" value="@Model.Phone" type="tel" inputmode="tel" required />
+            </div>
+        </div>
+        <div class="field">
+            <label class="field__label" for="Note">Not</label>
+            <textarea class="field__input field__input--area" id="Note" name="Note" rows="2">@Model.Note</textarea>
+        </div>
+    </fieldset>
+
+    <fieldset class="fieldset">
+        <legend class="fieldset__legend">Kalemler</legend>
+        @if (Model.Order.PaymentMethod == HerYerde.Entities.Enums.PaymentMethod.KrediKarti)
+        {
+            <p class="fieldset__note">Kartla ödenmiş siparişte adet değişmez; gerekirse sipariş iade edilir.</p>
+        }
+        <div class="table-wrap">
+            <table class="table">
+                <caption class="visually-hidden">Sipariş kalemleri ve adetleri</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Ürün</th>
+                        <th scope="col" class="table__num">Birim</th>
+                        <th scope="col" class="table__num">Adet</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @for (var i = 0; i < Model.Lines.Count; i++)
+                {
+                    var line = Model.Lines[i];
+                    var quantity = Model.Items.FirstOrDefault(x => x.Id == line.Id)?.Quantity ?? line.Quantity;
+                    <tr>
+                        <th scope="row">@line.ProductName <span class="cell-mono">@line.Sku</span></th>
+                        <td class="table__num">@Money.Tl(line.UnitPrice)</td>
+                        <td class="table__num">
+                            <input type="hidden" name="Items[@i].Id" value="@line.Id" />
+                            <label class="visually-hidden" for="Items_@(i)__Quantity">@line.ProductName adedi</label>
+                            <input class="field__input field__input--tiny" id="Items_@(i)__Quantity" name="Items[@i].Quantity" value="@quantity" type="number" min="1" step="1" inputmode="numeric" />
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </fieldset>
+
+    <div class="form-card__foot">
+        <a class="btn btn--ghost" asp-area="Admin" asp-controller="Orders" asp-action="Detail" asp-route-id="@Model.Order.Id">Vazgeç</a>
+        <button class="btn btn--primary" type="submit">Değişiklikleri kaydet</button>
+    </div>
+</form>

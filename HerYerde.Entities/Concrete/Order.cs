@@ -14,6 +14,9 @@ public class Order : IEntity
     public Guid AccessToken { get; set; }
     public OrderStatus Status { get; set; }
     public PaymentMethod PaymentMethod { get; set; }
+
+    /// <summary>Siparişin kanalı; vitrin siparişi Site, yönetimden girilen WhatsApp/Instagram/Telefon/Mağaza.</summary>
+    public OrderSource Source { get; set; } = OrderSource.Site;
     public decimal Subtotal { get; set; }
     public decimal ShippingFee { get; set; }
     public decimal Total { get; set; }
@@ -42,4 +45,12 @@ public class Order : IEntity
 
     /// <summary>Onaylanan yasal metinlerin sürümü; bu alan eklenmeden önceki siparişte boş.</summary>
     public string? LegalVersion { get; set; }
+
+    /// <summary>Muhasebe programında kesilen faturanın numarası; e-arşiv entegrasyonu yok, yönetici elle girer.</summary>
+    public string? InvoiceNo { get; set; }
+
+    public DateTime? InvoiceDate { get; set; }
+
+    /// <summary>Fatura PDF'inin gizli depodaki göreli yolu (wwwroot dışında); indirme sipariş anahtarıyla.</summary>
+    public string? InvoiceFile { get; set; }
 }

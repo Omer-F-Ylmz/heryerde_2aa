@@ -101,7 +101,9 @@ public static class TestData
 
     public static AdminAuthManager NewAdminAuthManager(HerYerdeContext context) => new(
         new EfAdminUserDal(context),
-        new EfUnitOfWork(context));
+        new EfUnitOfWork(context),
+        NewNotificationManager(context),
+        TestClock.Fixed);
 
     public static ProductManager NewProductManager(HerYerdeContext context) => new(
         new EfProductDal(context),
@@ -123,6 +125,7 @@ public static class TestData
         new EfUnitOfWork(context),
         NewNotificationManager(context, clock: clock),
         new EfPaymentDal(context),
+        new EfPaymentNoticeDal(context),
         Options.Create(NewShopSettings(freeShippingOver)),
         Options.Create(NewShippingSettings()),
         clock ?? TestClock.Fixed);

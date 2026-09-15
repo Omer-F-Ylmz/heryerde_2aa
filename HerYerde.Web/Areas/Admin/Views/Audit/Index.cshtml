@@ -43,7 +43,13 @@ else
                     {
                         <td>@entry.AdminEmail</td>
                     }
-                    <td>@entry.Log.Action</td>
+                    <td>
+                        @entry.Log.Action
+                        @if (entry.Log.Detail is { } detail)
+                        {
+                            <br /><span class="audit-detail">@detail</span>
+                        }
+                    </td>
                     <td>@entry.Log.Entity <span class="cell-mono">@(entry.Log.EntityId is { } id ? "#" + id : "—")</span></td>
                     <td><span class="cell-mono">@(entry.Log.Ip ?? "—")</span></td>
                 </tr>

@@ -18,6 +18,8 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
 {
     private const string InitPath = "/payment/3dsecure/initialize";
     private const string AuthPath = "/payment/3dsecure/auth";
+    private const string CancelPath = "/payment/cancel";
+    private const string RefundPath = "/v2/payment/refund";
 
     private IyzicoSettings Settings => options.Value;
 
@@ -142,6 +144,35 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
         return signed
             ? new PaymentAuthResult(true, Text(json, "paymentId"), paidPrice, null, raw)
             : new PaymentAuthResult(false, Text(json, "paymentId"), 0m, "Sağlayıcı yanıtının imzası doğrulanamadı.", raw);
+    }
+
+    /// <summary>Önce iptal (gün sonu mutabakatından önce, karta hiç yansımaz); iptal reddedilirse tam tutar iade (v2, paymentId ile).</summary>
+    public async Task<PaymentRefundResult> RefundAsync(PaymentRefundRequest request, CancellationToken cancellationToken = default)
+    {
+        var (cancel, cancelRaw) = await PostAsync(CancelPath, new JsonObject
+        {
+            ["locale"] = "tr",
+            ["conversationId"] = request.ConversationId,
+            ["paymentId"] = request.PaymentId,
+            ["ip"] = request.Ip
+        }, cancellationToken);
+        if (cancel is not null && Text(cancel, "status") == "success")
+        {
+            return new PaymentRefundResult(true, null, cancelRaw);
+        }
+
+        var (refund, refundRaw) = await PostAsync(RefundPath, new JsonObject
+        {
+            ["locale"] = "tr",
+            ["conversationId"] = request.ConversationId,
+            ["paymentId"] = request.PaymentId,
+            ["price"] = Price(request.Amount),
+            ["currency"] = "TRY",
+            ["ip"] = request.Ip
+        }, cancellationToken);
+        return refund is not null && Text(refund, "status") == "success"
+            ? new PaymentRefundResult(true, null, refundRaw)
+            : new PaymentRefundResult(false, ErrorMessage(refund), refundRaw);
     }
 
     /// <summary>İyzico'nun döndürdüğü otomatik gönderilen form: action ve gizli alanlar. Satır içi script CSP'ye

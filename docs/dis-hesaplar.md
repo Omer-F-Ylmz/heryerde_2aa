@@ -32,6 +32,8 @@ Prod'da değerler `docker-compose.prod.yml` üzerinden verilir; son sütun orada
 | İyzico API adresi | İyzico | `Iyzico:BaseUrl` (varsayılan `https://sandbox-api.iyzipay.com`; canlı `https://api.iyzipay.com`) | Evet | `HERYERDE_IYZICO_BASE_URL` |
 | 3D doğrulama formunun gideceği köken | İyzico / banka | `Iyzico:CspSources` (CSP `form-action`, `frame-src`; yalnız `/odeme*`) | Evet | `HERYERDE_IYZICO_CSP_SOURCE` (ilk köken) |
 | Hata izleme DSN'i | [Ömer] Sentry projesi (Settings › Client Keys) | `Sentry__Dsn` (env) | Evet | `HERYERDE_SENTRY_DSN` |
+| Fatura/dekont gizli klasörü | [Ömer] sunucu diski | `PrivateFiles:Root` (boşsa içerik kökü altında `private`; konteynerde `/app/private`, `heryerde-private` volume'u) | Hayır | — (compose volume) |
+| Havale bildirimi hız sınırı | — | `RateLimit:PaymentNoticePerMinute` (IP başına, varsayılan 5) | Hayır | — (appsettings) |
 | ETBİS kayıt numarası | [MÜŞTERİ] eticaret.gov.tr ETBİS kaydı | `Legal:EtbisNo` (boşken altbilgide bant görünmez) | Hayır (kayıt tamamlanınca) | `HERYERDE_ETBIS_NO` |
 
 ## Notlar
@@ -45,5 +47,8 @@ Prod'da değerler `docker-compose.prod.yml` üzerinden verilir; son sütun orada
   (compose'da `Iyzico__CspSources__1` satırı eklenir).
 - `Sentry__Dsn` boşken hata izleme tümüyle kapalıdır. Doluyken yalnız Error ve üstü olaylar gider; kişisel veri
   gönderimi kapalı, telefon/e-posta/adres olay çıkmadan maskelenir.
+- Yönetici parolası ve iki adımlı cihaz birlikte kaybolursa sunucuda
+  `docker compose -f docker-compose.prod.yml run --rm web --admin-sifirla <e-posta>` geçici parolayı konsola yazar;
+  ilk girişte parola değiştirilmeden panel açılmaz, iki adımlı doğrulama kapanır, açık oturumlar düşer.
 - `Shipping:Carriers` listesinde olmayan bir kargo firmasıyla "Kargoda" durumuna geçilemez (400).
 - Takip adresi şablonu boş bırakılırsa teşekkür sayfasında bağlantı değil yalnız takip numarası çıkar.

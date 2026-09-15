@@ -24,6 +24,7 @@ public class HerYerdeContext : DbContext
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
     public DbSet<SlugHistory> SlugHistories => Set<SlugHistory>();
+    public DbSet<PaymentNotice> PaymentNotices => Set<PaymentNotice>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -128,6 +129,12 @@ public class HerYerdeContext : DbContext
             e.Property(a => a.FailedAttempts).HasColumnName("failed_attempts");
             e.Property(a => a.LockedUntil).HasColumnName("locked_until");
             e.Property(a => a.PasswordChangedAt).HasColumnName("password_changed_at");
+            e.Property(a => a.MustChangePassword).HasColumnName("must_change_password");
+            e.Property(a => a.ResetTokenHash).HasColumnName("reset_token_hash").HasMaxLength(64);
+            e.Property(a => a.ResetTokenExpiresAt).HasColumnName("reset_token_expires_at");
+            e.Property(a => a.TotpSecret).HasColumnName("totp_secret").HasMaxLength(64);
+            e.Property(a => a.TotpEnabled).HasColumnName("totp_enabled");
+            e.Property(a => a.RecoveryCodeHashes).HasColumnName("recovery_code_hashes").HasMaxLength(600);
             e.HasIndex(a => a.Email).IsUnique().HasDatabaseName("ux_admin_user_email");
         });
 
@@ -179,6 +186,11 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.SeenAt).HasColumnName("seen_at");
             e.Property(o => o.Carrier).HasColumnName("carrier").HasMaxLength(40);
             e.Property(o => o.TrackingNo).HasColumnName("tracking_no").HasMaxLength(60);
+            // Bu alan eklenmeden önceki siparişlerin hepsi vitrinden gelmişti: geçiş eski satırlara Site (1) yazar.
+            e.Property(o => o.Source).HasColumnName("source").HasConversion<int>();
+            e.Property(o => o.InvoiceNo).HasColumnName("invoice_no").HasMaxLength(40);
+            e.Property(o => o.InvoiceDate).HasColumnName("invoice_date").HasColumnType("date");
+            e.Property(o => o.InvoiceFile).HasColumnName("invoice_file").HasMaxLength(200);
             e.HasIndex(o => o.OrderNo).IsUnique().HasDatabaseName("ux_order_order_no");
             e.HasIndex(o => o.AccessToken).IsUnique().HasDatabaseName("ux_order_access_token");
             // Yönetim sipariş listesi: duruma göre süzüp en yeniden eskiye.
@@ -219,6 +231,22 @@ public class HerYerdeContext : DbContext
             e.HasIndex(p => p.ConversationId).IsUnique().HasDatabaseName("ux_payment_conversation_id");
             e.HasIndex(p => p.OrderId).HasDatabaseName("ix_payment_order_id");
             e.HasOne<Order>().WithMany().HasForeignKey(p => p.OrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PaymentNotice>(e =>
+        {
+            e.ToTable("payment_notice");
+            e.HasKey(n => n.Id);
+            e.Property(n => n.Id).HasColumnName("id");
+            e.Property(n => n.OrderId).HasColumnName("order_id");
+            e.Property(n => n.SenderName).HasColumnName("sender_name").HasMaxLength(120).IsRequired();
+            e.Property(n => n.PaidOn).HasColumnName("paid_on").HasColumnType("date");
+            e.Property(n => n.Amount).HasColumnName("amount").HasPrecision(18, 2);
+            e.Property(n => n.ReceiptFile).HasColumnName("receipt_file").HasMaxLength(200);
+            e.Property(n => n.CreatedAt).HasColumnName("created_at");
+            e.Property(n => n.ApprovedAt).HasColumnName("approved_at");
+            e.HasIndex(n => n.OrderId).HasDatabaseName("ix_payment_notice_order_id");
+            e.HasOne<Order>().WithMany().HasForeignKey(n => n.OrderId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<OutboxMessage>(e =>
@@ -297,6 +325,7 @@ public class HerYerdeContext : DbContext
             e.Property(a => a.EntityId).HasColumnName("entity_id");
             e.Property(a => a.At).HasColumnName("at");
             e.Property(a => a.Ip).HasColumnName("ip").HasMaxLength(45);
+            e.Property(a => a.Detail).HasColumnName("detail").HasMaxLength(2000);
             // Denetim listesi: en yeniden eskiye.
             e.HasIndex(a => a.At).IsDescending().HasDatabaseName("ix_admin_audit_log_at");
         });

@@ -12,6 +12,32 @@ public interface IOrderService
     /// Kartla ödemede stok ve sepet ödeme onayına (IPaymentService.CompleteAsync) kalır; Payment kaydı açılır.</summary>
     Task<(HttpStatusCode, IDataResult<Order>)> PlaceAsync(Guid cartId, OrderDraft draft, CancellationToken cancellationToken = default);
 
+    /// <summary>Yönetimden sipariş: kalemler stok kodu/slug ile, stok aynı işlemde düşer (yetmezse 409, hiçbiri olmaz).
+    /// Kart seçilemez; kaynak kaydedilir; müşteri postası istenirse kuyruğa girer.</summary>
+    Task<(HttpStatusCode, IDataResult<Order>)> PlaceManualAsync(ManualOrderDraft draft, CancellationToken cancellationToken = default);
+
+    /// <summary>Beklemede/Onaylandı siparişte teslimat bilgisi ve adetler değişir, stok farkı düşer ya da geri döner;
+    /// sonraki durumlarda 409. Veri, denetim izi için "alan: eski → yeni" özetidir.</summary>
+    Task<(HttpStatusCode, IDataResult<string>)> EditAsync(int orderId, OrderEdit edit, CancellationToken cancellationToken = default);
+
+    /// <summary>Fatura numarası, tarihi ve gizli depodaki PDF yolunu yazar; veri, yerini alan eski dosyanın yolu.</summary>
+    Task<(HttpStatusCode, IDataResult<string?>)> SetInvoiceAsync(
+        int orderId,
+        string invoiceNo,
+        DateTime invoiceDate,
+        string file,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Müşterinin havale bildirimi; yalnız sipariş anahtarıyla ve bekleyen havale siparişinde.</summary>
+    Task<(HttpStatusCode, IResult)> SubmitPaymentNoticeAsync(
+        string orderNo,
+        Guid accessToken,
+        PaymentNoticeDraft draft,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Havale hesaba geçti: bildirimler onaylanır, sipariş Onaylandı olur, müşteriye posta kuyruğa girer.</summary>
+    Task<(HttpStatusCode, IResult)> ApprovePaymentAsync(int orderId, CancellationToken cancellationToken = default);
+
     Task<(HttpStatusCode, IDataResult<OrderDetail>)> GetByOrderNoAsync(string orderNo, CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IDataResult<OrderDetail>)> GetByIdAsync(int id, CancellationToken cancellationToken = default);
@@ -20,8 +46,13 @@ public interface IOrderService
     /// Hangi alanın tutmadığı söylenmez; anonimleştirilmiş sipariş hiç bulunmaz.</summary>
     Task<(HttpStatusCode, IDataResult<Order>)> LookupAsync(string orderNo, string phone, CancellationToken cancellationToken = default);
 
-    /// <summary>Yönetim listesi: duruma göre süzer, sipariş numarası veya telefonla arar.</summary>
-    Task<(HttpStatusCode, IDataResult<List<Order>>)> SearchAsync(OrderStatus? status, string? query, CancellationToken cancellationToken = default);
+    /// <summary>Yönetim listesi: duruma göre süzer, sipariş numarası veya telefonla arar.
+    /// uninvoicedDelivered ise yalnız faturası girilmemiş teslim edilmiş siparişler (durum süzgeci yok sayılır).</summary>
+    Task<(HttpStatusCode, IDataResult<List<Order>>)> SearchAsync(
+        OrderStatus? status,
+        string? query,
+        bool uninvoicedDelivered = false,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Yalnız <see cref="Rules.OrderRules.CanTransition"/> izin verirse; aksi halde 400.
     /// <see cref="OrderStatus.Kargoda"/> geçişinde tanımlı kargo firması ve takip numarası zorunlu.</summary>

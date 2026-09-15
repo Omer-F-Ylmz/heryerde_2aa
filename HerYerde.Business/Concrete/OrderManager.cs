@@ -21,6 +21,7 @@ public class OrderManager : IOrderService
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notifications;
     private readonly IPaymentDal _paymentDal;
+    private readonly IPaymentNoticeDal _noticeDal;
     private readonly ShopSettings _shop;
     private readonly ShippingSettings _shipping;
     private readonly TimeProvider _clock;
@@ -34,6 +35,7 @@ public class OrderManager : IOrderService
         IUnitOfWork unitOfWork,
         INotificationService notifications,
         IPaymentDal paymentDal,
+        IPaymentNoticeDal noticeDal,
         IOptions<ShopSettings> shop,
         IOptions<ShippingSettings> shipping,
         TimeProvider clock)
@@ -46,6 +48,7 @@ public class OrderManager : IOrderService
         _unitOfWork = unitOfWork;
         _notifications = notifications;
         _paymentDal = paymentDal;
+        _noticeDal = noticeDal;
         _shop = shop.Value;
         _shipping = shipping.Value;
         _clock = clock;
@@ -220,6 +223,328 @@ public class OrderManager : IOrderService
             note.Length == 0 ? "Siparişiniz alındı." : "Siparişiniz alındı. " + note));
     }
 
+    public async Task<(HttpStatusCode, IDataResult<Order>)> PlaceManualAsync(ManualOrderDraft draft, CancellationToken cancellationToken = default)
+    {
+        if (!PhoneRules.TryNormalize(draft.Phone, out var phone))
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>("Geçerli bir cep telefonu yazın (05XX XXX XX XX)."));
+        }
+
+        if (string.IsNullOrWhiteSpace(draft.FullName) ||
+            string.IsNullOrWhiteSpace(draft.Address) ||
+            string.IsNullOrWhiteSpace(draft.City) ||
+            string.IsNullOrWhiteSpace(draft.District))
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>("Ad soyad, adres, il ve ilçe zorunlu."));
+        }
+
+        // Kartlı sipariş yönetimden açılmaz: çekim yalnız müşterinin 3D doğrulamasıyla olur.
+        if (draft.PaymentMethod is not (PaymentMethod.KapidaOdeme or PaymentMethod.HavaleEft or PaymentMethod.NakitElden)
+            || draft.Source == OrderSource.Site)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>("Kaynak ve ödeme yöntemi seçin (kart yönetimden alınmaz)."));
+        }
+
+        var lines = draft.Lines.Where(l => !string.IsNullOrWhiteSpace(l.Code)).ToList();
+        if (lines.Count == 0 || lines.Any(l => l.Quantity < 1))
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>("En az bir kalem yazın; adet 1 ya da daha fazla olmalı."));
+        }
+
+        if (draft.ShippingFeeOverride is < 0m)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>("Kargo ücreti eksi olamaz."));
+        }
+
+        var now = _clock.GetUtcNow().UtcDateTime;
+        var resolved = new List<(ManualOrderLine Line, Product Product, ProductVariant? Variant)>();
+        foreach (var line in lines)
+        {
+            var code = line.Code.Trim();
+            var variant = await _variantDal.GetAsync(v => v.Sku == code, cancellationToken);
+            var product = variant is not null
+                ? await _productDal.GetAsync(p => p.Id == variant.ProductId, cancellationToken)
+                : await _productDal.GetAsync(p => p.Slug == code && p.DeletedAt == null, cancellationToken);
+
+            // Varyantlı ürün slug'la seçilemez: stok varyantta, hangi beden/renk olduğu bilinmeli.
+            if (product is null || product.DeletedAt is not null
+                || variant is null && await _variantDal.GetAsync(v => v.ProductId == product.Id, cancellationToken) is not null)
+            {
+                return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>(
+                    $"'{code}' bulunamadı; varyantlı üründe stok kodunu (ör. SALVAR-M), varyantsız üründe slug'ı yazın."));
+            }
+
+            resolved.Add((line with { Code = code }, product, variant));
+        }
+
+        var subtotal = resolved.Sum(r => CurrentPrice(r.Product, now) * r.Line.Quantity);
+        var shippingFee = draft.ShippingFeeOverride ?? ShippingRules.Fee(subtotal, _shop.ShippingFee, _shop.FreeShippingOver);
+        var order = new Order
+        {
+            OrderNo = await NextOrderNoAsync(now, cancellationToken),
+            AccessToken = Guid.NewGuid(),
+            Status = OrderStatus.Beklemede,
+            PaymentMethod = draft.PaymentMethod,
+            Source = draft.Source,
+            Subtotal = subtotal,
+            ShippingFee = shippingFee,
+            Total = subtotal + shippingFee,
+            FullName = draft.FullName.Trim(),
+            Phone = phone,
+            Email = string.IsNullOrWhiteSpace(draft.Email) ? null : draft.Email.Trim(),
+            Address = draft.Address.Trim(),
+            City = draft.City.Trim(),
+            District = draft.District.Trim(),
+            Note = string.IsNullOrWhiteSpace(draft.Note) ? null : draft.Note.Trim(),
+            // Onay kutusu vitrinde işaretlenir; yönetimden girilen siparişte onay anı ve metin sürümü boş kalır.
+            CreatedAt = now
+        };
+
+        try
+        {
+            await _unitOfWork.InTransactionAsync(async () =>
+            {
+                var shortages = new List<string>();
+                foreach (var (line, product, variant) in resolved)
+                {
+                    var decremented = variant is not null
+                        ? await _variantDal.TryDecrementStockAsync(variant.Id, line.Quantity, cancellationToken)
+                        : product.Stock is not null
+                            ? await _productDal.TryDecrementStockAsync(product.Id, line.Quantity, cancellationToken)
+                            : 1;
+                    if (decremented == 0)
+                    {
+                        shortages.Add(product.Name);
+                    }
+                }
+
+                if (shortages.Count > 0)
+                {
+                    throw new StockShortageException(shortages.Distinct().ToList());
+                }
+
+                await _orderDal.AddAsync(order, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                var items = new List<OrderItem>();
+                foreach (var (line, product, variant) in resolved)
+                {
+                    var item = new OrderItem
+                    {
+                        OrderId = order.Id,
+                        ProductName = product.Name,
+                        Sku = variant?.Sku ?? product.Slug,
+                        Quantity = line.Quantity,
+                        UnitPrice = CurrentPrice(product, now)
+                    };
+                    items.Add(item);
+                    await _orderItemDal.AddAsync(item, cancellationToken);
+                }
+
+                // Mağaza postası yok: siparişi yönetici kendisi girdi.
+                await _notifications.QueueOrderPlacedAsync(order, items, customer: draft.NotifyCustomer, store: false, cancellationToken: cancellationToken);
+                return await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+        }
+        catch (StockShortageException shortage)
+        {
+            return (HttpStatusCode.Conflict, new ErrorDataResult<Order>(
+                $"Stok yetersiz: {string.Join(", ", shortage.ProductNames)}."));
+        }
+
+        return (HttpStatusCode.Created, new SuccessDataResult<Order>(order, "Sipariş açıldı."));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<string>)> EditAsync(int orderId, OrderEdit edit, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderDal.GetTrackedAsync(o => o.Id == orderId, cancellationToken);
+        if (order is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorDataResult<string>("Sipariş bulunamadı."));
+        }
+
+        if (!OrderRules.CanEdit(order.Status))
+        {
+            return (HttpStatusCode.Conflict, new ErrorDataResult<string>("Hazırlanmaya ya da kargoya geçmiş sipariş düzenlenemez."));
+        }
+
+        if (!PhoneRules.TryNormalize(edit.Phone, out var phone))
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<string>("Geçerli bir cep telefonu yazın (05XX XXX XX XX)."));
+        }
+
+        if (string.IsNullOrWhiteSpace(edit.Address) || string.IsNullOrWhiteSpace(edit.City) || string.IsNullOrWhiteSpace(edit.District))
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<string>("Adres, il ve ilçe zorunlu."));
+        }
+
+        var items = await _orderItemDal.GetListAsync(i => i.OrderId == order.Id && !i.IsGift, cancellationToken);
+        var changes = new List<(OrderItem Item, int Quantity)>();
+        foreach (var (itemId, quantity) in edit.Quantities)
+        {
+            var item = items.FirstOrDefault(i => i.Id == itemId);
+            if (item is null || quantity < 1)
+            {
+                return (HttpStatusCode.BadRequest, new ErrorDataResult<string>("Kalem adedi 1 ya da daha fazla olmalı."));
+            }
+
+            if (item.Quantity != quantity)
+            {
+                changes.Add((item, quantity));
+            }
+        }
+
+        // Kartta çekilen tutar sabittir; adet değişirse tahsilatla sipariş ayrışırdı.
+        if (changes.Count > 0 && order.PaymentMethod == PaymentMethod.KrediKarti)
+        {
+            return (HttpStatusCode.Conflict, new ErrorDataResult<string>("Kartla ödenmiş siparişte adet değişmez; gerekirse iade edin."));
+        }
+
+        var log = new List<string>();
+        void Track(string label, string? before, string? after)
+        {
+            if ((before ?? string.Empty) != (after ?? string.Empty))
+            {
+                log.Add($"{label}: {before} → {after}");
+            }
+        }
+
+        var note = string.IsNullOrWhiteSpace(edit.Note) ? null : edit.Note.Trim();
+        Track("adres", order.Address, edit.Address.Trim());
+        Track("il", order.City, edit.City.Trim());
+        Track("ilçe", order.District, edit.District.Trim());
+        Track("telefon", order.Phone, phone);
+        Track("not", order.Note, note);
+
+        try
+        {
+            await _unitOfWork.InTransactionAsync(async () =>
+            {
+                foreach (var (item, quantity) in changes)
+                {
+                    var diff = quantity - item.Quantity;
+                    if (diff > 0 && !await TryTakeStockAsync(item.Sku, diff, cancellationToken))
+                    {
+                        throw new StockShortageException([item.ProductName]);
+                    }
+
+                    if (diff < 0)
+                    {
+                        await ReturnStockAsync(item.Sku, -diff, cancellationToken);
+                    }
+
+                    var tracked = (await _orderItemDal.GetTrackedAsync(i => i.Id == item.Id, cancellationToken))!;
+                    log.Add($"{item.ProductName} adet: {item.Quantity} → {quantity}");
+                    tracked.Quantity = quantity;
+                    item.Quantity = quantity;
+                }
+
+                order.Address = edit.Address.Trim();
+                order.City = edit.City.Trim();
+                order.District = edit.District.Trim();
+                order.Phone = phone;
+                order.Note = note;
+                // Kargo ücreti olduğu gibi kalır (yönetici üstüne yazmış olabilir); ara toplam ve toplam yenilenir.
+                order.Subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
+                order.Total = order.Subtotal + order.ShippingFee;
+                return await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+        }
+        catch (StockShortageException shortage)
+        {
+            return (HttpStatusCode.Conflict, new ErrorDataResult<string>($"Stok yetersiz: {string.Join(", ", shortage.ProductNames)}."));
+        }
+
+        return (HttpStatusCode.OK, new SuccessDataResult<string>(string.Join("; ", log), "Sipariş güncellendi."));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<string?>)> SetInvoiceAsync(
+        int orderId,
+        string invoiceNo,
+        DateTime invoiceDate,
+        string file,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await _orderDal.GetTrackedAsync(o => o.Id == orderId, cancellationToken);
+        if (order is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorDataResult<string?>("Sipariş bulunamadı."));
+        }
+
+        if (string.IsNullOrWhiteSpace(invoiceNo) || invoiceNo.Trim().Length > 40)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<string?>("Fatura numarası zorunlu (en çok 40 karakter)."));
+        }
+
+        var previous = order.InvoiceFile;
+        order.InvoiceNo = invoiceNo.Trim();
+        order.InvoiceDate = invoiceDate.Date;
+        order.InvoiceFile = file;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (HttpStatusCode.OK, new SuccessDataResult<string?>(previous, "Fatura kaydedildi."));
+    }
+
+    public async Task<(HttpStatusCode, IResult)> SubmitPaymentNoticeAsync(
+        string orderNo,
+        Guid accessToken,
+        PaymentNoticeDraft draft,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await _orderDal.GetAsync(o => o.OrderNo == orderNo && o.AccessToken == accessToken, cancellationToken);
+        if (order is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Sipariş bulunamadı."));
+        }
+
+        if (order.PaymentMethod != PaymentMethod.HavaleEft || order.Status != OrderStatus.Beklemede)
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult("Bu sipariş için havale bildirimi beklenmiyor."));
+        }
+
+        if (string.IsNullOrWhiteSpace(draft.SenderName) || draft.SenderName.Trim().Length > 120
+            || draft.Amount <= 0m || draft.PaidOn == DateTime.MinValue)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorResult("Gönderen adı, havale tarihi ve tutar zorunlu."));
+        }
+
+        await _noticeDal.AddAsync(new PaymentNotice
+        {
+            OrderId = order.Id,
+            SenderName = draft.SenderName.Trim(),
+            PaidOn = draft.PaidOn.Date,
+            Amount = draft.Amount,
+            ReceiptFile = draft.ReceiptFile,
+            CreatedAt = _clock.GetUtcNow().UtcDateTime
+        }, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (HttpStatusCode.Created, new SuccessResult("Bildiriminiz alındı; hesabımıza geçince siparişiniz onaylanır."));
+    }
+
+    public async Task<(HttpStatusCode, IResult)> ApprovePaymentAsync(int orderId, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderDal.GetTrackedAsync(o => o.Id == orderId, cancellationToken);
+        if (order is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Sipariş bulunamadı."));
+        }
+
+        if (order.PaymentMethod != PaymentMethod.HavaleEft || !OrderRules.CanTransition(order.Status, OrderStatus.Onaylandi))
+        {
+            return (HttpStatusCode.Conflict, new ErrorResult("Yalnız bekleyen havale siparişi onaylanır."));
+        }
+
+        var now = _clock.GetUtcNow().UtcDateTime;
+        foreach (var notice in await _noticeDal.GetListAsync(n => n.OrderId == order.Id && n.ApprovedAt == null, cancellationToken))
+        {
+            (await _noticeDal.GetTrackedAsync(n => n.Id == notice.Id, cancellationToken))!.ApprovedAt = now;
+        }
+
+        order.Status = OrderStatus.Onaylandi;
+        await _notifications.QueuePaymentApprovedAsync(order, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (HttpStatusCode.OK, new SuccessResult("Havale onaylandı; müşteriye posta gidecek."));
+    }
+
     public async Task<(HttpStatusCode, IDataResult<OrderDetail>)> GetByOrderNoAsync(string orderNo, CancellationToken cancellationToken = default)
         => await DetailAsync(await _orderDal.GetAsync(o => o.OrderNo == orderNo, cancellationToken), cancellationToken);
 
@@ -238,10 +563,16 @@ public class OrderManager : IOrderService
             : (HttpStatusCode.OK, new SuccessDataResult<Order>(order));
     }
 
-    public async Task<(HttpStatusCode, IDataResult<List<Order>>)> SearchAsync(OrderStatus? status, string? query, CancellationToken cancellationToken = default)
+    public async Task<(HttpStatusCode, IDataResult<List<Order>>)> SearchAsync(
+        OrderStatus? status,
+        string? query,
+        bool uninvoicedDelivered = false,
+        CancellationToken cancellationToken = default)
     {
         var orders = await _orderDal.GetListAsync(
-            status is { } wanted ? o => o.Status == wanted : null,
+            uninvoicedDelivered
+                ? o => o.Status == OrderStatus.TeslimEdildi && o.InvoiceNo == null
+                : status is { } wanted ? o => o.Status == wanted : null,
             cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(query))
@@ -325,11 +656,7 @@ public class OrderManager : IOrderService
 
                 foreach (var item in stockTaken ? await _orderItemDal.GetListAsync(i => i.OrderId == order.Id, cancellationToken) : [])
                 {
-                    // Stok kodu varyanta uymuyorsa satır varyantsız (Ev) üründür; iade ürünün stoğuna yazılır.
-                    if (await _variantDal.IncrementStockBySkuAsync(item.Sku, item.Quantity, cancellationToken) == 0)
-                    {
-                        await _productDal.IncrementStockBySlugAsync(item.Sku, item.Quantity, cancellationToken);
-                    }
+                    await ReturnStockAsync(item.Sku, item.Quantity, cancellationToken);
                 }
 
                 order.Status = next;
@@ -384,6 +711,13 @@ public class OrderManager : IOrderService
         order.Email = order.Email is null ? null : PersonalDataMask.Email(order.Email);
         order.Address = PersonalDataMask.Hidden;
         order.Note = null;
+        // Havaleyi gönderen başka biri olabilir; adı da siparişle birlikte maskelenir, tutar ve tarih kalır.
+        foreach (var notice in await _noticeDal.GetListAsync(n => n.OrderId == order.Id, cancellationToken))
+        {
+            var tracked = (await _noticeDal.GetTrackedAsync(n => n.Id == notice.Id, cancellationToken))!;
+            tracked.SenderName = PersonalDataMask.Name(tracked.SenderName);
+        }
+
         await _notifications.ForgetOrderAsync(order, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Kişisel veri anonimleştirildi."));
@@ -400,8 +734,35 @@ public class OrderManager : IOrderService
         var payment = order.PaymentMethod == PaymentMethod.KrediKarti
             ? (await _paymentDal.GetListAsync(p => p.OrderId == order.Id, cancellationToken)).MaxBy(p => p.Id)
             : null;
-        return (HttpStatusCode.OK, new SuccessDataResult<OrderDetail>(new OrderDetail(order, items.OrderBy(i => i.Id).ToList(), payment)));
+        var notices = order.PaymentMethod == PaymentMethod.HavaleEft
+            ? (await _noticeDal.GetListAsync(n => n.OrderId == order.Id, cancellationToken)).OrderBy(n => n.Id).ToList()
+            : null;
+        return (HttpStatusCode.OK, new SuccessDataResult<OrderDetail>(new OrderDetail(order, items.OrderBy(i => i.Id).ToList(), payment, notices)));
     }
+
+    /// <summary>Stok kodu varyanta uymuyorsa satır varyantsız (Ev) üründür; iade ürünün stoğuna yazılır.</summary>
+    private async Task ReturnStockAsync(string sku, int quantity, CancellationToken cancellationToken)
+    {
+        if (await _variantDal.IncrementStockBySkuAsync(sku, quantity, cancellationToken) == 0)
+        {
+            await _productDal.IncrementStockBySlugAsync(sku, quantity, cancellationToken);
+        }
+    }
+
+    /// <summary>Satırın stok kodu varyantsa varyanttan, değilse ürünün kendisinden düşer; stok tutmayan üründe düşüm yok.</summary>
+    private async Task<bool> TryTakeStockAsync(string sku, int quantity, CancellationToken cancellationToken)
+    {
+        if (await _variantDal.GetAsync(v => v.Sku == sku, cancellationToken) is { } variant)
+        {
+            return await _variantDal.TryDecrementStockAsync(variant.Id, quantity, cancellationToken) > 0;
+        }
+
+        var product = await _productDal.GetAsync(p => p.Slug == sku, cancellationToken);
+        return product?.Stock is null || await _productDal.TryDecrementStockAsync(product.Id, quantity, cancellationToken) > 0;
+    }
+
+    private static decimal CurrentPrice(Product product, DateTime now)
+        => ProductRules.CampaignIsActive(product, now) ? product.CampaignPrice!.Value : product.Price;
 
     /// <summary>Hediye edilen başka ürünler de sözlüğe girsin; adı ve stoğu oradan okunur.</summary>
     private async Task<Dictionary<int, Product>> WithGiftProductsAsync(

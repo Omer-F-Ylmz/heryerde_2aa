@@ -41,6 +41,62 @@ public sealed class ChangePasswordViewModel
 
     public string? ErrorMessage { get; set; }
     public bool Changed { get; set; }
+
+    /// <summary>Geçici parolayla girildi; sayfa başka bölüme geçmeden önce parola ister.</summary>
+    public bool MustChange { get; set; }
+}
+
+public sealed class ForgotPasswordViewModel
+{
+    [Required(ErrorMessage = "E-posta gerekli.")]
+    [EmailAddress(ErrorMessage = "Geçerli bir e-posta yazın.")]
+    [Display(Name = "E-posta")]
+    public string Email { get; set; } = string.Empty;
+
+    /// <summary>Gönderim sonrası tek tip bilgi metni; e-postanın kayıtlı olup olmadığını söylemez.</summary>
+    public string? Sent { get; set; }
+}
+
+public sealed class ResetPasswordViewModel
+{
+    public string Token { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Yeni parola gerekli.")]
+    [StringLength(200, MinimumLength = 10, ErrorMessage = "Yeni parola en az 10 karakter olmalı.")]
+    [DataType(DataType.Password)]
+    [Display(Name = "Yeni parola")]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Yeni parolayı tekrar yazın.")]
+    [Compare(nameof(NewPassword), ErrorMessage = "İki parola aynı değil.")]
+    [DataType(DataType.Password)]
+    [Display(Name = "Yeni parola (tekrar)")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+
+    public string? ErrorMessage { get; set; }
+}
+
+public sealed class SecondFactorViewModel
+{
+    [Display(Name = "Doğrulama kodu")]
+    public string? Code { get; set; }
+
+    public string? ErrorMessage { get; set; }
+}
+
+public sealed class TwoFactorSetupViewModel
+{
+    public bool Enabled { get; set; }
+
+    /// <summary>Kurulumdaki anahtar (QR okutulamazsa elle yazılır); açıkken gösterilmez.</summary>
+    public string? Secret { get; set; }
+
+    public string? QrDataUri { get; set; }
+
+    /// <summary>Yalnız açıldığı yanıtta dolu; bir daha gösterilmez.</summary>
+    public IReadOnlyList<string> RecoveryCodes { get; set; } = [];
+
+    public string? ErrorMessage { get; set; }
 }
 
 public sealed class CategoryFormViewModel
@@ -212,11 +268,86 @@ public sealed class ImageFormViewModel
     public int SortOrder { get; set; }
 }
 
+public sealed class ManualOrderFormViewModel
+{
+    /// <summary>Formdaki boş kalem satırı sayısı; boş bırakılan satır yok sayılır.</summary>
+    public const int LineCount = 6;
+
+    [Display(Name = "Ad soyad")]
+    public string FullName { get; set; } = string.Empty;
+
+    [Display(Name = "Cep telefonu")]
+    public string Phone { get; set; } = string.Empty;
+
+    [Display(Name = "E-posta (isteğe bağlı)")]
+    public string? Email { get; set; }
+
+    [Display(Name = "Adres")]
+    public string Address { get; set; } = string.Empty;
+
+    [Display(Name = "İl")]
+    public string City { get; set; } = string.Empty;
+
+    [Display(Name = "İlçe")]
+    public string District { get; set; } = string.Empty;
+
+    [Display(Name = "Not")]
+    public string? Note { get; set; }
+
+    [Display(Name = "Kanal")]
+    public OrderSource Source { get; set; } = OrderSource.WhatsApp;
+
+    [Display(Name = "Ödeme")]
+    public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.KapidaOdeme;
+
+    [Display(Name = "Kargo ücreti (boş = kurala göre)")]
+    public decimal? ShippingFeeOverride { get; set; }
+
+    [Display(Name = "Müşteriye sipariş postası gönder")]
+    public bool NotifyCustomer { get; set; }
+
+    public List<ManualOrderLineForm> Lines { get; set; } = [];
+
+    public string? ErrorMessage { get; set; }
+}
+
+public sealed class ManualOrderLineForm
+{
+    public string? Code { get; set; }
+    public int Quantity { get; set; } = 1;
+}
+
+public sealed class OrderEditViewModel
+{
+    public Order Order { get; set; } = null!;
+
+    public string Address { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string District { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string? Note { get; set; }
+    public List<OrderEditItemForm> Items { get; set; } = [];
+
+    /// <summary>Formda satır adı ve birim fiyatı; POST'ta gelmez, yeniden okunur.</summary>
+    public IReadOnlyList<OrderItem> Lines { get; set; } = [];
+
+    public string? ErrorMessage { get; set; }
+}
+
+public sealed class OrderEditItemForm
+{
+    public int Id { get; set; }
+    public int Quantity { get; set; }
+}
+
 public sealed class OrderListViewModel
 {
     public List<Order> Orders { get; set; } = [];
     public OrderStatus? Status { get; set; }
     public string? Query { get; set; }
+
+    /// <summary>"Faturasız teslim edilenler" süzgeci açık.</summary>
+    public bool Uninvoiced { get; set; }
 
     /// <summary>Arama kutusunun örnek metni; bugünün numarası olsun diye saatten üretilir.</summary>
     public string SampleOrderNo { get; set; } = string.Empty;
@@ -241,7 +372,15 @@ public sealed class OrderDetailViewModel
     /// <summary>Sıralı akışta bir sonraki adım; yoksa (teslim/iptal) buton çıkmaz.</summary>
     public OrderStatus? NextStatus => HerYerde.Business.Rules.OrderRules.Next(Detail.Order.Status);
 
-    public bool CanCancel => Detail.Order.Status == OrderStatus.Beklemede;
+    public bool CanCancel => Detail.Order.Status == OrderStatus.Beklemede && !CanRefund;
+
+    /// <summary>Kartla ödenmiş sipariş iptal düğmesiyle değil iadeyle kapanır: para da geri gider.</summary>
+    public bool CanRefund => Detail.Payment?.Status == PaymentStatus.Basarili && HerYerde.Business.Rules.OrderRules.CanRefund(Detail.Order.Status);
+
+    public bool CanEdit => HerYerde.Business.Rules.OrderRules.CanEdit(Detail.Order.Status);
+
+    /// <summary>Bekleyen havale siparişi: bildirim gelmiş olsun olmasın yönetici hesabı görünce onaylar.</summary>
+    public bool CanApproveTransfer => Detail.Order.PaymentMethod == PaymentMethod.HavaleEft && Detail.Order.Status == OrderStatus.Beklemede;
 
     /// <summary>Sıradaki adım kargoysa firma ve takip numarası istenir.</summary>
     public bool NeedsShipment => NextStatus == OrderStatus.Kargoda;

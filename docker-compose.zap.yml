@@ -13,3 +13,4 @@ services:
       RateLimit__ContactPerMinute: "100000"
       RateLimit__ReviewPerDay: "100000"
       RateLimit__OrderLookupPerMinute: "100000"
+      RateLimit__PaymentNoticePerMinute: "100000"

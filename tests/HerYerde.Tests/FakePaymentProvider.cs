@@ -23,6 +23,21 @@ public sealed class FakePaymentProvider : IPaymentProvider
 
     public int AuthCalls { get; private set; }
 
+    public bool RefundFails { get; set; }
+
+    public List<PaymentRefundRequest> Refunds { get; } = [];
+
+    public Task<PaymentRefundResult> RefundAsync(PaymentRefundRequest request, CancellationToken cancellationToken = default)
+    {
+        if (RefundFails)
+        {
+            return Task.FromResult(new PaymentRefundResult(false, "İade reddedildi.", "{\"status\":\"failure\"}"));
+        }
+
+        Refunds.Add(request);
+        return Task.FromResult(new PaymentRefundResult(true, null, "{\"status\":\"success\"}"));
+    }
+
     public Task<PaymentInitResult> InitThreeDsAsync(PaymentInitRequest request, CancellationToken cancellationToken = default)
     {
         Inits.Add(request);

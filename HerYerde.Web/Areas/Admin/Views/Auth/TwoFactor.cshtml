@@ -1,0 +1,76 @@
+@model TwoFactorSetupViewModel
+@{
+    ViewData["Title"] = "İki adımlı doğrulama";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Hesap</p>
+        <h1 class="display-2">İki adımlı doğrulama</h1>
+        <p class="page-head__note">Girişte paroladan sonra telefondaki doğrulayıcı uygulamanın 6 haneli kodu istenir.</p>
+    </div>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+@if (Model.RecoveryCodes.Count > 0)
+{
+    <div class="form-card form-card--narrow surface-elevated">
+        <p class="form-alert form-alert--notice" role="status">İki adımlı doğrulama açıldı.</p>
+        <h2 class="heading-3">Yedek kodlar</h2>
+        <p class="field__hint">Telefon kaybolursa her kod bir kez giriş açar. Bu kodlar bir daha gösterilmez; yazdırın ya da parola yöneticisine kaydedin.</p>
+        <ol class="recovery-codes">
+            @foreach (var code in Model.RecoveryCodes)
+            {
+                <li data-recovery-code>@code</li>
+            }
+        </ol>
+        <div class="form-card__foot">
+            <a class="btn btn--primary" asp-area="Admin" asp-controller="Products" asp-action="Index">Kaydettim, panele dön</a>
+        </div>
+    </div>
+}
+else if (Model.Enabled)
+{
+    <div class="form-card form-card--narrow surface-elevated">
+        <p class="totp-setup__state"><span class="tag tag--teslimedildi">Açık</span> Girişte paroladan sonra kod isteniyor.</p>
+        <form method="post" action="/admin/iki-adim/kapat">
+            @Html.AntiForgeryToken()
+            <div class="field">
+                <label class="field__label" for="Password">Kapatmak için parola</label>
+                <input class="field__input" id="Password" name="Password" type="password" autocomplete="current-password" required />
+                <span class="field__hint">Kapatınca yedek kodlar da geçersiz olur.</span>
+            </div>
+            <div class="form-card__foot">
+                <button class="btn btn--danger" type="submit">İki adımlı doğrulamayı kapat</button>
+            </div>
+        </form>
+    </div>
+}
+else
+{
+    <div class="form-card form-card--narrow surface-elevated totp-setup" data-totp-secret="@Model.Secret">
+        <ol class="totp-setup__steps">
+            <li>Telefonda Google Authenticator, Microsoft Authenticator ya da benzeri bir uygulama açın.</li>
+            <li>Kodu okutun; okutamıyorsanız anahtarı elle yazın.</li>
+            <li>Uygulamanın gösterdiği 6 haneli kodu aşağıya girin.</li>
+        </ol>
+        <div class="totp-setup__qr">
+            <img src="@Model.QrDataUri" alt="Doğrulayıcı uygulama için QR kod" width="222" height="222" />
+            <p class="field__hint">Anahtar: <span class="cell-mono totp-setup__secret">@Model.Secret</span></p>
+        </div>
+        <form method="post" action="/admin/iki-adim">
+            @Html.AntiForgeryToken()
+            <div class="field">
+                <label class="field__label" for="Code">Doğrulama kodu</label>
+                <input class="field__input field__input--code" id="Code" name="Code" autocomplete="one-time-code" inputmode="numeric" maxlength="6" required />
+            </div>
+            <div class="form-card__foot">
+                <button class="btn btn--primary" type="submit">Doğrula ve aç</button>
+            </div>
+        </form>
+    </div>
+}

@@ -47,6 +47,11 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("at");
 
+                    b.Property<string>("Detail")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)")
+                        .HasColumnName("detail");
+
                     b.Property<string>("Entity")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -94,6 +99,10 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("locked_until");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("bit")
+                        .HasColumnName("must_change_password");
+
                     b.Property<DateTime>("PasswordChangedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("password_changed_at");
@@ -103,6 +112,29 @@ namespace HerYerde.DataAccess.Migrations
                         .HasMaxLength(400)
                         .HasColumnType("nvarchar(400)")
                         .HasColumnName("password_hash");
+
+                    b.Property<string>("RecoveryCodeHashes")
+                        .HasMaxLength(600)
+                        .HasColumnType("nvarchar(600)")
+                        .HasColumnName("recovery_code_hashes");
+
+                    b.Property<DateTime?>("ResetTokenExpiresAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("reset_token_expires_at");
+
+                    b.Property<string>("ResetTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("reset_token_hash");
+
+                    b.Property<bool>("TotpEnabled")
+                        .HasColumnType("bit")
+                        .HasColumnName("totp_enabled");
+
+                    b.Property<string>("TotpSecret")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("totp_secret");
 
                     b.HasKey("Id");
 
@@ -324,6 +356,20 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("nvarchar(120)")
                         .HasColumnName("full_name");
 
+                    b.Property<DateTime?>("InvoiceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("invoice_date");
+
+                    b.Property<string>("InvoiceFile")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("invoice_file");
+
+                    b.Property<string>("InvoiceNo")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)")
+                        .HasColumnName("invoice_no");
+
                     b.Property<string>("LegalVersion")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
@@ -358,6 +404,10 @@ namespace HerYerde.DataAccess.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("shipping_fee");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int")
+                        .HasColumnName("source");
 
                     b.Property<int>("Status")
                         .HasColumnType("int")
@@ -568,6 +618,55 @@ namespace HerYerde.DataAccess.Migrations
                         .HasDatabaseName("ix_payment_order_id");
 
                     b.ToTable("payment", (string)null);
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.PaymentNotice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("approved_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int")
+                        .HasColumnName("order_id");
+
+                    b.Property<DateTime>("PaidOn")
+                        .HasColumnType("date")
+                        .HasColumnName("paid_on");
+
+                    b.Property<string>("ReceiptFile")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("receipt_file");
+
+                    b.Property<string>("SenderName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)")
+                        .HasColumnName("sender_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_payment_notice_order_id");
+
+                    b.ToTable("payment_notice", (string)null);
                 });
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.Product", b =>
@@ -916,6 +1015,15 @@ namespace HerYerde.DataAccess.Migrations
                 });
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.Payment", b =>
+                {
+                    b.HasOne("HerYerde.Entities.Concrete.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.PaymentNotice", b =>
                 {
                     b.HasOne("HerYerde.Entities.Concrete.Order", null)
                         .WithMany()
