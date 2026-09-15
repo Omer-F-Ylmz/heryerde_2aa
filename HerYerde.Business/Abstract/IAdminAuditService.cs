@@ -15,4 +15,7 @@ public interface IAdminAuditService
 
     /// <summary>Verilen yaştan eski kayıtları siler (saklama süresi, bkz. docs/veri-envanteri.md); silinen sayısını döner.</summary>
     Task<int> PurgeOlderThanAsync(TimeSpan age, CancellationToken cancellationToken = default);
+
+    /// <summary>Kaydın ayrıntısını (ör. düzenlemedeki eski/yeni adres) siler; kim, ne zaman, hangi işlem kalır. Anonimleştirmede.</summary>
+    Task ForgetDetailsAsync(string entity, int entityId, CancellationToken cancellationToken = default);
 }

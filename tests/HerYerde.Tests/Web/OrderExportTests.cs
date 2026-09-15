@@ -56,6 +56,26 @@ public sealed class OrderExportTests : IAsyncLifetime
         Assert.Contains(await new EfAdminAuditLogDal(context).GetListAsync(), a => a.Action == "sipariş dışa aktarma" && a.Detail == "kargo · 1 sipariş");
     }
 
+    /// <summary>KAPANIŞ-3 S-01: baştaki "-" de formül başıdır (-2+3, -5+cmd|...); = + @ ile birlikte kesme işaretiyle nötrlenir.</summary>
+    [Fact]
+    public async Task Csv_basi_eksi_arti_esittir_ve_et_ile_baslayan_alani_notrler()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere", price: 450m, stock: 5);
+            await TestData.NewOrderManager(context).PlaceManualAsync(new ManualOrderDraft(
+                "-2+3+cmd|' /C calc'!A0", "0542 497 09 82", null, "=HYPERLINK(\"http://kotu.example\")", "@SUM(1)", "+Kadıköy", null,
+                PaymentMethod.KapidaOdeme, OrderSource.Telefon, [new ManualOrderLine("celik-tencere", 1)], ShippingFeeOverride: null, NotifyCustomer: false,
+                ConsentConfirmed: true));
+        }
+
+        var admin = await _factory.CreateSignedInClientAsync();
+        var bytes = await (await admin.GetAsync("/admin/orders/export?bicim=kargo")).Content.ReadAsByteArrayAsync();
+        var row = Encoding.UTF8.GetString(bytes[3..]).Split("\r\n", StringSplitOptions.RemoveEmptyEntries)[1];
+
+        Assert.StartsWith("'-2+3+cmd|' /C calc'!A0;05424970982;\"'=HYPERLINK(\"\"http://kotu.example\"\")\";'@SUM(1);'+Kadıköy;", row);
+    }
+
     [Fact]
     public async Task Rapor_sayfasi_ve_csv_tarih_araligiyla_iner()
     {
@@ -85,7 +105,7 @@ public sealed class OrderExportTests : IAsyncLifetime
         await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere", price: 450m, stock: 5);
         var (_, placed) = await TestData.NewOrderManager(context).PlaceManualAsync(new ManualOrderDraft(
             "Ayşe Yılmaz", "0542 497 09 82", "ayse@example.com", "Cumhuriyet Mah. 12/3; kat 2", "İstanbul", "Kadıköy", null,
-            PaymentMethod.KapidaOdeme, OrderSource.Telefon, [new ManualOrderLine("celik-tencere", 2)], ShippingFeeOverride: null, NotifyCustomer: false));
+            PaymentMethod.KapidaOdeme, OrderSource.Telefon, [new ManualOrderLine("celik-tencere", 2)], ShippingFeeOverride: null, NotifyCustomer: false, ConsentConfirmed: true));
         return placed.Data!;
     }
 }

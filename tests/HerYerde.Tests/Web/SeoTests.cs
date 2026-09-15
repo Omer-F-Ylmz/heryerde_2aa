@@ -120,12 +120,26 @@ public sealed class SeoTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("text/plain", response.Content.Headers.ContentType!.MediaType);
         var lines = (await response.Content.ReadAsStringAsync()).Split('\n', StringSplitOptions.TrimEntries);
-        foreach (var path in new[] { "/admin", "/sepet", "/odeme", "/siparis", "/ara" })
+        // KAPANIŞ-3 SEO-01: token'lı sipariş sayfaları "/siparis/" altında; önek "/siparis" /siparis-sorgula'yı da kapatıyordu.
+        foreach (var path in new[] { "/admin", "/sepet", "/odeme", "/siparis/", "/ara" })
         {
             Assert.Contains($"Disallow: {path}", lines);
         }
 
         Assert.Contains($"Sitemap: {Base}/sitemap.xml", lines);
+    }
+
+    [Fact]
+    public async Task Robots_siparis_sorgula_sayfasini_kapatmaz()
+    {
+        var robots = await (await _factory.CreateNonRedirectingClient().GetAsync("/robots.txt")).Content.ReadAsStringAsync();
+
+        var blocking = robots.Split('\n', StringSplitOptions.TrimEntries)
+            .Where(l => l.StartsWith("Disallow: ", StringComparison.Ordinal))
+            .Select(l => l["Disallow: ".Length..])
+            .Where(path => "/siparis-sorgula".StartsWith(path, StringComparison.Ordinal));
+
+        Assert.Empty(blocking);
     }
 
     private async Task<string> GetHtmlAsync(string url)

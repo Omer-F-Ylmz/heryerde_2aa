@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using HerYerde.Business.Rules;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.Entities.Concrete;
+using HerYerde.Web.Areas.Admin.Controllers;
 using HerYerde.Web.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -64,6 +65,34 @@ public sealed class AdminAccountTests : IAsyncLifetime
         Assert.Contains("bağlantı gönderildi", await response.Content.ReadAsStringAsync());
         await using var context = TestDb.NewContext();
         Assert.Empty(await new EfOutboxMessageDal(context).GetListAsync());
+    }
+
+    /// <summary>KAPANIŞ-3 S-02: kayıtlı e-postada token + posta yazımı yapılır, kayıtsızda yapılmaz; yanıt süresi farkı hesabı ele
+    /// vermesin diye iki yol da aynı asgari sürede döner.</summary>
+    [Fact]
+    public async Task Sifremi_unuttum_kayitli_ve_kayitsiz_epostada_ayni_asgari_surede_doner()
+    {
+        var client = _factory.CreateNonRedirectingClient();
+
+        async Task<TimeSpan> ElapsedAsync(string email)
+        {
+            var token = await HtmlForm.AntiforgeryTokenAsync(client, "/admin/auth/sifremi-unuttum");
+            var started = System.Diagnostics.Stopwatch.StartNew();
+            var response = await client.PostAsync("/admin/auth/sifremi-unuttum", new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Email"] = email,
+                ["__RequestVerificationToken"] = token
+            }));
+            started.Stop();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            return started.Elapsed;
+        }
+
+        var known = await ElapsedAsync(AdminWebFactory.AdminEmail);
+        var unknown = await ElapsedAsync("yok@heryerde.test");
+
+        Assert.True(known >= AuthController.ResetResponseFloor - TimeSpan.FromMilliseconds(20), $"kayıtlı {known.TotalMilliseconds} ms");
+        Assert.True(unknown >= AuthController.ResetResponseFloor - TimeSpan.FromMilliseconds(20), $"kayıtsız {unknown.TotalMilliseconds} ms");
     }
 
     [Fact]
@@ -154,6 +183,28 @@ public sealed class AdminAccountTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.Found, used.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, reused.StatusCode);
+    }
+
+    [Fact]
+    public async Task Kullanilmis_totp_kodu_ayni_pencerede_ikinci_giriste_gecmez()
+    {
+        var admin = await _factory.CreateSignedInClientAsync();
+        var (secret, _) = await EnableTotpAsync(admin);
+        var code = Totp.Code(secret, _factory.Clock.GetUtcNow());
+
+        var first = _factory.CreateNonRedirectingClient();
+        await LoginAsync(first, AdminWebFactory.AdminPassword);
+        var used = await HtmlForm.PostAsync(first, "/admin/auth/iki-adim", "/admin/auth/iki-adim",
+            new Dictionary<string, string> { ["Code"] = code });
+
+        var second = _factory.CreateNonRedirectingClient();
+        await LoginAsync(second, AdminWebFactory.AdminPassword);
+        var replayed = await HtmlForm.PostAsync(second, "/admin/auth/iki-adim", "/admin/auth/iki-adim",
+            new Dictionary<string, string> { ["Code"] = code });
+
+        Assert.Equal(HttpStatusCode.Found, used.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, replayed.StatusCode);
+        Assert.Equal(HttpStatusCode.Found, (await second.GetAsync("/admin/products")).StatusCode);
     }
 
     [Fact]

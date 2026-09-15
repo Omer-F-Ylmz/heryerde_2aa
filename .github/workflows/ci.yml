@@ -169,8 +169,6 @@ jobs:
     env:
       DOTNET_NOLOGO: "1"
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-      # Bulgu metnini dilden bagimsiz kilmak icin CLI ciktisi Ingilizce.
-      DOTNET_CLI_UI_LANGUAGE: "en"
 
     steps:
       - uses: actions/checkout@v4
@@ -187,10 +185,16 @@ jobs:
         run: dotnet restore HerYerde.sln
 
       - name: NuGet vulnerability scan
+        # JSON çıktısı: CLI metni değişse de açık ya da proje sorunu (ör. restore yok) sayılır; filtre önce bilinen
+        # açıklı örnekte denenir, bulamazsa adım kırmızı olur (sessiz yeşil yok).
         run: |
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
-          if grep -q "has the following vulnerable packages" vulnerable.txt; then
-            echo "::error::Güvenlik açığı olan NuGet paketi bulundu."
+          filter='[(.problems // [])[], (.projects[] | (.problems // [])[]), (.projects[] | (.frameworks // [])[] | ((.topLevelPackages // [])[], (.transitivePackages // [])[]) | select(has("vulnerabilities")))] | length'
+          sample='{"projects":[{"frameworks":[{"transitivePackages":[{"id":"Ornek","vulnerabilities":[{"severity":"High"}]}]}]}]}'
+          test "$(jq "$filter" <<<"$sample")" -eq 1
+          dotnet list HerYerde.sln package --vulnerable --include-transitive --format json | tee vulnerable.json
+          jq -e '.projects | length > 0' vulnerable.json > /dev/null
+          if [ "$(jq "$filter" vulnerable.json)" -ne 0 ]; then
+            echo "::error::Güvenlik açığı olan NuGet paketi ya da tarama sorunu bulundu."
             exit 1
           fi
 

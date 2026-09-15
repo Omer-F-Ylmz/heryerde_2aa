@@ -306,6 +306,9 @@ public sealed class ManualOrderFormViewModel
     [Display(Name = "Müşteriye sipariş postası gönder")]
     public bool NotifyCustomer { get; set; }
 
+    [Display(Name = "Ön bilgilendirme ve sözleşme iletildi, müşteri teyit etti")]
+    public bool ConsentConfirmed { get; set; }
+
     public List<ManualOrderLineForm> Lines { get; set; } = [];
 
     public string? ErrorMessage { get; set; }

@@ -123,7 +123,11 @@ public class ProductTransferManager : IProductTransferService
                 product.CampaignPrice = Decimal(row.CampaignPrice);
                 product.CampaignLabel = Blank(row.CampaignLabel);
                 product.CampaignEndsAt = Date(row.CampaignEndsAt);
-                product.Stock = Integer(row.Stock);
+                if (product.Id == 0 || row.ExportedStock is null || Integer(row.ExportedStock) != Integer(row.Stock))
+                {
+                    product.Stock = Integer(row.Stock);
+                }
+
                 product.IsActive = Flag(row.IsActive);
                 product.Dimensions = Blank(row.Dimensions);
                 product.UpdatedAt = now;
@@ -151,7 +155,11 @@ public class ProductTransferManager : IProductTransferService
 
                 variant.Size = Blank(row.Axis1);
                 variant.Color = Blank(row.Axis2);
-                variant.Stock = Integer(row.VariantStock)!.Value;
+                if (variant.Id == 0 || row.ExportedStock is null || Integer(row.ExportedStock) != Integer(row.VariantStock))
+                {
+                    variant.Stock = Integer(row.VariantStock)!.Value;
+                }
+
                 if (variant.Id == 0)
                 {
                     await _variantDal.AddAsync(variant, cancellationToken);

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Security.Claims;
@@ -19,6 +20,8 @@ public class AuthController : Controller
 {
     /// <summary>Parolası doğrulanmış tarayıcının kodu girmek için süresi.</summary>
     private static readonly TimeSpan SecondFactorWindow = TimeSpan.FromMinutes(5);
+
+    public static readonly TimeSpan ResetResponseFloor = TimeSpan.FromMilliseconds(400);
 
     private readonly IAdminAuthService _adminAuthService;
     private readonly IAdminAuditService _auditService;
@@ -116,7 +119,14 @@ public class AuthController : Controller
             return View(model);
         }
 
+        // Kayıtlı e-postada anahtar üretilip posta kuyruğa yazılır; asgari süre yanıt süresinden hesabın varlığı okunmasın diye.
+        var started = Stopwatch.GetTimestamp();
         var (_, result) = await _adminAuthService.RequestPasswordResetAsync(model.Email.Trim(), cancellationToken);
+        if (ResetResponseFloor - Stopwatch.GetElapsedTime(started) is { Ticks: > 0 } remaining)
+        {
+            await Task.Delay(remaining, cancellationToken);
+        }
+
         return View(new ForgotPasswordViewModel { Sent = result.Message });
     }
 

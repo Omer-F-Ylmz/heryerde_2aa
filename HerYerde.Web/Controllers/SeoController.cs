@@ -20,7 +20,7 @@ public class SeoController(
     TimeProvider clock) : Controller
 {
     /// <summary>Kişiye özel ya da içeriği ince sayfalar taranmaz.</summary>
-    private static readonly string[] Closed = ["/admin", "/sepet", "/odeme", "/siparis", "/ara"];
+    private static readonly string[] Closed = ["/admin", "/sepet", "/odeme", "/siparis/", "/ara"];
 
     private static readonly XNamespace Ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 

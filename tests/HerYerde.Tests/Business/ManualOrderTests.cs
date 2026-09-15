@@ -83,6 +83,28 @@ public sealed class ManualOrderTests : IAsyncLifetime
         Assert.Equal("fatma@example.com", Assert.Single(mails).To);
     }
 
+    /// <summary>KAPANIŞ-3 V-03: WhatsApp/Instagram/telefon siparişi mesafeli sözleşmedir — ön bilgilendirme ve sözleşmenin
+    /// iletilip teyit alındığı işaretlenmeden açılmaz, teyit anı ve metin sürümü kaydedilir. Mağazada yüz yüze satış kapsam dışı.</summary>
+    [Fact]
+    public async Task Uzaktan_kanal_siparisi_teyit_olmadan_acilmaz_teyit_ani_ve_surum_kaydedilir()
+    {
+        await using var context = TestDb.NewContext();
+        await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere");
+        var manager = TestData.NewOrderManager(context);
+
+        var (missing, refused) = await manager.PlaceManualAsync(Draft([new ManualOrderLine("celik-tencere", 1)]) with { ConsentConfirmed = false });
+        var (_, confirmed) = await manager.PlaceManualAsync(Draft([new ManualOrderLine("celik-tencere", 1)]));
+        var (store, inStore) = await manager.PlaceManualAsync(
+            Draft([new ManualOrderLine("celik-tencere", 1)]) with { Source = OrderSource.Magaza, PaymentMethod = PaymentMethod.NakitElden, ConsentConfirmed = false });
+
+        Assert.Equal(HttpStatusCode.BadRequest, missing);
+        Assert.Contains("ön bilgilendirme", refused.Message);
+        Assert.Equal(TestClock.Now, confirmed.Data!.ConsentAt);
+        Assert.Equal(HerYerde.Business.LegalDocs.Version, confirmed.Data.LegalVersion);
+        Assert.Equal(HttpStatusCode.Created, store);
+        Assert.Null(inStore.Data!.ConsentAt);
+    }
+
     private static ManualOrderDraft Draft(IReadOnlyList<ManualOrderLine> lines) => new(
         "Ayşe Yılmaz",
         "0542 497 09 82",
@@ -95,5 +117,6 @@ public sealed class ManualOrderTests : IAsyncLifetime
         OrderSource.WhatsApp,
         lines,
         ShippingFeeOverride: null,
-        NotifyCustomer: false);
+        NotifyCustomer: false,
+        ConsentConfirmed: true);
 }

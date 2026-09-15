@@ -46,7 +46,8 @@ public sealed class OrderBackOfficeTests : IAsyncLifetime
             ["Lines[0].Code"] = "celik-tencere",
             ["Lines[0].Quantity"] = "2",
             ["Lines[1].Code"] = "",
-            ["Lines[1].Quantity"] = "1"
+            ["Lines[1].Quantity"] = "1",
+            ["ConsentConfirmed"] = "true"
         });
 
         Assert.Equal(HttpStatusCode.Found, response.StatusCode);
@@ -197,6 +198,26 @@ public sealed class OrderBackOfficeTests : IAsyncLifetime
         Assert.Equal(450m, stored.Subtotal);
         Assert.Equal(450m + stored.ShippingFee, stored.Total);
         Assert.Equal(1, Assert.Single(await new EfOrderItemDal(context).GetListAsync(i => i.OrderId == order.Id)).Quantity);
+    }
+
+    [Fact]
+    public async Task Onayli_havale_siparisinde_adet_degismez_409_toplam_ve_stok_ayni()
+    {
+        var order = await PlaceAsync(PaymentMethod.HavaleEft, quantity: 3);
+        await using (var context = TestDb.NewContext())
+        {
+            (await context.Orders.SingleAsync(o => o.Id == order.Id)).Status = OrderStatus.Onaylandi;
+            await context.SaveChangesAsync();
+        }
+
+        var admin = await _factory.CreateSignedInClientAsync();
+        var response = await PostEditAsync(admin, order, address: "Cumhuriyet Mah. 12/3", quantity: 1);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        await using var check = TestDb.NewContext();
+        Assert.Equal(order.Total, (await new EfOrderDal(check).GetAsync(o => o.Id == order.Id))!.Total);
+        Assert.Equal(3, Assert.Single(await new EfOrderItemDal(check).GetListAsync(i => i.OrderId == order.Id)).Quantity);
+        Assert.Equal(7, (await new EfProductDal(check).GetAsync(p => p.Slug == "celik-tencere"))!.Stock);
     }
 
     [Fact]

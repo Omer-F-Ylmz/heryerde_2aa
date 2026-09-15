@@ -134,6 +134,7 @@ public class HerYerdeContext : DbContext
             e.Property(a => a.ResetTokenExpiresAt).HasColumnName("reset_token_expires_at");
             e.Property(a => a.TotpSecret).HasColumnName("totp_secret").HasMaxLength(64);
             e.Property(a => a.TotpEnabled).HasColumnName("totp_enabled");
+            e.Property(a => a.TotpLastStep).HasColumnName("totp_last_step");
             e.Property(a => a.RecoveryCodeHashes).HasColumnName("recovery_code_hashes").HasMaxLength(600);
             e.HasIndex(a => a.Email).IsUnique().HasDatabaseName("ux_admin_user_email");
         });

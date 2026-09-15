@@ -109,7 +109,8 @@ public class OrdersController : Controller
             form.Source,
             form.Lines.Select(l => new ManualOrderLine(l.Code ?? string.Empty, l.Quantity)).ToList(),
             form.ShippingFeeOverride,
-            form.NotifyCustomer), cancellationToken);
+            form.NotifyCustomer,
+            form.ConsentConfirmed), cancellationToken);
 
         if (status != HttpStatusCode.Created)
         {
@@ -321,6 +322,12 @@ public class OrdersController : Controller
             return await DetailWithErrorAsync(id, status, result.Message, cancellationToken);
         }
 
+        foreach (var receipt in result.Data!)
+        {
+            _files.Delete(receipt);
+        }
+
+        await _auditService.ForgetDetailsAsync("sipariş", id, CancellationToken.None);
         await _auditService.WriteAsync(HttpContext, "kişisel veri anonimleştirildi", "sipariş", id);
         return RedirectToAction(nameof(Detail), new { id });
     }

@@ -31,6 +31,9 @@ public class AdminUser : IEntity
 
     public bool TotpEnabled { get; set; }
 
+    /// <summary>Girişte kabul edilen son TOTP adımı (Unix sn / 30); aynı ya da daha eski adımın kodu yeniden kabul edilmez.</summary>
+    public long? TotpLastStep { get; set; }
+
     /// <summary>Kullanılmamış yedek kodların SHA-256 özetleri, ";" ile ayrılmış; kullanılan kod listeden düşer.</summary>
     public string? RecoveryCodeHashes { get; set; }
 }

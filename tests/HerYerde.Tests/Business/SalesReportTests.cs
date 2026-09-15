@@ -69,6 +69,21 @@ public sealed class SalesReportTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Cok_satanlarda_ad_adet_tutar_esitse_stok_koduna_gore_sirali()
+    {
+        await using var context = TestDb.NewContext();
+        await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere", price: 100m);
+        var order = await PlaceAsync(context, PaymentMethod.KapidaOdeme, OrderStatus.Beklemede);
+        context.OrderItems.Add(new OrderItem { OrderId = order.Id, ProductName = "Şalvar", Sku = "SALVAR-M", Quantity = 5, UnitPrice = 10m });
+        context.OrderItems.Add(new OrderItem { OrderId = order.Id, ProductName = "Şalvar", Sku = "SALVAR-L", Quantity = 5, UnitPrice = 10m });
+        await context.SaveChangesAsync();
+
+        var report = await NewManager(context).BuildAsync(From, To, ReportPeriod.Ay, TimeZoneInfo.Utc);
+
+        Assert.Equal(["SALVAR-L", "SALVAR-M"], report.TopProducts.Take(2).Select(p => p.Sku));
+    }
+
+    [Fact]
     public async Task Kaynak_dagilimi_iptal_disi_siparisleri_sayar()
     {
         await using var context = TestDb.NewContext();
@@ -125,5 +140,5 @@ public sealed class SalesReportTests : IAsyncLifetime
 
     private static ManualOrderDraft Draft(PaymentMethod method, OrderSource source, ManualOrderLine line) => new(
         "Ayşe Yılmaz", "0542 497 09 82", null, "Cumhuriyet Mah. 12/3", "İstanbul", "Kadıköy", null,
-        method, source, [line], ShippingFeeOverride: null, NotifyCustomer: false);
+        method, source, [line], ShippingFeeOverride: null, NotifyCustomer: false, ConsentConfirmed: true);
 }

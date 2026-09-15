@@ -4,6 +4,6 @@ namespace HerYerde.Business;
 /// Metin değişince sürüm ve tarih birlikte ilerler; sipariş onayladığı sürümü saklar.</summary>
 public static class LegalDocs
 {
-    public const string Version = "2026-09-15";
+    public const string Version = "2026-09-15.2";
     public static readonly DateTime UpdatedAt = new(2026, 9, 15);
 }

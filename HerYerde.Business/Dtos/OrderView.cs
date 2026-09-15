@@ -34,7 +34,8 @@ public sealed record ManualOrderDraft(
     OrderSource Source,
     IReadOnlyList<ManualOrderLine> Lines,
     decimal? ShippingFeeOverride,
-    bool NotifyCustomer);
+    bool NotifyCustomer,
+    bool ConsentConfirmed = false);
 
 /// <summary>Sipariş düzenleme: teslimat bilgisi ve kalem adetleri (kalem kimliği → yeni adet).</summary>
 public sealed record OrderEdit(

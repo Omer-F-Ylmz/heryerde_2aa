@@ -256,6 +256,14 @@ public class OrderManager : IOrderService
             return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>("Kargo ücreti eksi olamaz."));
         }
 
+        // Mesafeli satış (WhatsApp, Instagram, telefon): ön bilgilendirme ve sözleşme müşteriye iletilip teyit alınmış olmalı.
+        var remote = draft.Source != OrderSource.Magaza;
+        if (remote && !draft.ConsentConfirmed)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>(
+                "Uzaktan siparişte ön bilgilendirme formu ve mesafeli satış sözleşmesi müşteriye iletilip teyidi alınmalı."));
+        }
+
         var now = _clock.GetUtcNow().UtcDateTime;
         var resolved = new List<(ManualOrderLine Line, Product Product, ProductVariant? Variant)>();
         foreach (var line in lines)
@@ -296,7 +304,9 @@ public class OrderManager : IOrderService
             City = draft.City.Trim(),
             District = draft.District.Trim(),
             Note = string.IsNullOrWhiteSpace(draft.Note) ? null : draft.Note.Trim(),
-            // Onay kutusu vitrinde işaretlenir; yönetimden girilen siparişte onay anı ve metin sürümü boş kalır.
+            // Uzaktan siparişte teyit anı ve metin sürümü yöneticinin işaretlediği teyitten; mağazada boş kalır.
+            ConsentAt = remote ? now : null,
+            LegalVersion = remote ? LegalDocs.Version : null,
             CreatedAt = now
         };
 
@@ -398,6 +408,12 @@ public class OrderManager : IOrderService
         if (changes.Count > 0 && order.PaymentMethod == PaymentMethod.KrediKarti)
         {
             return (HttpStatusCode.Conflict, new ErrorDataResult<string>("Kartla ödenmiş siparişte adet değişmez; gerekirse iade edin."));
+        }
+
+        // Onaylı havalede de para alınmıştır: toplam değişirse onaylanan havale tutarıyla ayrışırdı.
+        if (changes.Count > 0 && order.PaymentMethod == PaymentMethod.HavaleEft && order.Status != OrderStatus.Beklemede)
+        {
+            return (HttpStatusCode.Conflict, new ErrorDataResult<string>("Havalesi onaylanmış siparişte adet değişmez; yeni sipariş açın ya da iptal edin."));
         }
 
         var log = new List<string>();
@@ -710,17 +726,17 @@ public class OrderManager : IOrderService
         return (HttpStatusCode.OK, new SuccessResult("Sipariş görüldü olarak işaretlendi."));
     }
 
-    public async Task<(HttpStatusCode, IResult)> AnonymizeAsync(int orderId, CancellationToken cancellationToken = default)
+    public async Task<(HttpStatusCode, IDataResult<IReadOnlyList<string>>)> AnonymizeAsync(int orderId, CancellationToken cancellationToken = default)
     {
         var order = await _orderDal.GetTrackedAsync(o => o.Id == orderId, cancellationToken);
         if (order is null)
         {
-            return (HttpStatusCode.NotFound, new ErrorResult("Sipariş bulunamadı."));
+            return (HttpStatusCode.NotFound, new ErrorDataResult<IReadOnlyList<string>>("Sipariş bulunamadı."));
         }
 
         if (!OrderRules.CanAnonymize(order.Status))
         {
-            return (HttpStatusCode.Conflict, new ErrorResult(
+            return (HttpStatusCode.Conflict, new ErrorDataResult<IReadOnlyList<string>>(
                 "Kişisel veri yalnız teslim edilmiş ya da iptal edilmiş siparişte anonimleştirilir."));
         }
 
@@ -729,16 +745,25 @@ public class OrderManager : IOrderService
         order.Email = order.Email is null ? null : PersonalDataMask.Email(order.Email);
         order.Address = PersonalDataMask.Hidden;
         order.Note = null;
+        // Postadaki ya da tarayıcı geçmişindeki eski bağlantıyla sipariş sayfası ve fatura artık açılmaz.
+        order.AccessToken = Guid.NewGuid();
         // Havaleyi gönderen başka biri olabilir; adı da siparişle birlikte maskelenir, tutar ve tarih kalır.
+        // Dekont (ad, IBAN) saklanmaz: kayıttan düşer, dosyası çağıran tarafından silinir. Fatura yasal belge olarak kalır.
+        var receipts = new List<string>();
         foreach (var notice in await _noticeDal.GetListAsync(n => n.OrderId == order.Id, cancellationToken))
         {
             var tracked = (await _noticeDal.GetTrackedAsync(n => n.Id == notice.Id, cancellationToken))!;
             tracked.SenderName = PersonalDataMask.Name(tracked.SenderName);
+            if (tracked.ReceiptFile is { } receipt)
+            {
+                receipts.Add(receipt);
+                tracked.ReceiptFile = null;
+            }
         }
 
         await _notifications.ForgetOrderAsync(order, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return (HttpStatusCode.OK, new SuccessResult("Kişisel veri anonimleştirildi."));
+        return (HttpStatusCode.OK, new SuccessDataResult<IReadOnlyList<string>>(receipts, "Kişisel veri anonimleştirildi."));
     }
 
     private async Task<(HttpStatusCode, IDataResult<OrderDetail>)> DetailAsync(Order? order, CancellationToken cancellationToken)

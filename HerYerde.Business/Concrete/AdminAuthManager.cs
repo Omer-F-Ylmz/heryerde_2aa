@@ -82,7 +82,7 @@ public class AdminAuthManager : IAdminAuthService
 
         var normalized = new string(code.Where(char.IsAsciiLetterOrDigit).ToArray()).ToUpperInvariant();
         var matched = normalized.Length == 6 && normalized.All(char.IsAsciiDigit)
-            ? Totp.Verify(secret, normalized, _clock.GetUtcNow())
+            ? UseTotpStep(admin, Totp.MatchedStep(secret, normalized, _clock.GetUtcNow()))
             : UseRecoveryCode(admin, normalized);
 
         if (!matched)
@@ -300,6 +300,18 @@ public class AdminAuthManager : IAdminAuthService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>Kabul edilen adım saklanır: omuz üstünden ya da ağdan görülen kod, pencere kapanmadan ikinci kez kullanılamaz.</summary>
+    private static bool UseTotpStep(AdminUser admin, long? step)
+    {
+        if (step is null || step <= admin.TotpLastStep)
+        {
+            return false;
+        }
+
+        admin.TotpLastStep = step;
+        return true;
+    }
+
     /// <summary>Eşleşen yedek kod listeden düşer; ikinci kullanımda bulunmaz.</summary>
     private static bool UseRecoveryCode(AdminUser admin, string code)
     {
@@ -318,6 +330,7 @@ public class AdminAuthManager : IAdminAuthService
     {
         admin.TotpEnabled = false;
         admin.TotpSecret = null;
+        admin.TotpLastStep = null;
         admin.RecoveryCodeHashes = null;
     }
 

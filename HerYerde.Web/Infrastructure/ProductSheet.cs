@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.Compression;
 using ClosedXML.Excel;
 using HerYerde.Business.Dtos;
 
@@ -11,7 +12,9 @@ public static class ProductSheet
     public const string ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     public const int MaxRows = 5000;
     public const long MaxBytes = 8L * 1024 * 1024;
+    public const long MaxUnpackedBytes = 64L * 1024 * 1024;
     private const string SheetName = "Ürünler";
+    private const string StampSheetName = "disa_aktarim";
 
     public static readonly (string Name, string Help)[] Columns =
     [
@@ -38,10 +41,15 @@ public static class ProductSheet
     {
         using var book = new XLWorkbook();
         var sheet = AddHeader(book);
+        var stamp = book.AddWorksheet(StampSheetName);
+        stamp.Visibility = XLWorksheetVisibility.VeryHidden;
         var index = 2;
         foreach (var row in rows)
         {
-            Fill(sheet.Row(index++), row);
+            Fill(sheet.Row(index), row);
+            stamp.Cell(index, 1).SetValue(StampKey(row.Id, row.Sku));
+            stamp.Cell(index, 2).SetValue(row.IsVariant ? row.VariantStock : row.Stock);
+            index++;
         }
 
         sheet.Columns().AdjustToContents(1, 200, 8, 60);
@@ -83,6 +91,15 @@ public static class ProductSheet
 
         try
         {
+            // 8 MB'lık sıkıştırılmış dosya yüzlerce MB'a açılabilir (zip bombası); açmadan önce girişlerin toplamı denetlenir.
+            using (var zip = new ZipArchive(new MemoryStream(content), ZipArchiveMode.Read))
+            {
+                if (zip.Entries.Sum(e => e.Length) > MaxUnpackedBytes)
+                {
+                    return (null, $"Dosyanın açılmış boyutu {MaxUnpackedBytes / (1024 * 1024)} MB'ı aşıyor; tabloyu bölün.");
+                }
+            }
+
             using var book = new XLWorkbook(new MemoryStream(content));
             var sheet = book.Worksheet(1);
             if (!Columns.Select((c, i) => sheet.Cell(1, i + 1).GetString().Trim() == c.Name).All(match => match))
@@ -96,6 +113,16 @@ public static class ProductSheet
                 return (null, $"Tabloda en çok {MaxRows} satır olabilir ({used - 1} satır var).");
             }
 
+            // Dışa aktarmanın gizli sayfası: satır sırası Excel'de değişebilir, stok değeri id/sku ile eşlenir.
+            var exported = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (book.TryGetWorksheet(StampSheetName, out var stamp))
+            {
+                foreach (var stampRow in stamp.RowsUsed())
+                {
+                    exported.TryAdd(stampRow.Cell(1).GetString(), Text(stampRow.Cell(2)));
+                }
+            }
+
             var rows = new List<ProductSheetRow>();
             for (var number = 2; number <= used; number++)
             {
@@ -106,7 +133,8 @@ public static class ProductSheet
                 }
 
                 rows.Add(new ProductSheetRow(number, cells[0], cells[1], cells[2], cells[3], cells[4], cells[5], cells[6], cells[7],
-                    cells[8], cells[9], cells[10], cells[11], cells[12], cells[13], cells[14], cells[15], cells[16]));
+                    cells[8], cells[9], cells[10], cells[11], cells[12], cells[13], cells[14], cells[15], cells[16],
+                    exported.GetValueOrDefault(StampKey(cells[0], cells[11]))));
             }
 
             return (rows, null);
@@ -116,6 +144,10 @@ public static class ProductSheet
             return (null, "Dosya okunamadı; Excel'de .xlsx olarak yeniden kaydedin.");
         }
     }
+
+    /// <summary>Varyant satırı stok koduyla, ürün satırı kimliğiyle eşlenir; ikisi de boşsa (yeni satır) eşleşmez.</summary>
+    private static string StampKey(string id, string sku)
+        => sku.Length > 0 ? "sku:" + sku : id.Length > 0 ? "id:" + id : string.Empty;
 
     private static IXLWorksheet AddHeader(XLWorkbook book)
     {

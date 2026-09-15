@@ -15,16 +15,20 @@ public static class Totp
     public static string Code(string secret, DateTimeOffset moment) => CodeAt(FromBase32(secret), moment.ToUnixTimeSeconds() / StepSeconds);
 
     /// <summary>Saat kaymasına karşı bir önceki ve bir sonraki adım da kabul edilir.</summary>
-    public static bool Verify(string secret, string code, DateTimeOffset moment)
+    public static bool Verify(string secret, string code, DateTimeOffset moment) => MatchedStep(secret, code, moment) is not null;
+
+    /// <summary>Kodun eşleştiği adım (pencere: önceki, şimdiki, sonraki); eşleşmezse null.</summary>
+    public static long? MatchedStep(string secret, string code, DateTimeOffset moment)
     {
         var key = FromBase32(secret);
         var step = moment.ToUnixTimeSeconds() / StepSeconds;
-        var matched = false;
+        long? matched = null;
         for (var offset = -1; offset <= 1; offset++)
         {
-            matched |= CryptographicOperations.FixedTimeEquals(
-                Encoding.ASCII.GetBytes(CodeAt(key, step + offset)),
-                Encoding.ASCII.GetBytes(code));
+            if (CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(CodeAt(key, step + offset)), Encoding.ASCII.GetBytes(code)))
+            {
+                matched = step + offset;
+            }
         }
 
         return matched;

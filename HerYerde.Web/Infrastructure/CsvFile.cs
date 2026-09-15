@@ -24,11 +24,11 @@ public static class CsvFile
     /// <summary>"979,90": binlik ayraç yok, Excel sayı olarak okur.</summary>
     public static string Money(decimal amount) => amount.ToString("0.00", Turkish);
 
-    /// <summary>Ayraç, tırnak ya da satır sonu içeren alan tırnaklanır. "=", "+", "@" ile başlayan metin formül olarak
+    /// <summary>Ayraç, tırnak ya da satır sonu içeren alan tırnaklanır. "=", "+", "-", "@" ile başlayan metin formül olarak
     /// çalışmasın diye başına kesme işareti alır (CSV enjeksiyonu).</summary>
     private static string Field(string value)
     {
-        if (value.Length > 0 && value[0] is '=' or '+' or '@' or '\t')
+        if (value.Length > 0 && value[0] is '=' or '+' or '-' or '@' or '\t' or '\r')
         {
             value = "'" + value;
         }

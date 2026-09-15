@@ -1,7 +1,8 @@
 namespace HerYerde.Business.Dtos;
 
 /// <summary>Toplu ürün tablosunun bir satırı, hücreler metin olarak (sayılar nokta ondalıklı). Sku boşsa ürün satırı,
-/// doluysa aynı slug'lı ürünün varyant satırıdır; varyant satırında ürün sütunları yok sayılır.</summary>
+/// doluysa aynı slug'lı ürünün varyant satırıdır; varyant satırında ürün sütunları yok sayılır. ExportedStock: dosya
+/// dışa aktarmadan geldiyse o andaki stok; hücre buna eşitse stok yazılmaz (arada satılan adet ezilmesin).</summary>
 public sealed record ProductSheetRow(
     int RowNumber,
     string Id,
@@ -20,7 +21,8 @@ public sealed record ProductSheetRow(
     string Axis2,
     string VariantStock,
     string Images,
-    string Dimensions)
+    string Dimensions,
+    string? ExportedStock = null)
 {
     public bool IsVariant => Sku.Length > 0;
 }

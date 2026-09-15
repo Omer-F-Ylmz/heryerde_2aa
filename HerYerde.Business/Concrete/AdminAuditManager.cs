@@ -59,4 +59,14 @@ public class AdminAuditManager : IAdminAuditService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return stale.Count;
     }
+
+    public async Task ForgetDetailsAsync(string entity, int entityId, CancellationToken cancellationToken = default)
+    {
+        foreach (var entry in await _auditLogDal.GetListAsync(a => a.Entity == entity && a.EntityId == entityId && a.Detail != null, cancellationToken))
+        {
+            (await _auditLogDal.GetTrackedAsync(a => a.Id == entry.Id, cancellationToken))!.Detail = null;
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
 }

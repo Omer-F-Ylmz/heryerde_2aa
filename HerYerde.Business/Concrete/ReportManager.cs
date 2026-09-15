@@ -62,6 +62,7 @@ public class ReportManager : IReportService
                 .OrderByDescending(p => p.Quantity)
                 .ThenByDescending(p => p.Amount)
                 .ThenBy(p => p.ProductName, StringComparer.Ordinal)
+                .ThenBy(p => p.Sku, StringComparer.Ordinal)
                 .Take(TopCount)
                 .ToList(),
             open

@@ -748,16 +748,19 @@
 
   .switch {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     font-weight: 600;
     margin-bottom: 16px;
     cursor: pointer;
   }
 
+  /* Uzun etiket birkaç satıra kırılsa da kutu küçülmez ve ilk satıra hizalanır ((27.2 - 20) / 2 = 3.6px). */
   .switch input {
+    flex-shrink: 0;
     width: 20px;
     height: 20px;
+    margin-top: 3.6px;
     accent-color: var(--c-accent);
   }
 
@@ -3422,6 +3425,7 @@
   .about-trust a,
   .faq__lead a,
   .contact .field__hint a,
+  .notice-form .field__hint a,
   .product__help a,
   .cta-band__link {
     color: var(--c-brand-700);
@@ -3434,6 +3438,7 @@
   .about-trust a:hover,
   .faq__lead a:hover,
   .contact .field__hint a:hover,
+  .notice-form .field__hint a:hover,
   .product__help a:hover,
   .cta-band__link:hover {
     color: var(--c-brand-900);
@@ -3442,6 +3447,7 @@
   .about-trust a:focus-visible,
   .faq__lead a:focus-visible,
   .contact .field__hint a:focus-visible,
+  .notice-form .field__hint a:focus-visible,
   .product__help a:focus-visible,
   .cta-band__link:focus-visible,
   .contact__list a:focus-visible {
@@ -3452,6 +3458,7 @@
   .about-trust a:active,
   .faq__lead a:active,
   .contact .field__hint a:active,
+  .notice-form .field__hint a:active,
   .product__help a:active,
   .cta-band__link:active,
   .contact__list a:active {

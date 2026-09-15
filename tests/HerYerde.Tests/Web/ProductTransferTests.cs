@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.Entities.Concrete;
+using HerYerde.Web.Infrastructure;
 
 namespace HerYerde.Tests.Web;
 
@@ -119,6 +120,51 @@ public sealed class ProductTransferTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Eski_disa_aktarim_satistan_sonra_yuklenince_dokunulmamis_stok_ezilmez_degistirilen_yazilir()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere", stock: 5);
+            var (productId, _) = await TestData.AddClothingProductAsync(context, "Şalvar", "salvar", stock: 4);
+            await new EfProductVariantDal(context).AddAsync(new ProductVariant { ProductId = productId, Size = "L", Color = "Kiremit", Sku = "SALVAR-L", Stock = 2 });
+            await context.SaveChangesAsync();
+        }
+
+        var admin = await _factory.CreateSignedInClientAsync();
+        var exported = await (await admin.GetAsync("/admin/products/export")).Content.ReadAsByteArrayAsync();
+
+        // Dosya Excel'de dururken satış olur.
+        await using (var context = TestDb.NewContext())
+        {
+            (await new EfProductDal(context).GetTrackedAsync(p => p.Slug == "celik-tencere"))!.Stock = 3;
+            (await new EfProductVariantDal(context).GetTrackedAsync(v => v.Sku == "SALVAR-M"))!.Stock = 1;
+            await context.SaveChangesAsync();
+        }
+
+        byte[] edited;
+        using (var book = new XLWorkbook(new MemoryStream(exported)))
+        {
+            var rows = book.Worksheet(1).RowsUsed().Skip(1).ToList();
+            rows.Single(r => r.Cell(3).GetString() == "celik-tencere" && r.Cell(12).GetString().Length == 0).Cell(6).SetValue("499.90");
+            rows.Single(r => r.Cell(12).GetString() == "SALVAR-L").Cell(15).SetValue("7");
+            using var buffer = new MemoryStream();
+            book.SaveAs(buffer);
+            edited = buffer.ToArray();
+        }
+
+        var preview = await (await UploadAsync(admin, edited)).Content.ReadAsStringAsync();
+        var confirm = await ConfirmAsync(admin, preview);
+
+        Assert.Equal(HttpStatusCode.Found, confirm.StatusCode);
+        await using var check = TestDb.NewContext();
+        var tencere = (await new EfProductDal(check).GetAsync(p => p.Slug == "celik-tencere"))!;
+        Assert.Equal(499.90m, tencere.Price);
+        Assert.Equal(3, tencere.Stock);
+        Assert.Equal(1, (await new EfProductVariantDal(check).GetAsync(v => v.Sku == "SALVAR-M"))!.Stock);
+        Assert.Equal(7, (await new EfProductVariantDal(check).GetAsync(v => v.Sku == "SALVAR-L"))!.Stock);
+    }
+
+    [Fact]
     public async Task Kategori_slug_yoksa_satir_hatalidir()
     {
         await SeedAsync();
@@ -164,6 +210,45 @@ public sealed class ProductTransferTests : IAsyncLifetime
         var response = await UploadAsync(admin, [0x4D, 0x5A, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    /// <summary>KAPANIŞ-3 S-03: 8 MB'a sığan ama açılınca yüzlerce MB olan xlsx (sıkıştırma bombası) kitap belleğe alınmadan reddedilir.</summary>
+    [Fact]
+    public async Task Acilmis_boyutu_tavani_asan_xlsx_okunmadan_400()
+    {
+        var bomb = new MemoryStream();
+        using (var source = new MemoryStream(Book(Row(slug: "cam-surahi", name: "Cam Sürahi", category: "ev", price: "10"))))
+        using (var input = new System.IO.Compression.ZipArchive(source, System.IO.Compression.ZipArchiveMode.Read))
+        using (var output = new System.IO.Compression.ZipArchive(bomb, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var entry in input.Entries)
+            {
+                var copy = output.CreateEntry(entry.FullName, System.IO.Compression.CompressionLevel.SmallestSize);
+                using var target = copy.Open();
+                using (var original = entry.Open())
+                {
+                    original.CopyTo(target);
+                }
+
+                if (entry.FullName.EndsWith("sheet1.xml", StringComparison.Ordinal))
+                {
+                    // XML sonrasına boşluk: ayrıştırıcı için geçersiz olsa da açılmış boyut 120 MB olur.
+                    var padding = new byte[1024 * 1024];
+                    Array.Fill(padding, (byte)' ');
+                    for (var i = 0; i < 120; i++)
+                    {
+                        target.Write(padding);
+                    }
+                }
+            }
+        }
+
+        var admin = await _factory.CreateSignedInClientAsync();
+        var response = await UploadAsync(admin, bomb.ToArray());
+
+        Assert.True(bomb.Length < ProductSheet.MaxBytes);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("açılmış boyutu", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
