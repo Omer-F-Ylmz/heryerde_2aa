@@ -11,4 +11,7 @@ public class Category : IEntity
     public int? ParentId { get; set; }
     public int SortOrder { get; set; }
     public bool IsActive { get; set; }
+
+    /// <summary>16:9 webp adresi ("…-16x9.webp"); kare kesit aynı addaki "-1x1.webp". Boşsa vitrinde placeholder.</summary>
+    public string? ImageUrl { get; set; }
 }

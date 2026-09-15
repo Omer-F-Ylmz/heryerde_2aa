@@ -1,0 +1,57 @@
+@using HerYerde.DataAccess.Abstract
+@model List<LowStockRow>
+@{
+    ViewData["Title"] = "Düşük stok";
+    var threshold = (int)ViewData["Threshold"]!;
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Stok</p>
+        <h1 class="display-2">Düşük stok</h1>
+        <p class="page-head__note">Stoğu @threshold adet ve altına inmiş ürün ve varyantlar, en azı önce. Stok takibi olmayan ürünler listelenmez.</p>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <p class="empty surface-elevated">Eşiğin altına inen ürün yok.</p>
+}
+else
+{
+    <div class="table-wrap surface-elevated">
+        <table class="table">
+            <caption class="visually-hidden">Düşük stoklu ürün ve varyantlar: ürün, stok kodu, seçenek, kalan adet</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ürün</th>
+                    <th scope="col">Stok kodu</th>
+                    <th scope="col">Seçenek</th>
+                    <th scope="col" class="table__num">Kalan</th>
+                    <th scope="col"><span class="visually-hidden">İşlem</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var row in Model)
+            {
+                <tr>
+                    <th scope="row">@row.ProductName</th>
+                    <td><span class="cell-mono">@(row.Sku ?? "—")</span></td>
+                    <td>@(string.Join(" · ", new[] { row.Size, row.Color }.Where(p => !string.IsNullOrWhiteSpace(p))) is { Length: > 0 } option ? option : "—")</td>
+                    <td class="table__num">
+                        @if (row.Stock == 0)
+                        {
+                            <span class="tag tag--soldout">Tükendi</span>
+                        }
+                        else
+                        {
+                            <span class="tag tag--low">@row.Stock</span>
+                        }
+                    </td>
+                    <td class="table__actions"><a class="btn btn--ghost btn--sm" href="/admin/products/edit/@row.ProductId">Stoğu düzenle</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

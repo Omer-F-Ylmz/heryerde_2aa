@@ -25,6 +25,9 @@ public sealed class RateLimitSettings
     /// <summary>Ürün yorumu gönderimi; günlük pencere.</summary>
     public int ReviewPerDay { get; set; } = 3;
 
+    /// <summary>Sipariş sorgulama: numara + telefon denemesi; tahmin yoluyla sipariş bulmayı yavaşlatır.</summary>
+    public int OrderLookupPerMinute { get; set; } = 10;
+
     public int GeneralPerMinute { get; set; } = 300;
 }
 
@@ -64,7 +67,9 @@ public static class RateLimitPolicy
                                 ? ("iletisim", settings.ContactPerMinute)
                                 : isPost && IsReviewPost(path)
                                     ? ("yorum", settings.ReviewPerDay)
-                                    : ("genel", settings.GeneralPerMinute);
+                                    : isPost && path.StartsWithSegments("/siparis-sorgula")
+                                        ? ("siparis-sorgula", settings.OrderLookupPerMinute)
+                                        : ("genel", settings.GeneralPerMinute);
 
         return RateLimitPartition.GetFixedWindowLimiter($"{bucket}:{client}", _ => new FixedWindowRateLimiterOptions
         {

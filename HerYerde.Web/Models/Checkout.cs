@@ -112,6 +112,7 @@ public static class OrderLabels
     {
         OrderStatus.Beklemede => "Beklemede",
         OrderStatus.Onaylandi => "Onaylandı",
+        OrderStatus.Hazirlaniyor => "Hazırlanıyor",
         OrderStatus.Kargoda => "Kargoda",
         OrderStatus.TeslimEdildi => "Teslim edildi",
         _ => "İptal edildi"

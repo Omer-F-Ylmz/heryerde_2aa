@@ -18,6 +18,7 @@ public class ProductManager : IProductService
     private readonly IProductVariantDal _variantDal;
     private readonly IProductImageDal _imageDal;
     private readonly ICategoryDal _categoryDal;
+    private readonly ISlugHistoryDal _slugHistoryDal;
     private readonly IUnitOfWork _unitOfWork;
 
     public ProductManager(
@@ -25,12 +26,14 @@ public class ProductManager : IProductService
         IProductVariantDal variantDal,
         IProductImageDal imageDal,
         ICategoryDal categoryDal,
+        ISlugHistoryDal slugHistoryDal,
         IUnitOfWork unitOfWork)
     {
         _productDal = productDal;
         _variantDal = variantDal;
         _imageDal = imageDal;
         _categoryDal = categoryDal;
+        _slugHistoryDal = slugHistoryDal;
         _unitOfWork = unitOfWork;
     }
 
@@ -54,13 +57,10 @@ public class ProductManager : IProductService
         return (HttpStatusCode.OK, new SuccessDataResult<ProductListItem?>(hero));
     }
 
-    public async Task<(HttpStatusCode, IDataResult<Product>)> GetActiveBySlugAsync(string slug, CancellationToken cancellationToken = default)
-    {
-        var product = await _productDal.GetAsync(p => p.Slug == slug && p.IsActive, cancellationToken);
-        return product is null
-            ? (HttpStatusCode.NotFound, new ErrorDataResult<Product>("Ürün bulunamadı."))
-            : (HttpStatusCode.OK, new SuccessDataResult<Product>(product));
-    }
+    public async Task<(HttpStatusCode, IDataResult<ProductDetail>)> GetActiveBySlugAsync(string slug, CancellationToken cancellationToken = default)
+        => await _productDal.GetActiveWithVariantsBySlugAsync(slug, cancellationToken) is { } row
+            ? (HttpStatusCode.OK, new SuccessDataResult<ProductDetail>(new ProductDetail(row.Product, row.Variants)))
+            : (HttpStatusCode.NotFound, new ErrorDataResult<ProductDetail>("Ürün bulunamadı."));
 
     public async Task<(HttpStatusCode, IDataResult<Product>)> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -88,10 +88,13 @@ public class ProductManager : IProductService
             return (HttpStatusCode.Conflict, new ErrorDataResult<Product>(PriceMissingMessage));
         }
 
-        if (StockProblem(product, root) is { } stockProblem)
+        if (StockProblem(product, root, hasVariants: false) is { } stockProblem)
         {
             return (HttpStatusCode.BadRequest, new ErrorDataResult<Product>(stockProblem));
         }
+
+        product.VariantAxis1Label = NullIfBlank(product.VariantAxis1Label)?.Trim();
+        product.VariantAxis2Label = NullIfBlank(product.VariantAxis2Label)?.Trim();
 
         if (await GiftProblemAsync(product, cancellationToken) is { } giftProblem)
         {
@@ -133,7 +136,7 @@ public class ProductManager : IProductService
             return (HttpStatusCode.Conflict, new ErrorResult(PriceMissingMessage));
         }
 
-        if (StockProblem(product, root) is { } stockProblem)
+        if (StockProblem(product, root, await HasVariantAsync(stored.Id, cancellationToken)) is { } stockProblem)
         {
             return (HttpStatusCode.BadRequest, new ErrorResult(stockProblem));
         }
@@ -141,6 +144,12 @@ public class ProductManager : IProductService
         if (await GiftProblemAsync(product, cancellationToken) is { } giftProblem)
         {
             return (HttpStatusCode.BadRequest, new ErrorResult(giftProblem));
+        }
+
+        var slug = await UniqueSlugAsync(product.Name, stored.Id, cancellationToken);
+        if (slug != stored.Slug)
+        {
+            await _slugHistoryDal.RecordAsync(SlugEntity.Product, stored.Id, stored.Slug, slug, DateTime.UtcNow, cancellationToken);
         }
 
         stored.Name = product.Name;
@@ -156,7 +165,9 @@ public class ProductManager : IProductService
         stored.GiftQty = Math.Max(product.GiftQty, 1);
         stored.Stock = product.Stock;
         stored.IsActive = product.IsActive;
-        stored.Slug = await UniqueSlugAsync(product.Name, stored.Id, cancellationToken);
+        stored.VariantAxis1Label = NullIfBlank(product.VariantAxis1Label)?.Trim();
+        stored.VariantAxis2Label = NullIfBlank(product.VariantAxis2Label)?.Trim();
+        stored.Slug = slug;
         stored.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -190,6 +201,21 @@ public class ProductManager : IProductService
         return (HttpStatusCode.OK, new SuccessDataResult<Dictionary<int, int>>(totals));
     }
 
+    public async Task<(HttpStatusCode, IDataResult<List<LowStockRow>>)> GetLowStockAsync(int threshold, CancellationToken cancellationToken = default)
+        => (HttpStatusCode.OK, new SuccessDataResult<List<LowStockRow>>(await _productDal.GetLowStockAsync(threshold, cancellationToken)));
+
+    public async Task<(HttpStatusCode, IDataResult<int>)> CountLowStockAsync(int threshold, CancellationToken cancellationToken = default)
+        => (HttpStatusCode.OK, new SuccessDataResult<int>(await _productDal.CountLowStockAsync(threshold, cancellationToken)));
+
+    public async Task<(HttpStatusCode, IDataResult<string>)> GetCurrentSlugAsync(string oldSlug, CancellationToken cancellationToken = default)
+    {
+        var id = await _slugHistoryDal.FindEntityIdAsync(SlugEntity.Product, oldSlug, cancellationToken);
+        var product = id is null ? null : await _productDal.GetAsync(p => p.Id == id && p.IsActive, cancellationToken);
+        return product is null
+            ? (HttpStatusCode.NotFound, new ErrorDataResult<string>("Ürün bulunamadı."))
+            : (HttpStatusCode.OK, new SuccessDataResult<string>(product.Slug));
+    }
+
     public async Task<(HttpStatusCode, IResult)> AddVariantAsync(ProductVariant variant, CancellationToken cancellationToken = default)
     {
         if (variant.Stock < 0)
@@ -203,15 +229,11 @@ public class ProductManager : IProductService
             return (HttpStatusCode.NotFound, new ErrorResult("Ürün bulunamadı."));
         }
 
-        var (rootStatus, root) = await RootOfAsync(product.CategoryId, cancellationToken);
-        if (root is null)
+        // Varyantlı ürünün stoğu varyanttadır: ürünün kendi stoğu doluyken iki stok yan yana yaşardı.
+        if (product.Stock is not null)
         {
-            return (rootStatus, new ErrorResult("Kategori bulunamadı."));
-        }
-
-        if (!ProductRules.RequiresVariants(root) && (!string.IsNullOrWhiteSpace(variant.Size) || !string.IsNullOrWhiteSpace(variant.Color)))
-        {
-            return (HttpStatusCode.BadRequest, new ErrorResult("Ev ürününde beden ve renk boş kalmalı."));
+            return (HttpStatusCode.BadRequest, new ErrorResult(
+                "Varyant eklemeden önce ürün stoğunu boşaltın; varyantlı üründe stok varyantta tutulur."));
         }
 
         if (await _variantDal.GetAsync(v => v.Sku == variant.Sku, cancellationToken) is not null)
@@ -348,12 +370,17 @@ public class ProductManager : IProductService
 
     private const string PriceMissingMessage = "Fiyatı girilmemiş ürün yayına alınamaz.";
 
-    /// <summary>Giyim'de stok varyantta durur; ürünün kendi stok alanı boş kalmak zorundadır.</summary>
-    private static string? StockProblem(Product product, Category root)
+    /// <summary>Giyim'de ve varyantlı Ev ürününde stok varyantta durur; ürünün kendi stok alanı boş kalmak zorundadır.</summary>
+    private static string? StockProblem(Product product, Category root, bool hasVariants)
     {
         if (ProductRules.RequiresVariants(root) && product.Stock is not null)
         {
             return "Giyim ürününde stok varyantta tutulur; ürün stoğu boş kalmalı.";
+        }
+
+        if (hasVariants && product.Stock is not null)
+        {
+            return "Varyantlı üründe stok varyantta tutulur; ürün stoğu boş kalmalı.";
         }
 
         return product.Stock < 0 ? "Stok negatif olamaz." : null;

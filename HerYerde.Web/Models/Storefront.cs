@@ -48,12 +48,19 @@ public sealed record VariantChipVm(string Label, int Stock);
 /// <summary>Sepete eklemede beden+renk seçimini varyant kimliğine çevirmek için.</summary>
 public sealed record VariantOptionVm(int Id, string? Size, string? Color, int Stock);
 
+/// <summary>Axis1/Axis2: eksenlerin vitrin adı (ürünün VariantAxis1Label/2Label); boşsa Beden/Renk.</summary>
 public sealed record VariantPickerVm(
     IReadOnlyList<VariantChipVm> Sizes,
     IReadOnlyList<VariantChipVm> Colors,
-    IReadOnlyList<VariantOptionVm>? Options = null);
+    IReadOnlyList<VariantOptionVm>? Options = null,
+    string? Axis1Label = null,
+    string? Axis2Label = null)
+{
+    public bool HasOptions => Options is { Count: > 0 };
+}
 
-public sealed record CategoryTabVm(string Name, string Url, bool Current);
+/// <summary>ImageUrl: sekmede küçük kare görsel (kategorinin 1:1 kesiti); yoksa yalnız metin.</summary>
+public sealed record CategoryTabVm(string Name, string Url, bool Current, string? ImageUrl = null);
 
 /// <summary>FRONT kiti: fiyat aralığı süzgeci. Hidden, arama terimi/sıralama gibi korunacak alanlar.</summary>
 public sealed record HiddenFieldVm(string Name, string Value);

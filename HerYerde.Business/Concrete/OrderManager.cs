@@ -226,6 +226,18 @@ public class OrderManager : IOrderService
     public async Task<(HttpStatusCode, IDataResult<OrderDetail>)> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         => await DetailAsync(await _orderDal.GetAsync(o => o.Id == id, cancellationToken), cancellationToken);
 
+    public async Task<(HttpStatusCode, IDataResult<Order>)> LookupAsync(string orderNo, string phone, CancellationToken cancellationToken = default)
+    {
+        var number = orderNo.Trim().ToUpperInvariant();
+        var order = PhoneRules.TryNormalize(phone, out var normalized)
+            ? await _orderDal.GetAsync(o => o.OrderNo == number && o.Phone == normalized, cancellationToken)
+            : null;
+
+        return order is null
+            ? (HttpStatusCode.NotFound, new ErrorDataResult<Order>("Bu sipariş numarası ve telefonla eşleşen sipariş bulunamadı."))
+            : (HttpStatusCode.OK, new SuccessDataResult<Order>(order));
+    }
+
     public async Task<(HttpStatusCode, IDataResult<List<Order>>)> SearchAsync(OrderStatus? status, string? query, CancellationToken cancellationToken = default)
     {
         var orders = await _orderDal.GetListAsync(

@@ -4,16 +4,25 @@ namespace HerYerde.Business.Rules;
 
 public static class OrderRules
 {
+    /// <summary>Müşteriye gösterilen sıra; iptal bu çizginin dışındadır.</summary>
+    public static readonly IReadOnlyList<OrderStatus> Progress =
+        [OrderStatus.Beklemede, OrderStatus.Onaylandi, OrderStatus.Hazirlaniyor, OrderStatus.Kargoda, OrderStatus.TeslimEdildi];
+
     /// <summary>Durum tek yönlü ilerler: aşama atlanmaz, geri dönülmez; iptal yalnız daha hiçbir işlem
     /// başlamamışken (Beklemede) yapılır.</summary>
     public static bool CanTransition(OrderStatus from, OrderStatus to) => (from, to) switch
     {
         (OrderStatus.Beklemede, OrderStatus.Onaylandi) => true,
-        (OrderStatus.Onaylandi, OrderStatus.Kargoda) => true,
+        (OrderStatus.Onaylandi, OrderStatus.Hazirlaniyor) => true,
+        (OrderStatus.Hazirlaniyor, OrderStatus.Kargoda) => true,
         (OrderStatus.Kargoda, OrderStatus.TeslimEdildi) => true,
         (OrderStatus.Beklemede, OrderStatus.IptalEdildi) => true,
         _ => false
     };
+
+    /// <summary>Çizgideki bir sonraki durum; son adımda ya da iptalde null.</summary>
+    public static OrderStatus? Next(OrderStatus status)
+        => Progress.ToList().IndexOf(status) is var index && index >= 0 && index < Progress.Count - 1 ? Progress[index + 1] : null;
 
     /// <summary>Kişisel veri yalnız sipariş kapandıktan sonra (teslim ya da iptal) anonimleştirilir; açık siparişte
     /// teyit ve teslimat için gerekir.</summary>

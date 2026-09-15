@@ -175,6 +175,7 @@
     private static string NextLabel(OrderStatus next) => next switch
     {
         OrderStatus.Onaylandi => "Siparişi onayla",
+        OrderStatus.Hazirlaniyor => "Hazırlamaya başladım",
         OrderStatus.Kargoda => "Kargoya verdim",
         _ => "Teslim edildi olarak işaretle"
     };

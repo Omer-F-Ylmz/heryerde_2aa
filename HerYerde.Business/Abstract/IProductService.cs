@@ -19,8 +19,8 @@ public interface IProductService
     /// <summary>Ana sayfa hero'su: kampanyası süren, en yakın biten ürün; yoksa null.</summary>
     Task<(HttpStatusCode, IDataResult<ProductListItem?>)> GetCampaignHeroAsync(DateTime now, CancellationToken cancellationToken = default);
 
-    /// <summary>Vitrin ürün sayfası: yayındaki ürünü slug'ıyla tek sorguda getirir.</summary>
-    Task<(HttpStatusCode, IDataResult<Product>)> GetActiveBySlugAsync(string slug, CancellationToken cancellationToken = default);
+    /// <summary>Vitrin ürün sayfası: yayındaki ürünü varyantlarıyla birlikte slug'ıyla tek sorguda getirir.</summary>
+    Task<(HttpStatusCode, IDataResult<ProductDetail>)> GetActiveBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IDataResult<Product>)> AddAsync(Product product, CancellationToken cancellationToken = default);
 
@@ -35,7 +35,15 @@ public interface IProductService
     /// <summary>Yönetim listesi: ürün kimliği başına varyant stok toplamı, tek sorguda.</summary>
     Task<(HttpStatusCode, IDataResult<Dictionary<int, int>>)> GetStockTotalsAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Ev ürününde beden/renk boş kalmak zorunda.</summary>
+    /// <summary>Yönetim düşük stok listesi: stoğu eşiğe (dahil) inmiş ürün ve varyantlar.</summary>
+    Task<(HttpStatusCode, IDataResult<List<LowStockRow>>)> GetLowStockAsync(int threshold, CancellationToken cancellationToken = default);
+
+    Task<(HttpStatusCode, IDataResult<int>)> CountLowStockAsync(int threshold, CancellationToken cancellationToken = default);
+
+    /// <summary>Eski slug'ın bugün yayındaki ürününün slug'ı (301 için); yoksa 404.</summary>
+    Task<(HttpStatusCode, IDataResult<string>)> GetCurrentSlugAsync(string oldSlug, CancellationToken cancellationToken = default);
+
+    /// <summary>Varyant her iki alanda (Giyim, Ev) serbesttir; ürün stoğu doluyken varyant eklenmez.</summary>
     Task<(HttpStatusCode, IResult)> AddVariantAsync(ProductVariant variant, CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IResult)> UpdateStockAsync(int variantId, int stock, CancellationToken cancellationToken = default);

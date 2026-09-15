@@ -7,7 +7,8 @@ public sealed class OrderRulesTests
 {
     [Theory]
     [InlineData(OrderStatus.Beklemede, OrderStatus.Onaylandi)]
-    [InlineData(OrderStatus.Onaylandi, OrderStatus.Kargoda)]
+    [InlineData(OrderStatus.Onaylandi, OrderStatus.Hazirlaniyor)]
+    [InlineData(OrderStatus.Hazirlaniyor, OrderStatus.Kargoda)]
     [InlineData(OrderStatus.Kargoda, OrderStatus.TeslimEdildi)]
     public void Durum_bir_sonraki_asamaya_gecebilir(OrderStatus from, OrderStatus to)
         => Assert.True(OrderRules.CanTransition(from, to));
@@ -17,6 +18,7 @@ public sealed class OrderRulesTests
     [InlineData(OrderStatus.Kargoda, OrderStatus.Onaylandi)]
     [InlineData(OrderStatus.TeslimEdildi, OrderStatus.Kargoda)]
     [InlineData(OrderStatus.Beklemede, OrderStatus.Kargoda)]
+    [InlineData(OrderStatus.Onaylandi, OrderStatus.Kargoda)]
     public void Geri_veya_asama_atlayan_gecis_reddedilir(OrderStatus from, OrderStatus to)
         => Assert.False(OrderRules.CanTransition(from, to));
 

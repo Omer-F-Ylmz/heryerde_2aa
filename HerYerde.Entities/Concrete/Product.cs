@@ -26,8 +26,14 @@ public class Product : IEntity
     /// <summary>Hediye adedi; en az 1.</summary>
     public int GiftQty { get; set; } = 1;
 
-    /// <summary>Ev ürününde adet takibi. NULL = takip yok; Giyim'de daima NULL, stok varyantta durur.</summary>
+    /// <summary>Varyantsız ürünün adet takibi. NULL = takip yok; varyantlı üründe (Giyim daima) NULL, stok varyantta durur.</summary>
     public int? Stock { get; set; }
+
+    /// <summary>Varyantın birinci ekseninin (ProductVariant.Size) vitrindeki adı, ör. "Beden", "Boy"; boşsa "Beden".</summary>
+    public string? VariantAxis1Label { get; set; }
+
+    /// <summary>İkinci eksenin (ProductVariant.Color) adı, ör. "Renk", "Desen"; boşsa "Renk".</summary>
+    public string? VariantAxis2Label { get; set; }
 
     /// <summary>Serbest metin ölçü (ör. "70x70 cm"); yalnız ürün detayında "Ölçü" satırı olarak görünür.</summary>
     public string? Dimensions { get; set; }

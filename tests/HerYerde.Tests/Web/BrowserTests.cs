@@ -53,6 +53,34 @@ public sealed class BrowserTests : IAsyncLifetime
         Assert.Equal(390, await page.EvaluateExpressionAsync<int>("document.documentElement.scrollWidth"));
     }
 
+    /// <summary>D10 A3: varyantlı üründe "Son N adet" rozeti seçili varyantın stoğunu izler.</summary>
+    [Fact]
+    public async Task Varyant_secince_son_adet_rozeti_degisir()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            var productId = await TestData.AddHomeProductAsync(context, "Keten Örtü", "keten-ortu");
+            context.ProductVariants.AddRange(
+                new HerYerde.Entities.Concrete.ProductVariant { ProductId = productId, Color = "Bej", Sku = "KO-BEJ", Stock = 2 },
+                new HerYerde.Entities.Concrete.ProductVariant { ProductId = productId, Color = "Gri", Sku = "KO-GRI", Stock = 9 });
+            await context.SaveChangesAsync();
+        }
+
+        await using var page = await _browser.NewPageAsync();
+        await page.GoToAsync(_baseUrl + "/urun/keten-ortu", WaitUntilNavigation.Networkidle0);
+        const string badge = "(() => { const b = document.querySelector('[data-low-stock]'); return b && !b.hidden ? b.textContent.trim() : ''; })()";
+
+        var before = await page.EvaluateExpressionAsync<string>(badge);
+        await page.ClickAsync("label[for=color-bej]");
+        var low = await page.EvaluateExpressionAsync<string>(badge);
+        await page.ClickAsync("label[for=color-gri]");
+        var plenty = await page.EvaluateExpressionAsync<string>(badge);
+
+        Assert.Equal("", before);
+        Assert.Equal("Son 2 adet", low);
+        Assert.Equal("", plenty);
+    }
+
     [Fact]
     public async Task Urun_sayfasindaki_json_ld_ayrisir_ve_script_csp_ihlali_uretmez()
     {

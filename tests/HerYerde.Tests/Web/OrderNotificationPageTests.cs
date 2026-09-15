@@ -63,6 +63,7 @@ public sealed class OrderNotificationPageTests : IAsyncLifetime
         var admin = await _factory.CreateSignedInClientAsync();
 
         await Advance(admin, order.Id, OrderStatus.Onaylandi);
+        await Advance(admin, order.Id, OrderStatus.Hazirlaniyor);
         var shipped = await Advance(admin, order.Id, OrderStatus.Kargoda, TestData.Carrier, "1234567890");
         Assert.Equal(HttpStatusCode.Found, shipped.StatusCode);
 
@@ -82,11 +83,12 @@ public sealed class OrderNotificationPageTests : IAsyncLifetime
         var order = await PlaceOrderAsync(context);
         var admin = await _factory.CreateSignedInClientAsync();
         await Advance(admin, order.Id, OrderStatus.Onaylandi);
+        await Advance(admin, order.Id, OrderStatus.Hazirlaniyor);
 
         var response = await Advance(admin, order.Id, OrderStatus.Kargoda);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal(OrderStatus.Onaylandi, (await new EfOrderDal(context).GetAsync(o => o.Id == order.Id))!.Status);
+        Assert.Equal(OrderStatus.Hazirlaniyor, (await new EfOrderDal(context).GetAsync(o => o.Id == order.Id))!.Status);
     }
 
     [Fact]

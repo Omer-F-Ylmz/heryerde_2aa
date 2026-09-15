@@ -25,7 +25,7 @@
     <p class="form-alert" role="alert">@Model.ErrorMessage</p>
 }
 
-<form class="form-card surface-elevated" method="post" asp-area="Admin" asp-controller="Categories" asp-action="@(isEdit ? "Edit" : "Create")">
+<form class="form-card surface-elevated" method="post" enctype="multipart/form-data" asp-area="Admin" asp-controller="Categories" asp-action="@(isEdit ? "Edit" : "Create")">
     <input type="hidden" asp-for="Id" />
     <input type="hidden" asp-for="IsRoot" />
 
@@ -60,6 +60,19 @@
             <span class="field__error" asp-validation-for="SortOrder"></span>
         </div>
     </div>
+
+    @if (isEdit)
+    {
+        <div class="field">
+            <label class="field__label" asp-for="Image"></label>
+            @if (Model.ImageUrl is { } current)
+            {
+                <img class="category-preview" src="@current" alt="" width="320" height="180" />
+            }
+            <input class="field__input field__input--file" asp-for="Image" type="file" accept="image/jpeg,image/png,image/webp" />
+            <span class="field__hint">jpg, png ya da webp, en çok 8 MB. Ortadan kırpılarak 16:9 (bant, kapı kartı) ve kare (sekme) kesit üretilir; yenisi eskisinin yerine geçer.</span>
+        </div>
+    }
 
     <label class="switch">
         <input asp-for="IsActive" type="checkbox" />

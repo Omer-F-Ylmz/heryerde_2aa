@@ -53,11 +53,31 @@
 <section class="container" aria-label="Alanlar">
     <div class="doors">
         <a class="door door--active" href="/ev">
+            <span class="door__media">
+                @if (Model.EvImage is { } evImage)
+                {
+                    <img src="@evImage" alt="" width="1200" height="675" loading="lazy" />
+                }
+                else
+                {
+                    <span class="ph ph--pot"></span>
+                }
+            </span>
             <p class="eyebrow">Açık</p>
             <h2 class="display-2">Ev</h2>
             <p>Tencere-tava, yemek takımı, çatal-kaşık, saklama, sepet, küçük ev aletleri.</p>
         </a>
         <a class="door door--active" href="/ortu">
+            <span class="door__media">
+                @if (Model.OrtuImage is { } ortuImage)
+                {
+                    <img src="@ortuImage" alt="" width="1200" height="675" loading="lazy" />
+                }
+                else
+                {
+                    <span class="ph ph--scarf"></span>
+                }
+            </span>
             <p class="eyebrow">Açık</p>
             <h2 class="display-2">Örtü &amp; Eşarp</h2>
             <p>Eşarp, başörtüsü, şal, namaz örtüsü; renk ve desen seçimiyle.</p>

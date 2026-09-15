@@ -21,6 +21,24 @@ public interface IProductImageStorage
 
     /// <summary>Adresin ait olduğu üç dosyayı da siler; depo dışındaki adresler sessizce atlanır.</summary>
     void Delete(string url);
+
+    /// <summary>Kategori görseli: ortadan kırpılmış 16:9 (1200×675) ve 1:1 (800×800) webp; 16:9 adresini döner.</summary>
+    Task<string> SaveCategoryAsync(int categoryId, Stream content, CancellationToken cancellationToken = default);
+
+    /// <summary>Kategori görselinin iki kesitini siler; depo biçiminde olmayan adres atlanır.</summary>
+    void DeleteCategory(string url);
+}
+
+/// <summary>Kategori görseli adresleri: kayıtta 16:9 kesit tutulur, kare kesit aynı addan türetilir.</summary>
+public static class CategoryImages
+{
+    public const string WideSuffix = "-16x9.webp";
+    public const string SquareSuffix = "-1x1.webp";
+
+    public static string? Square(string? wideUrl)
+        => wideUrl is not null && wideUrl.EndsWith(WideSuffix, StringComparison.Ordinal)
+            ? wideUrl[..^WideSuffix.Length] + SquareSuffix
+            : wideUrl;
 }
 
 public sealed partial class ProductImageStorage : IProductImageStorage
@@ -79,6 +97,37 @@ public sealed partial class ProductImageStorage : IProductImageStorage
         {
             File.Delete(Path.Combine(directory, $"{match.Groups[2].Value}-{width}.webp"));
         }
+    }
+
+    public async Task<string> SaveCategoryAsync(int categoryId, Stream content, CancellationToken cancellationToken = default)
+    {
+        using var source = await Image.LoadAsync<Rgba32>(content, cancellationToken);
+        var id = categoryId.ToString(CultureInfo.InvariantCulture);
+        var directory = Path.Combine(UploadsPath, "categories", id);
+        var name = Guid.NewGuid().ToString("n");
+        Directory.CreateDirectory(directory);
+
+        foreach (var (size, suffix) in new[] { (new Size(1200, 675), CategoryImages.WideSuffix), (new Size(800, 800), CategoryImages.SquareSuffix) })
+        {
+            // Kategori görseli bant/kart zemini olarak kullanılır: dolgu değil ortadan kırpma.
+            using var cut = source.Clone(context => context.Resize(new ResizeOptions { Size = size, Mode = ResizeMode.Crop }));
+            await cut.SaveAsync(Path.Combine(directory, name + suffix), new WebpEncoder { Quality = 82 }, cancellationToken);
+        }
+
+        return $"/uploads/categories/{id}/{name}{CategoryImages.WideSuffix}";
+    }
+
+    public void DeleteCategory(string url)
+    {
+        var match = CategoryUrl().Match(url);
+        if (!match.Success)
+        {
+            return;
+        }
+
+        var directory = Path.Combine(UploadsPath, "categories", match.Groups[1].Value);
+        File.Delete(Path.Combine(directory, match.Groups[2].Value + CategoryImages.WideSuffix));
+        File.Delete(Path.Combine(directory, match.Groups[2].Value + CategoryImages.SquareSuffix));
     }
 
     /// <summary>Kare doldurma rengi: kaynağın dört kenarındaki piksellerin kanal bazlı medyanı.
@@ -145,4 +194,7 @@ public sealed partial class ProductImageStorage : IProductImageStorage
     /// <summary>Yalnız depo biçimindeki adres silinebilir; klasör ve dosya adı sunucunun ürettiği biçimde olmalı.</summary>
     [GeneratedRegex(@"^/uploads/products/(\d+)/([0-9a-f]{32})-\d+\.webp$")]
     private static partial Regex UploadedUrl();
+
+    [GeneratedRegex(@"^/uploads/categories/(\d+)/([0-9a-f]{32})-16x9\.webp$")]
+    private static partial Regex CategoryUrl();
 }

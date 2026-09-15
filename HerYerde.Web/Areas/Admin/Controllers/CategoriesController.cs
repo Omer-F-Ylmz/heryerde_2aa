@@ -18,12 +18,18 @@ public class CategoriesController : Controller
     private readonly ICategoryService _categoryService;
     private readonly IProductService _productService;
     private readonly IAdminAuditService _auditService;
+    private readonly IProductImageStorage _imageStorage;
 
-    public CategoriesController(ICategoryService categoryService, IProductService productService, IAdminAuditService auditService)
+    public CategoriesController(
+        ICategoryService categoryService,
+        IProductService productService,
+        IAdminAuditService auditService,
+        IProductImageStorage imageStorage)
     {
         _categoryService = categoryService;
         _productService = productService;
         _auditService = auditService;
+        _imageStorage = imageStorage;
     }
 
     [HttpGet]
@@ -84,6 +90,7 @@ public class CategoriesController : Controller
             SortOrder = category.SortOrder,
             IsActive = category.IsActive,
             IsRoot = CategoryRules.IsRoot(category),
+            ImageUrl = category.ImageUrl,
             Parents = await RootsAsync(category.Id, cancellationToken)
         });
     }
@@ -95,6 +102,15 @@ public class CategoriesController : Controller
         if (!ModelState.IsValid)
         {
             model.Parents = await RootsAsync(model.Id, cancellationToken);
+            return View("Form", model);
+        }
+
+        // Görsel içerikten doğrulanır; geçersizse kategori alanları da yazılmaz.
+        if (model.Image is { } image && await ImageFile.ProblemAsync(image, cancellationToken) is { } problem)
+        {
+            model.Parents = await RootsAsync(model.Id, cancellationToken);
+            model.ErrorMessage = problem;
+            Response.StatusCode = StatusCodes.Status400BadRequest;
             return View("Form", model);
         }
 
@@ -110,6 +126,19 @@ public class CategoriesController : Controller
         if (status == HttpStatusCode.OK)
         {
             await _auditService.WriteAsync(HttpContext, "güncelle", Entity, model.Id);
+            if (model.Image is { } upload)
+            {
+                await using var content = upload.OpenReadStream();
+                var url = await _imageStorage.SaveCategoryAsync(model.Id, content, cancellationToken);
+                var (_, previous) = await _categoryService.SetImageAsync(model.Id, url, cancellationToken);
+                if (previous.Data is { } old)
+                {
+                    _imageStorage.DeleteCategory(old);
+                }
+
+                await _auditService.WriteAsync(HttpContext, "görsel ekle", Entity, model.Id);
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

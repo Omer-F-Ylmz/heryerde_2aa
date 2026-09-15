@@ -36,6 +36,9 @@ document.querySelectorAll(".tabs--scroll [aria-current=page]").forEach(function 
   var field = form.querySelector("[data-variant-id]");
   var button = form.querySelector("[data-add-button]");
   var hint = document.querySelector("[data-add-hint]");
+  var pickText = hint ? hint.getAttribute("data-pick-text") : "";
+  var lowStock = document.querySelector("[data-low-stock][data-low-stock-at]");
+  var lowStockAt = lowStock ? Number(lowStock.getAttribute("data-low-stock-at")) : 0;
   var needsSize = options.some(function (o) { return o.Size; });
   var needsColor = options.some(function (o) { return o.Color; });
 
@@ -57,7 +60,13 @@ document.querySelectorAll(".tabs--scroll [aria-current=page]").forEach(function 
     if (hint) {
       hint.textContent = ok
         ? "Stokta " + match.Stock + " adet var."
-        : (match ? "Bu seçim tükendi." : (needsSize ? "Sepete eklemek için beden ve renk seçin." : "Sepete eklemek için renk seçin."));
+        : (match ? "Bu seçim tükendi." : pickText);
+    }
+    // "Son N adet" rozeti seçili varyantın stoğunu izler; eşik üstünde ya da seçim yokken gizli.
+    if (lowStock) {
+      var low = ok && match.Stock <= lowStockAt;
+      lowStock.textContent = low ? "Son " + match.Stock + " adet" : "";
+      lowStock.hidden = !low;
     }
   };
 

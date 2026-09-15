@@ -23,6 +23,7 @@ public class HerYerdeContext : DbContext
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
+    public DbSet<SlugHistory> SlugHistories => Set<SlugHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +40,7 @@ public class HerYerdeContext : DbContext
             e.Property(c => c.ParentId).HasColumnName("parent_id");
             e.Property(c => c.SortOrder).HasColumnName("sort_order");
             e.Property(c => c.IsActive).HasColumnName("is_active");
+            e.Property(c => c.ImageUrl).HasColumnName("image_url").HasMaxLength(300);
             e.HasIndex(c => c.Slug).IsUnique().HasDatabaseName("ux_category_slug");
             e.HasOne<Category>().WithMany().HasForeignKey(c => c.ParentId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -67,6 +69,8 @@ public class HerYerdeContext : DbContext
             e.Property(p => p.CampaignPrice).HasColumnName("campaign_price").HasPrecision(18, 2);
             e.Property(p => p.CampaignLabel).HasColumnName("campaign_label").HasMaxLength(40);
             e.Property(p => p.Dimensions).HasColumnName("dimensions").HasMaxLength(60);
+            e.Property(p => p.VariantAxis1Label).HasColumnName("variant_axis1_label").HasMaxLength(30);
+            e.Property(p => p.VariantAxis2Label).HasColumnName("variant_axis2_label").HasMaxLength(30);
             e.Property(p => p.CampaignEndsAt).HasColumnName("campaign_ends_at");
             e.Property(p => p.GiftMode).HasColumnName("gift_mode").HasConversion<int>();
             e.Property(p => p.GiftProductId).HasColumnName("gift_product_id");
@@ -234,6 +238,18 @@ public class HerYerdeContext : DbContext
             e.Property(m => m.SentAt).HasColumnName("sent_at");
             // Dağıtım turu: yalnız bekleyen ve sırası gelmiş kayıtlar okunur.
             e.HasIndex(m => new { m.Status, m.NextTryAt }).HasDatabaseName("ix_outbox_message_status_next_try_at");
+        });
+
+        modelBuilder.Entity<SlugHistory>(e =>
+        {
+            e.ToTable("slug_history");
+            e.HasKey(h => h.Id);
+            e.Property(h => h.Id).HasColumnName("id");
+            e.Property(h => h.EntityType).HasColumnName("entity_type").HasMaxLength(20).IsRequired();
+            e.Property(h => h.EntityId).HasColumnName("entity_id");
+            e.Property(h => h.OldSlug).HasColumnName("old_slug").HasMaxLength(220).IsRequired();
+            e.Property(h => h.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(h => new { h.EntityType, h.OldSlug }).IsUnique().HasDatabaseName("ux_slug_history_entity_type_old_slug");
         });
 
         modelBuilder.Entity<ContactMessage>(e =>

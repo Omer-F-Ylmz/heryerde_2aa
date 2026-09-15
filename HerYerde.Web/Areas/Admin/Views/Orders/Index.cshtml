@@ -18,7 +18,7 @@
         <label class="field__label" for="durum">Durum</label>
         <select class="field__input" id="durum" name="durum">
             <option value="">Tümü</option>
-            @foreach (var status in Enum.GetValues<OrderStatus>())
+            @foreach (var status in HerYerde.Business.Rules.OrderRules.Progress.Append(OrderStatus.IptalEdildi))
             {
                 <option value="@((int)status)" selected="@(Model.Status == status)">@OrderLabels.For(status)</option>
             }

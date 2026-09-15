@@ -108,6 +108,7 @@ public static class TestData
         new EfProductVariantDal(context),
         new EfProductImageDal(context),
         new EfCategoryDal(context),
+        new EfSlugHistoryDal(context),
         new EfUnitOfWork(context));
 
     public static OrderManager NewOrderManager(

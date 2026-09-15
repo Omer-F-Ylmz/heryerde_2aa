@@ -40,8 +40,8 @@
             <h2 class="heading-3" id="variants-heading">Varyantlar</h2>
             <p class="side-card__note">
                 @(Model.RequiresVariants
-                    ? "Giyim alanı: beden ve renk girin, stok kodu benzersizdir."
-                    : "Ev alanı: beden ve renk boş kalır, yalnız stok kodu ve adet.")
+                    ? "Giyim alanı: en az bir varyant gerekir; stok kodu benzersizdir."
+                    : "Ev alanı: varyant isteğe bağlı. Varyant eklenirse stok varyantlarda tutulur, ürün stoğu boş kalır.")
             </p>
 
             @if (Model.Variants.Count == 0)
@@ -77,19 +77,16 @@
 
             <form class="side-card__form" asp-area="Admin" asp-controller="Products" asp-action="AddVariant" method="post">
                 <input type="hidden" name="ProductId" value="@Model.Id" />
-                @if (Model.RequiresVariants)
-                {
-                    <div class="field-row">
-                        <div class="field">
-                            <label class="field__label" for="variant-size">Beden</label>
-                            <input class="field__input" id="variant-size" name="Size" autocomplete="off" />
-                        </div>
-                        <div class="field">
-                            <label class="field__label" for="variant-color">Renk</label>
-                            <input class="field__input" id="variant-color" name="Color" autocomplete="off" />
-                        </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label class="field__label" for="variant-size">@(Model.VariantAxis1Label ?? "Beden")</label>
+                        <input class="field__input" id="variant-size" name="Size" maxlength="16" autocomplete="off" />
                     </div>
-                }
+                    <div class="field">
+                        <label class="field__label" for="variant-color">@(Model.VariantAxis2Label ?? "Renk")</label>
+                        <input class="field__input" id="variant-color" name="Color" maxlength="60" autocomplete="off" />
+                    </div>
+                </div>
                 <div class="field-row">
                     <div class="field">
                         <label class="field__label" for="variant-sku">Stok kodu</label>

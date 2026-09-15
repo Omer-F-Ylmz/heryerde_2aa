@@ -62,21 +62,29 @@
             {
                 <partial name="Components/_Badge" model="badge" />
             }
+            @* "Son N adet": varyantsızda ürün stoğundan, varyantlıda seçilen varyanta göre site.js doldurur. *@
+            @if (Model.Picker.HasOptions)
+            {
+                <span class="tag tag--low" data-low-stock data-low-stock-at="@Shop.Value.LowStockBadgeAt" hidden></span>
+            }
+            else if (!Model.SoldOut && product.Stock is { } left && left <= Shop.Value.LowStockBadgeAt)
+            {
+                <span class="tag tag--low" data-low-stock>Son @left adet</span>
+            }
             <partial name="Components/_PriceBlock" model="new PriceBlockVm(product.Price, Model.CampaignActive ? product.CampaignPrice : null, true)" />
             @if (Model.CampaignActive && product.CampaignEndsAt is { } endsAt)
             {
                 <partial name="Components/_Countdown" model="endsAt" />
             }
-            @if (Model.IsClothing)
+            @if (Model.Picker.HasOptions)
             {
                 <partial name="Components/_VariantPicker" model="Model.Picker" />
-                <p class="product__desc">@product.Description</p>
             }
-            else
+            @if (!Model.IsClothing)
             {
                 <h2 class="heading-3">Set içeriği</h2>
-                <p class="product__desc">@product.Description</p>
             }
+            <p class="product__desc">@product.Description</p>
             @if (product.Dimensions is { } dimensions)
             {
                 <dl class="product__facts">
@@ -91,7 +99,7 @@
                     <input type="hidden" name="variantId" value="" data-variant-id />
                     <input type="hidden" name="quantity" value="1" />
                     <input type="hidden" name="donus" value="/sepet" />
-                    <button class="btn btn--cta btn--lg" type="submit" disabled="@(Model.IsClothing || Model.SoldOut)" data-add-button>
+                    <button class="btn btn--cta btn--lg" type="submit" disabled="@(Model.IsClothing || Model.Picker.HasOptions || Model.SoldOut)" data-add-button>
                         <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                         Sepete ekle
                     </button>
@@ -105,9 +113,10 @@
             {
                 <p class="field__hint">Bu ürün şimdilik tükendi. WhatsApp'tan yazarsanız geldiğinde haber veriyoruz.</p>
             }
-            else if (Model.IsClothing)
+            else if (Model.IsClothing || Model.Picker.HasOptions)
             {
-                <p class="field__hint" data-add-hint>@StoreCatalog.PickHint(Model.Picker)</p>
+                var pickHint = StoreCatalog.PickHint(Model.Picker);
+                <p class="field__hint" data-add-hint data-pick-text="@pickHint">@pickHint</p>
             }
         </div>
     </div>

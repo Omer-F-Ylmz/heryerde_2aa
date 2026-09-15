@@ -20,10 +20,11 @@ public sealed class ProductManagerTests : IAsyncLifetime
         new EfProductVariantDal(context),
         new EfProductImageDal(context),
         new EfCategoryDal(context),
+        new EfSlugHistoryDal(context),
         new EfUnitOfWork(context));
 
     [Fact]
-    public async Task Ev_urunune_bedenli_varyant_eklenmez()
+    public async Task Ev_urunune_bedenli_varyant_eklenir()
     {
         await using var context = TestDb.NewContext();
         var manager = NewManager(context);
@@ -37,9 +38,10 @@ public sealed class ProductManagerTests : IAsyncLifetime
             Stock = 4
         });
 
-        Assert.Equal(HttpStatusCode.BadRequest, status);
-        Assert.Contains("beden", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Empty(await new EfProductVariantDal(context).GetListAsync(v => v.ProductId == productId));
+        // D10: Ev'de varyant isteğe bağlı; beden/renk eksenleri serbest.
+        Assert.Equal(HttpStatusCode.Created, status);
+        Assert.True(result.Success);
+        Assert.Single(await new EfProductVariantDal(context).GetListAsync(v => v.ProductId == productId));
     }
 
     [Fact]

@@ -12,3 +12,4 @@ services:
       RateLimit__ThreeDsCallbackPerMinute: "100000"
       RateLimit__ContactPerMinute: "100000"
       RateLimit__ReviewPerDay: "100000"
+      RateLimit__OrderLookupPerMinute: "100000"

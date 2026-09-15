@@ -1,10 +1,13 @@
 @using HerYerde.Business.Abstract
 @inject IOrderService OrderService
+@inject IProductService ProductService
+@inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
 @{
     var signedIn = User.Identity?.IsAuthenticated == true;
     var section = ViewContext.RouteData.Values["controller"] as string;
-    // Rozet yalnız girişten sonra sorulur; çıkış ekranında veritabanına gidilmez.
+    // Rozetler yalnız girişten sonra sorulur; çıkış ekranında veritabanına gidilmez.
     var unseen = signedIn ? (await OrderService.UnseenCountAsync()).Item2.Data : 0;
+    var lowStock = signedIn ? (await ProductService.CountLowStockAsync(Shop.Value.LowStockAlertAt)).Item2.Data : 0;
 }
 <!DOCTYPE html>
 <html lang="tr">
@@ -47,6 +50,16 @@
                                 @unseen
                                 <span class="visually-hidden">okunmamış sipariş</span>
                             </span>
+                        }
+                    </a>
+                    <a class="admin-nav__link @(section == "Stock" ? "is-current" : null)"
+                       href="/admin/stok"
+                       aria-current="@(section == "Stock" ? "page" : null)">
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                        <span>Stok</span>
+                        @if (lowStock > 0)
+                        {
+                            <span class="admin-nav__count" data-low-stock-count>@lowStock<span class="visually-hidden"> düşük stok</span></span>
                         }
                     </a>
                     <a class="admin-nav__link @(section == "Categories" ? "is-current" : null)"

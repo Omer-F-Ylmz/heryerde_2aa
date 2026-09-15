@@ -1,0 +1,17 @@
+@using HerYerde.Business.Rules
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@model OrderStatus
+@* FRONT kiti: sipariş durum çizgisi. İptal edilmiş siparişte çizgi yok, yalnız rozet görünür. *@
+@if (Model != OrderStatus.IptalEdildi)
+{
+    var current = OrderRules.Progress.ToList().IndexOf(Model);
+    <ol class="status-steps" aria-label="Sipariş durumu">
+        @for (var i = 0; i < OrderRules.Progress.Count; i++)
+        {
+            var step = OrderRules.Progress[i];
+            var state = i < current ? " is-done" : i == current ? " is-current" : "";
+            <li class="status-steps__item@(state)" aria-current="@(i == current ? "step" : null)"><span class="status-steps__label">@(step == OrderStatus.Beklemede ? "Alındı" : OrderLabels.For(step))</span></li>
+        }
+    </ol>
+}

@@ -24,6 +24,7 @@ Prod'da değerler `docker-compose.prod.yml` üzerinden verilir; son sütun orada
 | Kargo firmaları ve takip adresi şablonu | [MÜŞTERİ] kargo anlaşması | `Shipping:Carriers` (`Name`, `TrackingUrl`; `{0}` takip numarası) | Evet | — (appsettings) |
 | Bedava kargo eşiği | [MÜŞTERİ] | `Shop:FreeShippingOver` (0 = eşik kapalı) | Evet (şu an geçici 2500) | — (appsettings) |
 | Kargo ücreti | [MÜŞTERİ] kargo anlaşması | `Shop:ShippingFee` | Evet | — (appsettings) |
+| "Son N adet" rozeti ve yönetim düşük stok eşiği | [MÜŞTERİ] | `Shop:LowStockBadgeAt` (vitrin, varsayılan 3), `Shop:LowStockAlertAt` (yönetim, varsayılan 5) | Hayır | — (appsettings) |
 | Havale/EFT IBAN | [MÜŞTERİ] bankası | `Shop__Iban` (env) | Evet | `HERYERDE_IBAN` |
 | WhatsApp sipariş numarası | [MÜŞTERİ] | `Shop:WhatsApp` | Evet | — (appsettings) |
 | İyzico API anahtarı | [MÜŞTERİ] İyzico üye iş yeri paneli (sandbox: sandbox-merchant.iyzipay.com) | `Iyzico__ApiKey` (env) | Evet | `HERYERDE_IYZICO_API_KEY` |

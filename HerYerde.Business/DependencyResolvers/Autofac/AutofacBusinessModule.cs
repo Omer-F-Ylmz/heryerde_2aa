@@ -27,6 +27,7 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfPaymentDal>().As<IPaymentDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfContactMessageDal>().As<IContactMessageDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductReviewDal>().As<IProductReviewDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfSlugHistoryDal>().As<ISlugHistoryDal>().InstancePerLifetimeScope();
 
         builder.RegisterType<AdminAuthManager>().As<IAdminAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<CategoryManager>().As<ICategoryService>().InstancePerLifetimeScope();

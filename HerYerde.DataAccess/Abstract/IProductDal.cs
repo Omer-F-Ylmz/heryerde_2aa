@@ -20,6 +20,15 @@ public interface IProductDal : IEntityRepository<Product>
     /// <summary>Yönetim listesi: ürün kimliği başına varyant stok toplamı, tek gruplu sorguda.</summary>
     Task<Dictionary<int, int>> GetStockTotalsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>Stoğu eşiğe (dahil) inmiş varyantsız ürünler ve varyantlar; stok takipsiz (NULL) ürün girmez.</summary>
+    Task<List<LowStockRow>> GetLowStockAsync(int threshold, CancellationToken cancellationToken = default);
+
+    /// <summary>Yayındaki ürün varyantlarıyla birlikte tek gidiş-dönüşte; yoksa null.</summary>
+    Task<(Product Product, List<ProductVariant> Variants)?> GetActiveWithVariantsBySlugAsync(string slug, CancellationToken cancellationToken = default);
+
+    /// <summary>GetLowStockAsync satır sayısı, tek sorguda (yönetim menüsündeki sayaç her sayfada çalışır).</summary>
+    Task<int> CountLowStockAsync(int threshold, CancellationToken cancellationToken = default);
+
     /// <summary>Slug benzersizliği soft-delete süzgecini yok sayar: silinen ürünün slug'ı da doludur.</summary>
     Task<bool> SlugTakenAsync(string slug, int excludedId, CancellationToken cancellationToken = default);
 

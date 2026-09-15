@@ -23,10 +23,10 @@ public sealed class PerfQueryTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    /// <summary>Kampanya, yeni gelenler, görseller ve (D9) onaylı yorum alıntıları: dört sorgu.</summary>
+    /// <summary>Kampanya, yeni gelenler, görseller ve (D9) onaylı yorum alıntıları, (D10) kapı kartı görselleri için kategoriler: beş sorgu.</summary>
     [Fact]
-    public async Task Ana_sayfa_en_cok_dort_sorgu_atar()
-        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/"), 1, 4);
+    public async Task Ana_sayfa_en_cok_bes_sorgu_atar()
+        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/"), 1, 5);
 
     [Fact]
     public async Task Ev_listesi_en_cok_uc_sorgu_atar()
@@ -40,12 +40,12 @@ public sealed class PerfQueryTests : IAsyncLifetime
     public async Task Urun_sayfasi_en_cok_bes_sorgu_atar()
         => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/urun/granit-dokum-tencere-seti"), 1, 5);
 
-    /// <summary>Üç liste sorgusu + G12 parola damgası kontrolü + D6 okunmamış sipariş sayacı.</summary>
+    /// <summary>Üç liste sorgusu + G12 parola damgası kontrolü + D6 okunmamış sipariş sayacı + D10 düşük stok sayacı (tek SQL).</summary>
     [Fact]
-    public async Task Yonetim_urun_listesi_en_cok_bes_sorgu_atar()
+    public async Task Yonetim_urun_listesi_en_cok_alti_sorgu_atar()
     {
         var client = await _factory.CreateSignedInClientAsync();
-        Assert.InRange(await _factory.QueryCountAsync(client, "/admin/products"), 1, 5);
+        Assert.InRange(await _factory.QueryCountAsync(client, "/admin/products"), 1, 6);
     }
 
     [Fact]

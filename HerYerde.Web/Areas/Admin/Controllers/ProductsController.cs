@@ -273,6 +273,8 @@ public class ProductsController : Controller
         GiftProductId = model.GiftProductId,
         GiftQty = model.GiftQty,
         Stock = model.Stock,
+        VariantAxis1Label = model.VariantAxis1Label,
+        VariantAxis2Label = model.VariantAxis2Label,
         IsActive = model.IsActive
     };
 
@@ -316,6 +318,8 @@ public class ProductsController : Controller
             GiftProductId = product.GiftProductId,
             GiftQty = product.GiftQty,
             Stock = product.Stock,
+            VariantAxis1Label = product.VariantAxis1Label,
+            VariantAxis2Label = product.VariantAxis2Label,
             IsActive = product.IsActive,
             Slug = product.Slug,
             ErrorMessage = errorMessage

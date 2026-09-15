@@ -123,17 +123,26 @@ public static class StoreCatalog
         };
     }
 
-    /// <summary>Beden boyutu yoksa (örtü/eşarp) yalnız renk/desen seçilir; ipucu metni buna göre.</summary>
+    /// <summary>Seçim ipucu eksen adlarıyla: birinci eksen yoksa (örtü/eşarp) yalnız ikincisi istenir.</summary>
     public static string PickHint(VariantPickerVm picker)
-        => picker.Sizes.Count == 0 ? "Sepete eklemek için renk seçin." : "Sepete eklemek için beden ve renk seçin.";
+    {
+        var culture = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+        var first = (picker.Axis1Label ?? "Beden").ToLower(culture);
+        var second = (picker.Axis2Label ?? "Renk").ToLower(culture);
+        return picker.Sizes.Count == 0
+            ? $"Sepete eklemek için {second} seçin."
+            : $"Sepete eklemek için {first} ve {second} seçin.";
+    }
 
-    public static VariantPickerVm Picker(IEnumerable<ProductVariant> variants)
+    public static VariantPickerVm Picker(IEnumerable<ProductVariant> variants, Product? product = null)
     {
         var list = variants.ToList();
         return new VariantPickerVm(
             Group(list, v => v.Size),
             Group(list, v => v.Color),
-            list.Select(v => new VariantOptionVm(v.Id, v.Size, v.Color, v.Stock)).ToList());
+            list.Select(v => new VariantOptionVm(v.Id, v.Size, v.Color, v.Stock)).ToList(),
+            product?.VariantAxis1Label,
+            product?.VariantAxis2Label);
 
         static List<VariantChipVm> Group(List<ProductVariant> list, Func<ProductVariant, string?> key)
             => list.Where(v => !string.IsNullOrWhiteSpace(key(v)))
@@ -166,7 +175,9 @@ public sealed record HomeVm(
     string? HeroPlaceholderIcon,
     string? HeroWhatsApp,
     IReadOnlyList<ProductCardVm> NewArrivals,
-    IReadOnlyList<TestimonialVm> Testimonials);
+    IReadOnlyList<TestimonialVm> Testimonials,
+    string? EvImage = null,
+    string? OrtuImage = null);
 
 /// <summary>RootName kırıntı üst başlığı; EmptyLink boş rafta önerilen başka kök (Örtü'de Ev).</summary>
 public sealed record CategoryPageVm(
@@ -178,7 +189,9 @@ public sealed record CategoryPageVm(
     PaginationVm Pagination,
     int Total,
     string RootName = "Ev",
-    CategoryTabVm? EmptyLink = null);
+    CategoryTabVm? EmptyLink = null,
+    string? BannerImage = null,
+    string? BannerIcon = null);
 
 /// <summary>Arama sonucu. Message doluysa (kısa terim) liste hiç sorgulanmaz.</summary>
 public sealed record SearchPageVm(

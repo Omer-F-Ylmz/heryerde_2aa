@@ -64,6 +64,13 @@ public sealed class CategoryFormViewModel
 
     public string Slug { get; set; } = string.Empty;
     public bool IsRoot { get; set; }
+
+    /// <summary>Yeni görsel (isteğe bağlı); yüklenince eskisi silinir.</summary>
+    [Display(Name = "Görsel")]
+    public IFormFile? Image { get; set; }
+
+    /// <summary>Kayıtlı 16:9 görsel; formda önizleme.</summary>
+    public string? ImageUrl { get; set; }
     public List<Category> Parents { get; set; } = [];
     public string? ErrorMessage { get; set; }
 }
@@ -116,6 +123,14 @@ public sealed class ProductFormViewModel
     [Display(Name = "Ölçü (isteğe bağlı)")]
     public string? Dimensions { get; set; }
 
+    [StringLength(30)]
+    [Display(Name = "1. eksen adı")]
+    public string? VariantAxis1Label { get; set; }
+
+    [StringLength(30)]
+    [Display(Name = "2. eksen adı")]
+    public string? VariantAxis2Label { get; set; }
+
     [Display(Name = "Stok (boş = takip yok)")]
     [Range(0, int.MaxValue, ErrorMessage = "Stok negatif olamaz.")]
     public int? Stock { get; set; }
@@ -135,7 +150,7 @@ public sealed class ProductFormViewModel
 
     public string Slug { get; set; } = string.Empty;
 
-    /// <summary>Giyim alanındaki ürün varyantsız yayına alınamaz; Ev alanında beden/renk boş kalır.</summary>
+    /// <summary>Giyim alanındaki ürün varyantsız yayına alınamaz; Ev alanında varyant isteğe bağlıdır.</summary>
     public bool RequiresVariants { get; set; }
 
     public List<Category> Categories { get; set; } = [];
@@ -224,13 +239,7 @@ public sealed class OrderDetailViewModel
         + OrderLabels.For(Detail.Order.Status) + ".");
 
     /// <summary>Sıralı akışta bir sonraki adım; yoksa (teslim/iptal) buton çıkmaz.</summary>
-    public OrderStatus? NextStatus => Detail.Order.Status switch
-    {
-        OrderStatus.Beklemede => OrderStatus.Onaylandi,
-        OrderStatus.Onaylandi => OrderStatus.Kargoda,
-        OrderStatus.Kargoda => OrderStatus.TeslimEdildi,
-        _ => null
-    };
+    public OrderStatus? NextStatus => HerYerde.Business.Rules.OrderRules.Next(Detail.Order.Status);
 
     public bool CanCancel => Detail.Order.Status == OrderStatus.Beklemede;
 

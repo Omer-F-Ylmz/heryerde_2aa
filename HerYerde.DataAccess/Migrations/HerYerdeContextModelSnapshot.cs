@@ -181,6 +181,11 @@ namespace HerYerde.DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("image_url");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
@@ -653,6 +658,16 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
+                    b.Property<string>("VariantAxis1Label")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("variant_axis1_label");
+
+                    b.Property<string>("VariantAxis2Label")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("variant_axis2_label");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GiftProductId");
@@ -823,6 +838,44 @@ namespace HerYerde.DataAccess.Migrations
                         {
                             t.HasCheckConstraint("ck_product_variant_stock", "[stock] >= 0");
                         });
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.SlugHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("int")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("OldSlug")
+                        .IsRequired()
+                        .HasMaxLength(220)
+                        .HasColumnType("nvarchar(220)")
+                        .HasColumnName("old_slug");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EntityType", "OldSlug")
+                        .IsUnique()
+                        .HasDatabaseName("ux_slug_history_entity_type_old_slug");
+
+                    b.ToTable("slug_history", (string)null);
                 });
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.CartItem", b =>

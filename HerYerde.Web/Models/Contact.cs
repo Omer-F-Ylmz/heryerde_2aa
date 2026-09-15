@@ -28,6 +28,21 @@ public sealed class ContactFormViewModel
     public string? Website { get; set; }
 }
 
+/// <summary>/siparis-sorgula formu. Telefon geri yazılmaz; hata mesajı tek biçimdir.</summary>
+public sealed class OrderLookupViewModel
+{
+    [StringLength(30)]
+    public string? OrderNo { get; set; }
+
+    [StringLength(30)]
+    public string? Phone { get; set; }
+
+    /// <summary>Bot tuzağı: dolu gelirse eşleşme aranmaz, yanlış bilgiyle aynı yanıt döner.</summary>
+    public string? Website { get; set; }
+
+    public string? ErrorMessage { get; set; }
+}
+
 public sealed record AboutPageVm(string WhatsAppUrl);
 
 /// <summary>Sent: gönderim alındı, form yerine teşekkür gösterilir.</summary>

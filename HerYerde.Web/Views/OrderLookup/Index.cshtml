@@ -1,0 +1,40 @@
+@using HerYerde.Web.Models
+@model OrderLookupViewModel
+@{
+    ViewData["Title"] = "Sipariş sorgula";
+    ViewData["Description"] = "Sipariş numaranız ve telefonunuzla siparişinizin durumunu ve kargo takibini görün.";
+    ViewData["Canonical"] = "/siparis-sorgula";
+}
+
+<div class="container section lookup">
+    <header class="lookup__head">
+        <p class="eyebrow">Sipariş sorgula</p>
+        <h1 class="display-2 h-mark">Siparişim nerede?</h1>
+        <p class="lead">Sipariş numaranızı ve siparişte yazdığınız telefonu girin; durumunu ve kargo takibini gösterelim.</p>
+    </header>
+
+    <form class="form-card surface-elevated lookup__form" method="post" action="/siparis-sorgula">
+        @Html.AntiForgeryToken()
+        @if (Model.ErrorMessage is not null)
+        {
+            <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+        }
+        <div class="field">
+            <label class="field__label" for="OrderNo">Sipariş numarası</label>
+            <input class="field__input" id="OrderNo" name="OrderNo" value="@Model.OrderNo" maxlength="30" autocomplete="off"
+                   placeholder="HY-20260915-0001" required />
+        </div>
+        <div class="field">
+            <label class="field__label" for="Phone">Telefon</label>
+            <input class="field__input" id="Phone" name="Phone" type="tel" maxlength="30" autocomplete="tel" inputmode="tel"
+                   placeholder="05XX XXX XX XX" required />
+            <span class="field__hint">Siparişte yazdığınız numaranın tamamı.</span>
+        </div>
+        @* Bot tuzağı: ekran dışında, sekmeyle ulaşılmaz; insan doldurmaz. *@
+        <div class="trap" aria-hidden="true">
+            <label for="Website">Bu alanı boş bırakın</label>
+            <input id="Website" name="Website" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+        <button class="btn btn--primary btn--lg" type="submit">Siparişimi göster</button>
+    </form>
+</div>

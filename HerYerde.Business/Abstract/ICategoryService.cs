@@ -14,4 +14,10 @@ public interface ICategoryService
     Task<(HttpStatusCode, IResult)> UpdateAsync(Category category, CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IResult)> DeleteAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>Kategori görselini değiştirir; eski adres (dosyası silinsin diye) veriyle döner.</summary>
+    Task<(HttpStatusCode, IDataResult<string?>)> SetImageAsync(int id, string? imageUrl, CancellationToken cancellationToken = default);
+
+    /// <summary>Eski slug'ın bugünkü kategorisi (301 için); yoksa 404.</summary>
+    Task<(HttpStatusCode, IDataResult<Category>)> GetByOldSlugAsync(string oldSlug, CancellationToken cancellationToken = default);
 }

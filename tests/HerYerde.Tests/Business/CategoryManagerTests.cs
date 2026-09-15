@@ -14,7 +14,7 @@ public sealed class CategoryManagerTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     private static CategoryManager NewManager(HerYerdeContext context)
-        => new(new EfCategoryDal(context), new EfProductDal(context), new EfUnitOfWork(context));
+        => new(new EfCategoryDal(context), new EfProductDal(context), new EfSlugHistoryDal(context), new EfUnitOfWork(context));
 
     [Fact]
     public async Task Slug_addan_uretilir_ve_cakisirsa_2_ekiyle_ayrisir()

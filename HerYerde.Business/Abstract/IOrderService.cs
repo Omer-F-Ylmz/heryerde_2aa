@@ -16,6 +16,10 @@ public interface IOrderService
 
     Task<(HttpStatusCode, IDataResult<OrderDetail>)> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
+    /// <summary>Müşterinin sipariş sorgulaması: numara ve tam telefon (tek biçime indirgenmiş) birlikte eşleşmeli.
+    /// Hangi alanın tutmadığı söylenmez; anonimleştirilmiş sipariş hiç bulunmaz.</summary>
+    Task<(HttpStatusCode, IDataResult<Order>)> LookupAsync(string orderNo, string phone, CancellationToken cancellationToken = default);
+
     /// <summary>Yönetim listesi: duruma göre süzer, sipariş numarası veya telefonla arar.</summary>
     Task<(HttpStatusCode, IDataResult<List<Order>>)> SearchAsync(OrderStatus? status, string? query, CancellationToken cancellationToken = default);
 

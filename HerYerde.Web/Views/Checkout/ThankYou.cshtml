@@ -20,6 +20,11 @@
         </div>
 
         <div class="thanks__card">
+            <h2 class="heading-3">Sipariş durumu</h2>
+            <partial name="Components/_StatusSteps" model="order.Status" />
+        </div>
+
+        <div class="thanks__card">
             <h2 class="heading-3">Sipariş özeti</h2>
             @foreach (var item in Model.Detail.Items)
             {

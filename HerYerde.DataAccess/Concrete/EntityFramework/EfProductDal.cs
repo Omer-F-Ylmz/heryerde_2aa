@@ -117,6 +117,42 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
         return rows.ToDictionary(r => r.ProductId, r => r.Stock);
     }
 
+    public async Task<List<LowStockRow>> GetLowStockAsync(int threshold, CancellationToken cancellationToken = default)
+    {
+        var products = await Context.Products
+            .AsNoTracking()
+            .Where(p => p.Stock != null && p.Stock <= threshold)
+            .Select(p => new LowStockRow(p.Id, p.Name, null, null, null, p.Stock!.Value))
+            .ToListAsync(cancellationToken);
+
+        var variants = await Context.ProductVariants
+            .AsNoTracking()
+            .Where(v => v.Stock <= threshold)
+            .Join(Context.Products, v => v.ProductId, p => p.Id, (v, p) => new LowStockRow(p.Id, p.Name, v.Sku, v.Size, v.Color, v.Stock))
+            .ToListAsync(cancellationToken);
+
+        return products.Concat(variants).OrderBy(r => r.Stock).ThenBy(r => r.ProductName).ToList();
+    }
+
+    public async Task<(Product Product, List<ProductVariant> Variants)?> GetActiveWithVariantsBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        var row = await Context.Products
+            .AsNoTracking()
+            .Where(p => p.Slug == slug && p.IsActive)
+            .Select(p => new { Product = p, Variants = Context.ProductVariants.Where(v => v.ProductId == p.Id).ToList() })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return row is null ? null : (row.Product, row.Variants);
+    }
+
+    public Task<int> CountLowStockAsync(int threshold, CancellationToken cancellationToken = default)
+        => Context.Database
+            .SqlQuery<int>($"""
+                SELECT (SELECT COUNT(*) FROM product WHERE deleted_at IS NULL AND stock IS NOT NULL AND stock <= {threshold})
+                     + (SELECT COUNT(*) FROM product_variant v JOIN product p ON p.id = v.product_id WHERE p.deleted_at IS NULL AND v.stock <= {threshold}) AS [Value]
+                """)
+            .SingleAsync(cancellationToken);
+
     public Task<bool> SlugTakenAsync(string slug, int excludedId, CancellationToken cancellationToken = default)
         => Context.Products
             .IgnoreQueryFilters()

@@ -2,7 +2,7 @@
 @if (Model.Sizes.Count > 0)
 {
     <fieldset class="chips">
-        <legend class="chips__legend">Beden</legend>
+        <legend class="chips__legend">@(Model.Axis1Label ?? "Beden")</legend>
         @foreach (var size in Model.Sizes)
         {
             var id = "size-" + size.Label.ToLowerInvariant().Replace(' ', '-');
@@ -13,10 +13,10 @@
 }
 @if (Model.Colors.Count > 0)
 {
-    // Beden yoksa (örtü/eşarp) tek boyut renk/desen: çipler tek satırda kayar.
+    // Birinci eksen yoksa (örtü/eşarp) tek boyut renk/desen: çipler tek satırda kayar.
     var colorOnly = Model.Sizes.Count == 0;
     <fieldset class="@(colorOnly ? "chips chips--row" : "chips")">
-        <legend class="chips__legend">@(colorOnly ? "Renk / desen" : "Renk")</legend>
+        <legend class="chips__legend">@(Model.Axis2Label ?? (colorOnly ? "Renk / desen" : "Renk"))</legend>
         <div class="@(colorOnly ? "chips__scroll" : "chips__group")">
         @foreach (var color in Model.Colors)
         {

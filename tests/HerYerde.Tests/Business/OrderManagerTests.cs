@@ -198,6 +198,7 @@ public sealed class OrderManagerTests : IAsyncLifetime
         var order = await PlaceAsync(context, quantity: 1);
 
         Assert.Equal(HttpStatusCode.OK, (await manager.ChangeStatusAsync(order.Id, OrderStatus.Onaylandi)).Item1);
+        Assert.Equal(HttpStatusCode.OK, (await manager.ChangeStatusAsync(order.Id, OrderStatus.Hazirlaniyor)).Item1);
         // D6: kargo adımı firma ve takip numarası ister.
         Assert.Equal(
             HttpStatusCode.OK,

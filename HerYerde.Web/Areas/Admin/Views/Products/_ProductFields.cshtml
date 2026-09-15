@@ -72,11 +72,35 @@
         <div class="field">
             <label class="field__label" asp-for="Stock"></label>
             <input class="field__input" asp-for="Stock" type="number" min="0" step="1" inputmode="numeric" />
-            <span class="field__hint">Boş bırakılırsa stok takibi yapılmaz; 0 yazılırsa vitrinde "Tükendi" görünür.</span>
+            @if (Model.Variants.Count > 0)
+            {
+                <span class="field__hint" data-variant-stock-warning>Bu ürün varyantlı: stok varyantlarda tutulur, bu alanı boş bırakın.</span>
+            }
+            else
+            {
+                <span class="field__hint">Boş bırakılırsa stok takibi yapılmaz; 0 yazılırsa vitrinde "Tükendi" görünür. Varyant eklenecekse boş bırakın.</span>
+            }
             <span class="field__error" asp-validation-for="Stock"></span>
         </div>
     </div>
 }
+
+<fieldset class="fieldset">
+    <legend class="fieldset__legend">Varyant eksenleri</legend>
+    <p class="fieldset__note">Vitrindeki seçici başlıkları; boş bırakılırsa Beden ve Renk yazılır (ör. Boy, Desen, Ölçü).</p>
+    <div class="field-row">
+        <div class="field">
+            <label class="field__label" asp-for="VariantAxis1Label"></label>
+            <input class="field__input" asp-for="VariantAxis1Label" autocomplete="off" placeholder="Beden" />
+            <span class="field__error" asp-validation-for="VariantAxis1Label"></span>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="VariantAxis2Label"></label>
+            <input class="field__input" asp-for="VariantAxis2Label" autocomplete="off" placeholder="Renk" />
+            <span class="field__error" asp-validation-for="VariantAxis2Label"></span>
+        </div>
+    </div>
+</fieldset>
 
 <fieldset class="fieldset">
     <legend class="fieldset__legend">1 alana 1 hediye</legend>

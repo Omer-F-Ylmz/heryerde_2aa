@@ -9,8 +9,22 @@
 }
 
 <div class="container section">
-    <p class="eyebrow">@Model.RootName</p>
-    <h1 class="display-2 h-mark">@Model.Title</h1>
+    <div class="category-band">
+        <div class="category-band__copy">
+            <p class="eyebrow">@Model.RootName</p>
+            <h1 class="display-2 h-mark">@Model.Title</h1>
+        </div>
+        <div class="category-band__media">
+            @if (Model.BannerImage is { } banner)
+            {
+                <img src="@banner" alt="" width="1200" height="675" />
+            }
+            else
+            {
+                <span class="ph@(Model.BannerIcon is null ? "" : " ph--" + Model.BannerIcon)"></span>
+            }
+        </div>
+    </div>
     <partial name="Components/_CategoryTabs" model="Model.Tabs" />
     <div class="listing-bar">
         <partial name="Components/_SortTabs" model="Model.Sort" />

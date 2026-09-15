@@ -31,6 +31,7 @@ public sealed class OrderShippingTests : IAsyncLifetime
         var manager = TestData.NewOrderManager(context);
         var order = await PlaceAsync(context);
         await manager.ChangeStatusAsync(order.Id, OrderStatus.Onaylandi);
+        await manager.ChangeStatusAsync(order.Id, OrderStatus.Hazirlaniyor);
 
         var (missingBoth, both) = await manager.ChangeStatusAsync(order.Id, OrderStatus.Kargoda);
         var (missingNo, _) = await manager.ChangeStatusAsync(order.Id, OrderStatus.Kargoda, TestData.Carrier);
@@ -38,7 +39,7 @@ public sealed class OrderShippingTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, missingBoth);
         Assert.Equal(HttpStatusCode.BadRequest, missingNo);
         Assert.Contains("takip", both.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(OrderStatus.Onaylandi, (await new EfOrderDal(context).GetAsync(o => o.Id == order.Id))!.Status);
+        Assert.Equal(OrderStatus.Hazirlaniyor, (await new EfOrderDal(context).GetAsync(o => o.Id == order.Id))!.Status);
     }
 
     [Fact]
@@ -48,6 +49,7 @@ public sealed class OrderShippingTests : IAsyncLifetime
         var manager = TestData.NewOrderManager(context);
         var order = await PlaceAsync(context);
         await manager.ChangeStatusAsync(order.Id, OrderStatus.Onaylandi);
+        await manager.ChangeStatusAsync(order.Id, OrderStatus.Hazirlaniyor);
 
         var (status, _) = await manager.ChangeStatusAsync(order.Id, OrderStatus.Kargoda, TestData.Carrier, "1234567890");
 

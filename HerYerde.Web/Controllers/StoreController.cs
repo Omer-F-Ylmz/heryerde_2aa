@@ -2,6 +2,7 @@ using HerYerde.Business.Abstract;
 using HerYerde.Business.Dtos;
 using HerYerde.DataAccess.Abstract;
 using HerYerde.Entities.Concrete;
+using HerYerde.Web.Infrastructure;
 using HerYerde.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -46,13 +47,19 @@ public class StoreController(
             ? reviews.Data!.Select(r => new TestimonialVm(r.Review.Name, r.Review.Comment, r.ProductName + " yorumu")).ToList()
             : TestimonialSource.Load();
 
+        // Kapı kartlarının görseli kök kategoriden.
+        var (_, categories) = await categoryService.GetAllAsync(cancellationToken);
+        string? RootImage(string rootSlug) => categories.Data!.FirstOrDefault(c => c.Slug == rootSlug && c.ParentId is null)?.ImageUrl;
+
         return View(new HomeVm(
             hero,
             heroImage,
             hero is null ? null : StoreCatalog.PlaceholderIcon(heroItem.Data!.CategorySlug),
             hero is null ? null : StoreCatalog.WhatsAppUrl(WhatsAppBase, hero.Name),
             Cards(arrivals.Data!.Items, images.Data!, now),
-            testimonials));
+            testimonials,
+            RootImage("ev"),
+            RootImage("giyim")));
     }
 
     [HttpGet("ev")]
@@ -102,7 +109,10 @@ public class StoreController(
             current = children.FirstOrDefault(c => c.Slug == slug);
             if (current is null)
             {
-                return NotFound();
+                var (moved, renamed) = await categoryService.GetByOldSlugAsync(slug, cancellationToken);
+                return moved == System.Net.HttpStatusCode.OK && children.Any(c => c.Id == renamed.Data!.Id)
+                    ? RedirectPermanent(StoreCatalog.Root(root.Slug, root.Name).Url + "/" + renamed.Data!.Slug + Request.QueryString)
+                    : NotFound();
             }
         }
 
@@ -128,7 +138,7 @@ public class StoreController(
         var (rootName, rootPath) = StoreCatalog.Root(root.Slug, root.Name);
         var baseUrl = current is null ? rootPath : rootPath + "/" + current.Slug;
         var tabs = new List<CategoryTabVm> { new("Tümü", rootPath, current is null) };
-        tabs.AddRange(children.Select(c => new CategoryTabVm(c.Name, rootPath + "/" + c.Slug, c.Id == current?.Id)));
+        tabs.AddRange(children.Select(c => new CategoryTabVm(c.Name, rootPath + "/" + c.Slug, c.Id == current?.Id, CategoryImages.Square(c.ImageUrl))));
 
         return View("Category", new CategoryPageVm(
             current?.Name ?? rootName,
@@ -144,7 +154,9 @@ public class StoreController(
             total,
             rootName,
             // Boş rafta öteki kök önerilir: Örtü'de Ev, Ev'de Örtü & Eşarp.
-            rootSlug == "giyim" ? new CategoryTabVm("Ev ürünlerine bak", "/ev", false) : new CategoryTabVm("Örtü & Eşarp'a bak", "/ortu", false)));
+            rootSlug == "giyim" ? new CategoryTabVm("Ev ürünlerine bak", "/ev", false) : new CategoryTabVm("Örtü & Eşarp'a bak", "/ortu", false),
+            current?.ImageUrl ?? root.ImageUrl,
+            StoreCatalog.PlaceholderIcon(current?.Slug)));
     }
 
     [HttpGet("ara")]
@@ -222,7 +234,9 @@ public class StoreController(
         var (status, found) = await productService.GetActiveBySlugAsync(slug, cancellationToken);
         if (status != System.Net.HttpStatusCode.OK)
         {
-            return NotFound();
+            // Adı değişmiş ürünün eski adresi kalıcı olarak yenisine gider (paylaşılmış bağlantı, arama motoru).
+            var (moved, current) = await productService.GetCurrentSlugAsync(slug, cancellationToken);
+            return moved == System.Net.HttpStatusCode.OK ? RedirectPermanent("/urun/" + current.Data) : NotFound();
         }
 
         return await ProductViewAsync(found.Data!, new ReviewFormViewModel(), TempData[ReviewNoticeKey] as string, cancellationToken);
@@ -239,7 +253,7 @@ public class StoreController(
             return NotFound();
         }
 
-        var product = found.Data!;
+        var product = found.Data!.Product;
         if (ModelState.IsValid)
         {
             var (added, result) = await reviewService.AddAsync(new ProductReview
@@ -262,15 +276,16 @@ public class StoreController(
         }
 
         Response.StatusCode = StatusCodes.Status400BadRequest;
-        return await ProductViewAsync(product, form, null, cancellationToken);
+        return await ProductViewAsync(found.Data!, form, null, cancellationToken);
     }
 
     private async Task<IActionResult> ProductViewAsync(
-        Product product,
+        ProductDetail detail,
         ReviewFormViewModel reviewForm,
         string? reviewNotice,
         CancellationToken cancellationToken)
     {
+        var product = detail.Product;
         var now = DateTime.UtcNow;
         var (_, categories) = await categoryService.GetAllAsync(cancellationToken);
         var category = categories.Data!.FirstOrDefault(c => c.Id == product.CategoryId);
@@ -293,14 +308,10 @@ public class StoreController(
             similar.Data!.Items.Select(i => i.Product.Id).Append(product.Id).ToList(),
             cancellationToken);
 
-        // Varyant seçici yalnız giyimde çizilir; ev ürününde sorgu da atılmaz.
-        var variants = isClothing
-            ? (await productService.GetVariantsAsync(product.Id, cancellationToken)).Item2.Data!
-            : [];
-
-        // Giyimde tüm varyantlar bittiyse, Evde ürünün kendi stoğu sıfırsa tükendi.
-        var soldOut = isClothing
-            ? variants.Count > 0 && variants.All(v => v.Stock == 0)
+        // Varyant her iki alanda da olabilir (D10): varyantlıda stok varyantta, varyantsızda ürünün kendi stoğunda.
+        var variants = detail.Variants;
+        var soldOut = variants.Count > 0
+            ? variants.All(v => v.Stock == 0)
             : product.Stock == 0;
 
         var (_, reviews) = await reviewService.GetApprovedAsync(product.Id, cancellationToken);
@@ -315,7 +326,7 @@ public class StoreController(
             isClothing,
             soldOut,
             images.Data!.Where(i => i.ProductId == product.Id).OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).ToList(),
-            isClothing ? StoreCatalog.Picker(variants) : new VariantPickerVm([], []),
+            variants.Count > 0 ? StoreCatalog.Picker(variants, product) : new VariantPickerVm([], []),
             StoreCatalog.IsCampaignActive(product, now),
             StoreCatalog.WhatsAppUrl(WhatsAppBase, product.Name),
             Cards(similar.Data!.Items, images.Data!, now),

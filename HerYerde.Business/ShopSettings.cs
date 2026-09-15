@@ -16,4 +16,10 @@ public sealed class ShopSettings
 
     /// <summary>Ürün görselinin gelebileceği dış kökenler (ör. https://placehold.co); CSP img-src'e eklenir.</summary>
     public string[] ImageOrigins { get; set; } = [];
+
+    /// <summary>Ürün sayfasında "Son N adet" rozeti bu adet ve altında görünür (varyantlıda seçili varyanta göre).</summary>
+    public int LowStockBadgeAt { get; set; } = 3;
+
+    /// <summary>Yönetimde düşük stok sayacı ve /admin/stok listesi bu adet ve altını sayar.</summary>
+    public int LowStockAlertAt { get; set; } = 5;
 }

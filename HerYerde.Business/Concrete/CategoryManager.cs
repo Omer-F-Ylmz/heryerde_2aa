@@ -13,12 +13,14 @@ public class CategoryManager : ICategoryService
 {
     private readonly ICategoryDal _categoryDal;
     private readonly IProductDal _productDal;
+    private readonly ISlugHistoryDal _slugHistoryDal;
     private readonly IUnitOfWork _unitOfWork;
 
-    public CategoryManager(ICategoryDal categoryDal, IProductDal productDal, IUnitOfWork unitOfWork)
+    public CategoryManager(ICategoryDal categoryDal, IProductDal productDal, ISlugHistoryDal slugHistoryDal, IUnitOfWork unitOfWork)
     {
         _categoryDal = categoryDal;
         _productDal = productDal;
+        _slugHistoryDal = slugHistoryDal;
         _unitOfWork = unitOfWork;
     }
 
@@ -70,7 +72,12 @@ public class CategoryManager : ICategoryService
         if (!CategoryRules.IsRoot(stored))
         {
             stored.ParentId = category.ParentId;
-            stored.Slug = await UniqueSlugAsync(category.Name, stored.Id, cancellationToken);
+            var slug = await UniqueSlugAsync(category.Name, stored.Id, cancellationToken);
+            if (slug != stored.Slug)
+            {
+                await _slugHistoryDal.RecordAsync(SlugEntity.Category, stored.Id, stored.Slug, slug, DateTime.UtcNow, cancellationToken);
+                stored.Slug = slug;
+            }
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -103,6 +110,29 @@ public class CategoryManager : ICategoryService
         _categoryDal.Delete(category);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Kategori silindi."));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<string?>)> SetImageAsync(int id, string? imageUrl, CancellationToken cancellationToken = default)
+    {
+        var category = await _categoryDal.GetTrackedAsync(c => c.Id == id, cancellationToken);
+        if (category is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorDataResult<string?>("Kategori bulunamadı."));
+        }
+
+        var previous = category.ImageUrl;
+        category.ImageUrl = imageUrl;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (HttpStatusCode.OK, new SuccessDataResult<string?>(previous, "Kategori görseli güncellendi."));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<Category>)> GetByOldSlugAsync(string oldSlug, CancellationToken cancellationToken = default)
+    {
+        var id = await _slugHistoryDal.FindEntityIdAsync(SlugEntity.Category, oldSlug, cancellationToken);
+        var category = id is null ? null : await _categoryDal.GetAsync(c => c.Id == id, cancellationToken);
+        return category is null
+            ? (HttpStatusCode.NotFound, new ErrorDataResult<Category>("Kategori bulunamadı."))
+            : (HttpStatusCode.OK, new SuccessDataResult<Category>(category));
     }
 
     private async Task<(HttpStatusCode, IResult)?> ParentIsInvalidAsync(int? parentId, CancellationToken cancellationToken)

@@ -3,7 +3,15 @@
     <ul class="tabs__list">
         @foreach (var tab in Model)
         {
-            <li><a class="tab" href="@tab.Url" aria-current="@(tab.Current ? "page" : null)">@tab.Name</a></li>
+            <li>
+                <a class="tab@(tab.ImageUrl is null ? "" : " tab--thumb")" href="@tab.Url" aria-current="@(tab.Current ? "page" : null)">
+                    @if (tab.ImageUrl is { } thumb)
+                    {
+                        <img class="tab__thumb" src="@thumb" alt="" width="32" height="32" loading="lazy" />
+                    }
+                    @tab.Name
+                </a>
+            </li>
         }
     </ul>
 </nav>
