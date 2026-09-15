@@ -671,6 +671,24 @@ public class OrderManager : IOrderService
         return (HttpStatusCode.OK, new SuccessResult("Sipariş durumu güncellendi."));
     }
 
+    public async Task<List<OrderDetail>> ExportAsync(OrderStatus? status, DateTime? fromUtc, DateTime? toUtc, CancellationToken cancellationToken = default)
+    {
+        var orders = await _orderDal.GetListAsync(
+            o => (status == null || o.Status == status)
+                 && (fromUtc == null || o.CreatedAt >= fromUtc)
+                 && (toUtc == null || o.CreatedAt < toUtc),
+            cancellationToken);
+        var ids = orders.Select(o => o.Id).ToList();
+        var items = (ids.Count == 0 ? new List<OrderItem>() : await _orderItemDal.GetListAsync(i => ids.Contains(i.OrderId), cancellationToken))
+            .ToLookup(i => i.OrderId);
+
+        return orders
+            .OrderBy(o => o.CreatedAt)
+            .ThenBy(o => o.Id)
+            .Select(o => new OrderDetail(o, items[o.Id].OrderBy(i => i.Id).ToList()))
+            .ToList();
+    }
+
     public async Task<(HttpStatusCode, IDataResult<int>)> UnseenCountAsync(CancellationToken cancellationToken = default)
         => (HttpStatusCode.OK, new SuccessDataResult<int>(await _orderDal.UnseenCountAsync(cancellationToken)));
 

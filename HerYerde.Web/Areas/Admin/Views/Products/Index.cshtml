@@ -15,11 +15,19 @@
             </ul>
         </nav>
     </div>
-    <a class="btn btn--primary" asp-area="Admin" asp-controller="Products" asp-action="Create">
-        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-        <span>Ürün ekle</span>
-    </a>
+    <div class="page-head__actions">
+        <a class="btn btn--ghost" href="/admin/products/import">Toplu ürün (Excel)</a>
+        <a class="btn btn--primary" asp-area="Admin" asp-controller="Products" asp-action="Create">
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            <span>Ürün ekle</span>
+        </a>
+    </div>
 </div>
+
+@if (TempData[HerYerde.Web.Areas.Admin.Controllers.ProductTransferController.ImportNoticeKey] is string importNotice)
+{
+    <p class="form-alert form-alert--notice" role="status">@importNotice</p>
+}
 
 @if (Model.Products.Count == 0)
 {

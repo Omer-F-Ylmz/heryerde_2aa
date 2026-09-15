@@ -63,6 +63,9 @@ public interface IOrderService
         string? trackingNo = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>CSV dökümü: duruma ve [fromUtc, toUtc) aralığına göre siparişler kalemleriyle (hediye dahil), eskiden yeniye; kalemler tek sorguda.</summary>
+    Task<List<OrderDetail>> ExportAsync(OrderStatus? status, DateTime? fromUtc, DateTime? toUtc, CancellationToken cancellationToken = default);
+
     /// <summary>Yönetimde henüz açılmamış sipariş sayısı; başlıktaki rozet buradan.</summary>
     Task<(HttpStatusCode, IDataResult<int>)> UnseenCountAsync(CancellationToken cancellationToken = default);
 

@@ -1,0 +1,88 @@
+@using HerYerde.Business.Dtos
+@model ProductImportViewModel
+@{
+    ViewData["Title"] = "Toplu ürün";
+    var preview = Model.Preview;
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Katalog</p>
+        <h1 class="display-2">Toplu ürün</h1>
+        <p class="page-head__note">Excel tablosuyla ürün ve varyant ekleyin ya da güncelleyin. Önce önizleme gösterilir; tek hatalı satır varsa hiçbir değişiklik yazılmaz.</p>
+    </div>
+    <div class="page-head__actions">
+        <a class="btn btn--ghost" href="/admin/products/export/sablon">Boş şablon</a>
+        <a class="btn btn--secondary" href="/admin/products/export">Tüm ürünleri indir</a>
+    </div>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+<div class="import">
+    <form class="form-card surface-elevated import__upload" method="post" action="/admin/products/import" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <h2 class="heading-3">@(preview is null ? "Dosya yükle" : "Başka dosya yükle")</h2>
+        <div class="field">
+            <label class="field__label" for="importFile">.xlsx dosyası (en çok 8 MB, 5000 satır)</label>
+            <input class="field__input field__input--file" id="importFile" name="file" type="file"
+                   accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required />
+            <span class="field__hint">Sütun adları şablondaki gibi olmalı. Ürün satırında sku boş; varyant satırında sku ve ürünün slug'ı dolu.</span>
+        </div>
+        <div class="form-card__foot">
+            <button class="btn btn--primary" type="submit">Önizle</button>
+        </div>
+    </form>
+
+    @if (preview is not null)
+    {
+        <section class="form-card surface-elevated import__preview" aria-labelledby="preview-title">
+            <h2 class="heading-3" id="preview-title">Önizleme</h2>
+            <ul class="import__counts">
+                <li><span class="import__count">@preview.Created</span> yeni</li>
+                <li><span class="import__count">@preview.Updated</span> güncellenecek</li>
+                <li class="@(preview.Errors > 0 ? "import__counts-error" : null)"><span class="import__count">@preview.Errors</span> hatalı</li>
+            </ul>
+
+            <div class="table-wrap">
+                <table class="table">
+                    <caption class="visually-hidden">İçe aktarma önizlemesi: satır, işlem, ürün ya da stok kodu, neden</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="table__num">Satır</th>
+                            <th scope="col">İşlem</th>
+                            <th scope="col">Slug / stok kodu</th>
+                            <th scope="col">Neden</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in preview.Rows)
+                    {
+                        <tr data-import-row="@(row.Kind switch { ImportRowKind.Yeni => "yeni", ImportRowKind.Guncelle => "guncelle", _ => "hata" })">
+                            <td class="table__num">@row.RowNumber</td>
+                            <td><span class="tag @(row.Kind switch { ImportRowKind.Yeni => "tag--teslimedildi", ImportRowKind.Guncelle => "tag--onaylandi", _ => "tag--iptaledildi" })">@(row.Kind switch { ImportRowKind.Yeni => "Yeni", ImportRowKind.Guncelle => "Güncellenecek", _ => "Hata" })</span></td>
+                            <th scope="row"><span class="cell-mono">@row.Label</span></th>
+                            <td>@(row.Reason ?? "—")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+
+            <form class="form-card__foot import__confirm" method="post" action="/admin/products/import/onayla">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Token" value="@Model.Token" />
+                @if (preview.Errors > 0)
+                {
+                    <p class="field__hint">Hatalı satırları Excel'de düzeltip dosyayı yeniden yükleyin.</p>
+                }
+                <button class="btn btn--primary" type="submit" disabled="@(preview.Errors > 0 || preview.Rows.Count == 0)">
+                    @(preview.Created + preview.Updated) satırı uygula
+                </button>
+            </form>
+        </section>
+    }
+</div>

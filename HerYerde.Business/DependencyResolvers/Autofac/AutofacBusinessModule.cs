@@ -40,5 +40,7 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<PaymentManager>().As<IPaymentService>().InstancePerLifetimeScope();
         builder.RegisterType<ContactManager>().As<IContactService>().InstancePerLifetimeScope();
         builder.RegisterType<ReviewManager>().As<IReviewService>().InstancePerLifetimeScope();
+        builder.RegisterType<ReportManager>().As<IReportService>().InstancePerLifetimeScope();
+        builder.RegisterType<ProductTransferManager>().As<IProductTransferService>().InstancePerLifetimeScope();
     }
 }

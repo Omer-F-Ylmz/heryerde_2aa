@@ -4121,3 +4121,146 @@
     }
   }
 }
+/* --- D12 toplu işlem ve rapor --- */
+@layer components {
+  .import {
+    display: grid;
+    gap: 24px;
+  }
+
+  /* ızgara öğesi içindeki geniş tablo sütunu büyütmesin; tablo kendi kabında kayar */
+  .import > * {
+    min-width: 0;
+  }
+
+  .import__counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    margin: 0 0 16px;
+    padding: 0;
+    list-style: none;
+    color: var(--c-neutral-700);
+  }
+
+  .import__count {
+    font-family: var(--font-display);
+    font-size: 24px;
+    color: var(--c-neutral-900);
+    margin-right: 4px;
+  }
+
+  .import__counts-error .import__count {
+    color: var(--c-brand-700);
+  }
+
+  .import__confirm {
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .import__confirm .field__hint {
+    margin: 0 auto 0 0;
+  }
+
+  .report__kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .report__kpi {
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  /* dar ekranda ciro ve iptal oranı tam satır, ikisi arada yan yana */
+  .report__kpi--lead,
+  .report__kpi:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .report__kpi-label {
+    margin: 0;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .report__kpi-value {
+    margin: 8px 0 0;
+    font-family: var(--font-display);
+    font-size: 24px;
+    line-height: 1.2;
+    color: var(--c-neutral-900);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .report__kpi--lead .report__kpi-value {
+    font-size: 40px;
+    letter-spacing: -0.03em;
+    color: var(--c-brand-900);
+  }
+
+  .report__kpi-note {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .report__grid {
+    display: grid;
+    gap: 24px;
+  }
+
+  .report__panel {
+    position: relative;
+    border-radius: 16px;
+    padding: 24px;
+    min-width: 0;
+  }
+
+  /* Üç sütunlu özet tabloları dar ekrana sığar; yalnız çok satanlar (5 sütun) kendi kabında kayar */
+  .report__panel .table {
+    min-width: 0;
+  }
+
+  .report__panel .table--scroll {
+    min-width: 560px;
+  }
+
+  .report__subhead {
+    margin-top: 32px;
+  }
+
+  @media (min-width: 1024px) {
+    .import {
+      grid-template-columns: 5fr 7fr;
+      align-items: start;
+    }
+
+    .import__preview {
+      margin-top: 32px;
+    }
+
+    /* kırık simetri: ciro kutusu iki kademe geniş, diğer üç gösterge dar */
+    .report__kpis {
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+    }
+
+    .report__kpi--lead,
+    .report__kpi:last-child {
+      grid-column: auto;
+    }
+
+    .report__grid {
+      grid-template-columns: 7fr 5fr;
+      align-items: start;
+    }
+
+    .report__panel--wide:last-child {
+      grid-column: 1 / -1;
+    }
+  }
+}

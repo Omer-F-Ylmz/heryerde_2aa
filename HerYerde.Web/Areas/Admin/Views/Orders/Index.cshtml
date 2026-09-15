@@ -12,6 +12,8 @@
         <p class="page-head__note">Durum sırayla ilerler ve geri alınamaz; iptal yalnız beklemedeki siparişte yapılır.</p>
     </div>
     <div class="page-head__actions">
+        <a class="btn btn--ghost" href="/admin/orders/export?bicim=kargo&amp;durum=@((int?)Model.Status)">Kargo CSV</a>
+        <a class="btn btn--ghost" href="/admin/orders/export?bicim=tam&amp;durum=@((int?)Model.Status)">Tam döküm CSV</a>
         <a class="btn btn--primary" href="/admin/orders/new">Yeni sipariş</a>
     </div>
 </div>

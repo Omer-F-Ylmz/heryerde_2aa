@@ -15,6 +15,9 @@ public interface IPrivateFileStorage
     string? Resolve(string? relativePath);
 
     void Delete(string? relativePath);
+
+    /// <summary>Klasördeki verilen yaştan eski dosyaları siler (onaylanmamış içe aktarma önizlemeleri).</summary>
+    void DeleteOlderThan(string folder, TimeSpan age, DateTime utcNow);
 }
 
 public sealed partial class PrivateFileStorage(string root) : IPrivateFileStorage
@@ -44,6 +47,18 @@ public sealed partial class PrivateFileStorage(string root) : IPrivateFileStorag
         }
     }
 
+    public void DeleteOlderThan(string folder, TimeSpan age, DateTime utcNow)
+    {
+        var directory = Path.Combine(root, folder);
+        foreach (var file in Directory.Exists(directory) ? Directory.GetFiles(directory) : [])
+        {
+            if (File.GetLastWriteTimeUtc(file) < utcNow - age)
+            {
+                File.Delete(file);
+            }
+        }
+    }
+
     /// <summary>Uzantı dosya adından değil içerikten: PDF, PNG, JPEG, WebP imzası; başka her şey null (çalıştırılabilir dahil).</summary>
     public static string? Kind(byte[] content)
     {
@@ -66,6 +81,6 @@ public sealed partial class PrivateFileStorage(string root) : IPrivateFileStorag
     };
 
     /// <summary>Yalnız sunucunun ürettiği biçim: klasör/32 hex.uzantı; "../" gibi yollar geçmez.</summary>
-    [GeneratedRegex(@"^(faturalar|dekontlar)/[0-9a-f]{32}\.(pdf|png|jpg|webp)$")]
+    [GeneratedRegex(@"^(faturalar|dekontlar|aktarimlar)/[0-9a-f]{32}\.(pdf|png|jpg|webp|xlsx)$")]
     private static partial Regex StoredPath();
 }

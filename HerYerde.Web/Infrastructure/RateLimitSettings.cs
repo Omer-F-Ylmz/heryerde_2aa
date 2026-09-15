@@ -62,7 +62,7 @@ public static class RateLimitPolicy
                                              || path.StartsWithSegments("/admin/auth/sifremi-unuttum")
                                              || path.StartsWithSegments("/admin/auth/sifre-sifirla"))
             ? ("admin-giris", settings.AdminLoginPerMinute)
-            : isPost && path.StartsWithSegments("/admin/products/addimage")
+            : isPost && (path.StartsWithSegments("/admin/products/addimage") || path.StartsWithSegments("/admin/products/import"))
                 ? ("yukleme", settings.UploadPerMinute)
                 : isPost && path.StartsWithSegments("/sepet")
                     ? ("sepet", settings.CartPerMinute)

@@ -55,6 +55,41 @@ public class OrdersController : Controller
         });
     }
 
+    /// <summary>bicim=kargo: kargo firmasına verilen sabit kolonlu şablon; bicim=tam (varsayılan): tüm alanlar. tarih: İstanbul günü.</summary>
+    [HttpGet("admin/orders/export")]
+    public async Task<IActionResult> Export(OrderStatus? durum, DateOnly? tarih, string? bicim, CancellationToken cancellationToken)
+    {
+        var cargo = bicim == "kargo";
+        var orders = await _orderService.ExportAsync(
+            durum,
+            tarih is { } day ? IstanbulTime.StartOfDayUtc(day) : null,
+            tarih is { } next ? IstanbulTime.StartOfDayUtc(next.AddDays(1)) : null,
+            cancellationToken);
+
+        var rows = new List<IReadOnlyList<string>>
+        {
+            cargo
+                ? new[] { "Ad Soyad", "Telefon", "Adres", "İl", "İlçe", "Tutar", "Ödeme", "Sipariş No", "Kalemler" }
+                : new[] { "Sipariş No", "Tarih", "Durum", "Kanal", "Ödeme", "Ad Soyad", "Telefon", "E-posta", "Adres", "İl", "İlçe",
+                          "Ara Toplam", "Kargo", "Toplam", "Kargo Firması", "Takip No", "Fatura No", "Kalemler", "Not" }
+        };
+        foreach (var (order, items, _, _) in orders)
+        {
+            var lines = string.Join(" | ", items.Select(i => $"{i.ProductName} x{i.Quantity}{(i.IsGift ? " (hediye)" : "")}"));
+            rows.Add(cargo
+                ? new[] { order.FullName, order.Phone, order.Address, order.City, order.District, CsvFile.Money(order.Total),
+                   PaymentLabels.Method(order.PaymentMethod), order.OrderNo, lines }
+                : new[] { order.OrderNo, IstanbulTime.Format(order.CreatedAt), OrderLabels.For(order.Status), PaymentLabels.Source(order.Source),
+                   PaymentLabels.Method(order.PaymentMethod), order.FullName, order.Phone, order.Email ?? "", order.Address, order.City,
+                   order.District, CsvFile.Money(order.Subtotal), CsvFile.Money(order.ShippingFee), CsvFile.Money(order.Total),
+                   order.Carrier ?? "", order.TrackingNo ?? "", order.InvoiceNo ?? "", lines, order.Note ?? "" });
+        }
+
+        var format = cargo ? "kargo" : "tam";
+        await _auditService.WriteAsync(HttpContext, "sipariş dışa aktarma", "sipariş", null, $"{format} · {orders.Count} sipariş");
+        return File(CsvFile.Build(rows), CsvFile.ContentType, $"siparisler-{format}-{_clock.GetUtcNow():yyyyMMdd}.csv");
+    }
+
     [HttpGet("admin/orders/new")]
     public IActionResult New() => View(WithLines(new ManualOrderFormViewModel()));
 

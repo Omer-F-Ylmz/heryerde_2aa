@@ -389,6 +389,27 @@ public sealed class OrderDetailViewModel
     public bool CanAnonymize => HerYerde.Business.Rules.OrderRules.CanAnonymize(Detail.Order.Status);
 }
 
+public sealed class ProductImportViewModel
+{
+    public ImportPreview? Preview { get; set; }
+
+    /// <summary>Önizlenen dosyanın gizli depodaki adı; onay bununla aynı dosyayı yeniden okur.</summary>
+    public string? Token { get; set; }
+
+    public string? ErrorMessage { get; set; }
+}
+
+public sealed class ReportViewModel
+{
+    public SalesReport Report { get; set; } = null!;
+    public DateOnly From { get; set; }
+    public DateOnly To { get; set; }
+    public ReportPeriod Period { get; set; }
+
+    /// <summary>Sorgu dizesi: CSV bağlantısı aynı süzgeçle iner.</summary>
+    public string Query => $"baslangic={From:yyyy-MM-dd}&bitis={To:yyyy-MM-dd}&donem={Period.ToString().ToLowerInvariant()}";
+}
+
 public sealed class AuditListViewModel
 {
     public AdminAuditPage Page { get; set; } = null!;

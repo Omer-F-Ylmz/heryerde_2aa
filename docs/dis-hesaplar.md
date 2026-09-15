@@ -33,6 +33,7 @@ Prod'da değerler `docker-compose.prod.yml` üzerinden verilir; son sütun orada
 | 3D doğrulama formunun gideceği köken | İyzico / banka | `Iyzico:CspSources` (CSP `form-action`, `frame-src`; yalnız `/odeme*`) | Evet | `HERYERDE_IYZICO_CSP_SOURCE` (ilk köken) |
 | Hata izleme DSN'i | [Ömer] Sentry projesi (Settings › Client Keys) | `Sentry__Dsn` (env) | Evet | `HERYERDE_SENTRY_DSN` |
 | Fatura/dekont gizli klasörü | [Ömer] sunucu diski | `PrivateFiles:Root` (boşsa içerik kökü altında `private`; konteynerde `/app/private`, `heryerde-private` volume'u) | Hayır | — (compose volume) |
+| Toplu ürün içe aktarmada izinli görsel kökenleri | [Ömer] görsel barındırma | `Shop:ImageOrigins` (yerel `/uploads/…` her zaman izinli; listede olmayan kökenli görsel satırı hatalı sayılır) | Hayır | — (appsettings) |
 | Havale bildirimi hız sınırı | — | `RateLimit:PaymentNoticePerMinute` (IP başına, varsayılan 5) | Hayır | — (appsettings) |
 | ETBİS kayıt numarası | [MÜŞTERİ] eticaret.gov.tr ETBİS kaydı | `Legal:EtbisNo` (boşken altbilgide bant görünmez) | Hayır (kayıt tamamlanınca) | `HERYERDE_ETBIS_NO` |
 

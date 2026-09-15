@@ -1,0 +1,134 @@
+@using System.Globalization
+@using HerYerde.Business.Dtos
+@using HerYerde.Web.Models
+@model ReportViewModel
+@{
+    ViewData["Title"] = "Rapor";
+    var report = Model.Report;
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+    string PeriodLabel(DateOnly start) => Model.Period switch
+    {
+        ReportPeriod.Ay => start.ToString("MMMM yyyy", turkish),
+        ReportPeriod.Hafta => start.ToString("dd.MM.yyyy", turkish) + " haftası",
+        _ => start.ToString("dd.MM.yyyy ddd", turkish)
+    };
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Satış</p>
+        <h1 class="display-2">Rapor</h1>
+        <p class="page-head__note">Ciro yalnız parası alınmış siparişlerden: kart çekimi başarılı, havale onaylı, kapıda ya da elden ödemede teslim edilmiş. Tutarlar kargo dahil.</p>
+    </div>
+    <div class="page-head__actions">
+        <a class="btn btn--secondary" href="/admin/rapor/csv?@Model.Query">CSV indir</a>
+    </div>
+</div>
+
+<form class="filters" method="get" action="/admin/rapor">
+    <div class="field">
+        <label class="field__label" for="baslangic">Başlangıç</label>
+        <input class="field__input" id="baslangic" name="baslangic" type="date" value="@Model.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" />
+    </div>
+    <div class="field">
+        <label class="field__label" for="bitis">Bitiş (dahil)</label>
+        <input class="field__input" id="bitis" name="bitis" type="date" value="@Model.To.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" />
+    </div>
+    <div class="field">
+        <label class="field__label" for="donem">Dönem</label>
+        <select class="field__input" id="donem" name="donem">
+            <option value="gun" selected="@(Model.Period == ReportPeriod.Gun)">Gün</option>
+            <option value="hafta" selected="@(Model.Period == ReportPeriod.Hafta)">Hafta</option>
+            <option value="ay" selected="@(Model.Period == ReportPeriod.Ay)">Ay</option>
+        </select>
+    </div>
+    <button class="btn btn--secondary" type="submit">Göster</button>
+</form>
+
+<section class="report__kpis" aria-label="Özet">
+    <div class="surface-elevated report__kpi report__kpi--lead">
+        <p class="report__kpi-label">Ciro</p>
+        <p class="report__kpi-value">@Money.Tl(report.Revenue)</p>
+        <p class="report__kpi-note">@report.PaidOrderCount ödenmiş sipariş</p>
+    </div>
+    <div class="surface-elevated report__kpi">
+        <p class="report__kpi-label">Sipariş</p>
+        <p class="report__kpi-value">@report.OrderCount</p>
+    </div>
+    <div class="surface-elevated report__kpi">
+        <p class="report__kpi-label">Ortalama sepet</p>
+        <p class="report__kpi-value">@Money.Tl(report.AverageBasket)</p>
+    </div>
+    <div class="surface-elevated report__kpi">
+        <p class="report__kpi-label">İptal oranı</p>
+        <p class="report__kpi-value">%@((report.CancelRate * 100).ToString("0.#", turkish))</p>
+    </div>
+</section>
+
+@if (report.OrderCount == 0)
+{
+    <p class="empty surface-elevated">Bu aralıkta sipariş yok.</p>
+}
+else
+{
+    <div class="report__grid">
+        <section class="surface-elevated report__panel report__panel--wide" aria-labelledby="donemler">
+            <h2 class="heading-3" id="donemler">Dönemler</h2>
+            <div class="table-wrap">
+                <table class="table">
+                    <caption class="visually-hidden">Dönem başına ciro ve sipariş sayısı</caption>
+                    <thead><tr><th scope="col">Dönem</th><th scope="col" class="table__num">Ciro</th><th scope="col" class="table__num">Sipariş</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in report.Periods)
+                    {
+                        <tr><th scope="row">@PeriodLabel(row.Start)</th><td class="table__num">@Money.Tl(row.Revenue)</td><td class="table__num">@row.Orders</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="surface-elevated report__panel" aria-labelledby="kanallar">
+            <h2 class="heading-3" id="kanallar">Kanal</h2>
+            <table class="table">
+                <caption class="visually-hidden">Kanala göre sipariş ve ciro (iptal hariç)</caption>
+                <thead><tr><th scope="col">Kanal</th><th scope="col" class="table__num">Sipariş</th><th scope="col" class="table__num">Ciro</th></tr></thead>
+                <tbody>
+                @foreach (var row in report.Sources)
+                {
+                    <tr><th scope="row">@PaymentLabels.Source(row.Source)</th><td class="table__num">@row.Orders</td><td class="table__num">@Money.Tl(row.Revenue)</td></tr>
+                }
+                </tbody>
+            </table>
+
+            <h2 class="heading-3 report__subhead" id="odemeler">Ödeme yöntemi</h2>
+            <table class="table">
+                <caption class="visually-hidden">Ödeme yöntemine göre sipariş ve ciro (iptal hariç)</caption>
+                <thead><tr><th scope="col">Yöntem</th><th scope="col" class="table__num">Sipariş</th><th scope="col" class="table__num">Ciro</th></tr></thead>
+                <tbody>
+                @foreach (var row in report.PaymentMethods)
+                {
+                    <tr><th scope="row">@PaymentLabels.Method(row.Method)</th><td class="table__num">@row.Orders</td><td class="table__num">@Money.Tl(row.Revenue)</td></tr>
+                }
+                </tbody>
+            </table>
+        </section>
+
+        <section class="surface-elevated report__panel report__panel--wide" aria-labelledby="coksatan">
+            <h2 class="heading-3" id="coksatan">Çok satan 10</h2>
+            <div class="table-wrap">
+                <table class="table table--scroll">
+                    <caption class="visually-hidden">Adede göre en çok satan ürünler (iptal hariç, hediye satırları sayılmaz)</caption>
+                    <thead><tr><th scope="col" class="table__num">#</th><th scope="col">Ürün</th><th scope="col">Stok kodu</th><th scope="col" class="table__num">Adet</th><th scope="col" class="table__num">Tutar</th></tr></thead>
+                    <tbody>
+                    @for (var i = 0; i < report.TopProducts.Count; i++)
+                    {
+                        var row = report.TopProducts[i];
+                        <tr><td class="table__num">@(i + 1)</td><th scope="row">@row.ProductName</th><td><span class="cell-mono">@row.Sku</span></td><td class="table__num">@row.Quantity</td><td class="table__num">@Money.Tl(row.Amount)</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+}
