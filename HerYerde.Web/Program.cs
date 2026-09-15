@@ -63,6 +63,7 @@ builder.Services.AddSerilog((services, logger) =>
 builder.Services.AddControllersWithViews(options =>
 {
     options.ModelBinderProviders.Insert(0, new InvariantDecimalModelBinderProvider());
+    options.ModelBinderProviders.Insert(0, new CheckboxBoolModelBinderProvider());
     // Tek bir POST'ta bile unutulmasın diye antiforgery doğrulaması genelde açık.
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 });
