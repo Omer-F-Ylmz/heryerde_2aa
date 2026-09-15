@@ -62,7 +62,9 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      disable: true
+      # Uyuyan döngüdür, HTTP ucu yok; "up --wait" sağlık denetimsiz servisi hata saydığı için süreç ayaktaysa sağlıklı.
+      test: ["CMD", "true"]
+      interval: 60s
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest

@@ -6,4 +6,5 @@ node_modules/
 .github/
 .claude/
 tests/
+backups/
 **/appsettings.Development.json

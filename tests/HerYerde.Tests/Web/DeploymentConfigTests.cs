@@ -97,6 +97,10 @@ public sealed class DeploymentConfigTests
         Assert.Contains("dotnet HerYerde.Web.dll --yedek-al /backups", compose);
         Assert.Contains("- ./backups:/backups", compose);
         Assert.Contains("- heryerde-uploads:/app/wwwroot/uploads", compose);
+        // CI: yedek klasörü (10001:1654, 0770) build context'e girerse imaj derlemesi "permission denied" ile düşer.
+        Assert.Contains("backups/", RepoFile.ReadAllText(".dockerignore"));
+        // "docker compose up --wait" sağlık denetimi olmayan servisi hata sayar.
+        Assert.DoesNotContain("disable: true", compose);
         Assert.Contains("  restore-check:", ci);
         Assert.Contains("  smoke:", ci);
         Assert.Contains("tools/smoke.ps1", ci);
