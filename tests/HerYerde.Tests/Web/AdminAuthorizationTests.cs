@@ -42,15 +42,16 @@ public sealed class AdminAuthorizationTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    /// <summary>D13 B2: çıplak /admin artık ürün listesine yönlenmez, panoyu açar.</summary>
     [Fact]
-    public async Task Ciplak_admin_adresi_giris_sonrasi_urun_listesine_yonlenir()
+    public async Task Ciplak_admin_adresi_giris_sonrasi_panoyu_acar()
     {
         var client = await _factory.CreateSignedInClientAsync();
 
         var response = await client.GetAsync("/admin");
 
-        Assert.Equal(HttpStatusCode.Found, response.StatusCode);
-        Assert.Equal("/admin/products", response.Headers.Location!.OriginalString);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("data-metric=\"today-orders\"", await response.Content.ReadAsStringAsync());
     }
 
     /// <summary>KAPANIŞ-2 ZAP 90022: ASCII dışı dönüş adresi Location başlığına yazılmaz (Kestrel'de 500), ürün listesine düşülür.</summary>

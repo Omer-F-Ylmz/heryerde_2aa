@@ -366,6 +366,9 @@ public sealed class OrderDetailViewModel
 
     public string? TrackingUrl { get; set; }
 
+    /// <summary>Sipariş, postalar, işlemler, iade talepleri ve iç notlar eskiden yeniye.</summary>
+    public IReadOnlyList<TimelineEntry> Timeline { get; set; } = [];
+
     /// <summary>Müşteriyle hızlı temas: ad, sipariş numarası ve durum önden dolu.</summary>
     public string WhatsAppUrl => WhatsAppLink.For(
         Detail.Order.Phone,
@@ -432,3 +435,11 @@ public sealed record ReturnDetailViewModel(ReturnDetail Detail, string? ErrorMes
 
     public int? RefundDaysLeft(DateTime now) => ReturnRules.RefundDaysLeft(Request, now);
 }
+
+/// <summary>/admin/kvkk: arama sonucu (varsa), başvurular, hata ya da işlem sonucu.</summary>
+public sealed record KvkkPageViewModel(
+    string? Query,
+    KvkkPerson? Person,
+    IReadOnlyList<KvkkRequestRow> Requests,
+    string? ErrorMessage,
+    string? Notice);

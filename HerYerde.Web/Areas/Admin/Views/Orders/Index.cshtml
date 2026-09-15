@@ -50,11 +50,18 @@
 }
 else
 {
+    <form id="toplu-yazdir" class="bulk-print" method="post" action="/admin/orders/yazdir" target="_blank">
+        @Html.AntiForgeryToken()
+        <span class="bulk-print__label">Seçili siparişleri yazdır</span>
+        <button class="btn btn--ghost btn--sm" type="submit" name="tur" value="fis">Fiş</button>
+        <button class="btn btn--ghost btn--sm" type="submit" name="tur" value="etiket">Kargo etiketi</button>
+    </form>
     <div class="table-wrap surface-elevated">
         <table class="table">
-            <caption class="visually-hidden">Siparişler: numara, müşteri, tutar ve durum</caption>
+            <caption class="visually-hidden">Siparişler: seçim, numara, müşteri, tutar ve durum</caption>
             <thead>
                 <tr>
+                    <th scope="col"><span class="visually-hidden">Seç</span></th>
                     <th scope="col">Sipariş</th>
                     <th scope="col">Müşteri</th>
                     <th scope="col">Ödeme</th>
@@ -67,6 +74,9 @@ else
             @foreach (var order in Model.Orders)
             {
                 <tr>
+                    <td>
+                        <input class="table__check" type="checkbox" name="ids" value="@order.Id" form="toplu-yazdir" aria-label="@order.OrderNo siparişini seç" />
+                    </td>
                     <th scope="row">
                         <div class="cell-product">
                             <span class="order-row__head">

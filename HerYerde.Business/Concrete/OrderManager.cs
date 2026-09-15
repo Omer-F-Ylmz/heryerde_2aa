@@ -22,6 +22,8 @@ public class OrderManager : IOrderService
     private readonly INotificationService _notifications;
     private readonly IPaymentDal _paymentDal;
     private readonly IPaymentNoticeDal _noticeDal;
+    private readonly IReturnRequestDal _returnDal;
+    private readonly IOrderNoteDal _noteDal;
     private readonly ShopSettings _shop;
     private readonly ShippingSettings _shipping;
     private readonly TimeProvider _clock;
@@ -36,6 +38,8 @@ public class OrderManager : IOrderService
         INotificationService notifications,
         IPaymentDal paymentDal,
         IPaymentNoticeDal noticeDal,
+        IReturnRequestDal returnDal,
+        IOrderNoteDal noteDal,
         IOptions<ShopSettings> shop,
         IOptions<ShippingSettings> shipping,
         TimeProvider clock)
@@ -49,6 +53,8 @@ public class OrderManager : IOrderService
         _notifications = notifications;
         _paymentDal = paymentDal;
         _noticeDal = noticeDal;
+        _returnDal = returnDal;
+        _noteDal = noteDal;
         _shop = shop.Value;
         _shipping = shipping.Value;
         _clock = clock;
@@ -765,6 +771,27 @@ public class OrderManager : IOrderService
                 receipts.Add(receipt);
                 tracked.ReceiptFile = null;
             }
+        }
+
+        // İade talebinde neden serbest metin, IBAN ve fotoğraf kişiye ait: silinir; tür, durum, kalem ve tutar ispat için kalır.
+        order.RefundIban = null;
+        foreach (var request in await _returnDal.GetListAsync(r => r.OrderId == order.Id, cancellationToken))
+        {
+            var tracked = (await _returnDal.GetTrackedAsync(r => r.Id == request.Id, cancellationToken))!;
+            tracked.Reason = PersonalDataMask.Hidden;
+            tracked.RejectReason = tracked.RejectReason is null ? null : PersonalDataMask.Hidden;
+            tracked.RefundIban = null;
+            if (tracked.PhotoFile is { } photo)
+            {
+                receipts.Add(photo);
+                tracked.PhotoFile = null;
+            }
+        }
+
+        // İç not serbest metin (ad, telefon geçebilir): metin gizlenir, notun kim tarafından ne zaman düşüldüğü kalır.
+        foreach (var note in await _noteDal.GetListAsync(n => n.OrderId == order.Id, cancellationToken))
+        {
+            (await _noteDal.GetTrackedAsync(n => n.Id == note.Id, cancellationToken))!.Text = PersonalDataMask.Hidden;
         }
 
         await _notifications.ForgetOrderAsync(order, cancellationToken);

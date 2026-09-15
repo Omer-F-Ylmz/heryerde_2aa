@@ -31,6 +31,8 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfPaymentNoticeDal>().As<IPaymentNoticeDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfReturnRequestDal>().As<IReturnRequestDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfReturnRequestItemDal>().As<IReturnRequestItemDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfKvkkRequestDal>().As<IKvkkRequestDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfOrderNoteDal>().As<IOrderNoteDal>().InstancePerLifetimeScope();
 
         builder.RegisterType<AdminAuthManager>().As<IAdminAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<CategoryManager>().As<ICategoryService>().InstancePerLifetimeScope();
@@ -45,5 +47,8 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<ReportManager>().As<IReportService>().InstancePerLifetimeScope();
         builder.RegisterType<ProductTransferManager>().As<IProductTransferService>().InstancePerLifetimeScope();
         builder.RegisterType<ReturnManager>().As<IReturnService>().InstancePerLifetimeScope();
+        builder.RegisterType<KvkkManager>().As<IKvkkService>().InstancePerLifetimeScope();
+        builder.RegisterType<DashboardManager>().As<IDashboardService>().InstancePerLifetimeScope();
+        builder.RegisterType<OrderTimelineManager>().As<IOrderTimelineService>().InstancePerLifetimeScope();
     }
 }

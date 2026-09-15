@@ -204,9 +204,11 @@ jobs:
           npm audit --audit-level=high
 
   zap-scan:
-    # DAST: prod imajı compose ile ayağa kalkar, ZAP baseline tarar; Medium+ bulguda kırmızı (bkz. docs/zap-1.md).
+    # DAST: prod imajı compose ile ayağa kalkar, ZAP vitrini baseline tarar; tarama hesabıyla yönetim paneli oturumlu taranır
+    # (aktif tarama 40 dk tavan). Doğrulanmış yanlış pozitif dışındaki Medium+ bulguda kırmızı (bkz. docs/zap-1.md, docs/zap-3.md).
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     env:
       COMPOSE: docker compose -f docker-compose.prod.yml -f docker-compose.zap.yml
@@ -227,10 +229,30 @@ jobs:
           docker run --rm --network host -v "$PWD/zap-out:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:8080 -r zap-report.html -J zap.json -a -j -I
 
-      - name: Fail on Medium+
+      - name: ZAP admin (authenticated)
+        # Compose'un tohumladığı 2FA'sız tarama hesabı; çerez replacer ile her isteğe eklenir. Plan .zap/yonetim.yaml: örümcek, pasif,
+        # aktif tarama (40 dk), yıkıcı uçlar (çıkış, parola, silme, anonimleştirme, iade) dışarıda. Çıkış kodu 2 = uyarı, eşik sonraki adımda.
         run: |
-          jq -r '.site[] | select(."@name" | startswith("http://localhost")) | .alerts[]
-            | select((.riskcode|tonumber) >= 2) | "::error::\(.riskdesc) \(.name) (\(.pluginid))"' zap-out/zap.json | tee medium.txt
+          cp .zap/yonetim.yaml zap-out/
+          admin="$(bash .zap/yonetim-cerezi.sh http://localhost:8080 "$HERYERDE_ADMIN_EMAIL" "$HERYERDE_ADMIN_PASSWORD")"
+          echo "::add-mask::$admin"
+          docker run --rm --network host -v "$PWD/zap-out:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap.sh -cmd -port 8090 -config "replacer.full_list(0).description=yonetim" -config "replacer.full_list(0).enabled=true" \
+            -config "replacer.full_list(0).matchtype=REQ_HEADER" -config "replacer.full_list(0).matchstr=Cookie" -config "replacer.full_list(0).regex=false" \
+            -config "replacer.full_list(0).replacement=$admin" -autorun /zap/wrk/yonetim.yaml || [ $? -eq 2 ]
+          # Oturumlu tarandığının kanıtı: menüdeki rapor sayfası 200 dönmüş olmalı (giriş betiği bu sayfaya gitmez).
+          $COMPOSE logs web > zap-out/web.log 2>&1
+          grep -q 'GET /admin/rapor responded 200' zap-out/web.log || { echo "::error::Yönetim taraması oturumsuz kaldı."; exit 1; }
+          test -f zap-out/yonetim-full.json || { echo "::error::yonetim-full.json yok."; exit 1; }
+
+      - name: Fail on Medium+
+        # Planda doğrulanıp "False Positive" işaretlenen uyarı (docs/zap-3.md, 6-5 Path Traversal) eşiğe girmez.
+        run: |
+          for f in zap-out/zap.json zap-out/yonetim-full.json; do
+            jq -r '.site[] | select(."@name" | startswith("http://localhost")) | .alerts[]
+              | select((.riskcode|tonumber) >= 2) | select(.riskdesc | contains("False Positive") | not)
+              | "::error::\(.riskdesc) \(.name) (\(.pluginid))"' "$f"
+          done | tee medium.txt
           test ! -s medium.txt
 
       - name: Upload ZAP report

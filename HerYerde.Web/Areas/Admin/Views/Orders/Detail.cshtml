@@ -21,6 +21,8 @@
             <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
             <span>WhatsApp'tan yaz</span>
         </a>
+        <a class="btn btn--ghost" href="/admin/orders/@order.Id/fis" target="_blank" rel="noopener">Fiş yazdır</a>
+        <a class="btn btn--ghost" href="/admin/orders/@order.Id/etiket" target="_blank" rel="noopener">Etiket yazdır</a>
         <a class="btn btn--ghost" asp-area="Admin" asp-controller="Orders" asp-action="Index">Listeye dön</a>
     </div>
 </div>
@@ -236,6 +238,35 @@
         }
     </div>
 </div>
+
+<section class="form-card surface-elevated timeline" aria-labelledby="timeline-title">
+    <h2 class="heading-3" id="timeline-title">Zaman çizelgesi</h2>
+    <ol class="timeline__list">
+        @foreach (var entry in Model.Timeline)
+        {
+            <li class="timeline__item timeline__item--@entry.Kind" data-timeline-at="@entry.At.ToString("o")" data-timeline-kind="@entry.Kind">
+                <span class="timeline__at cell-mono">@IstanbulTime.Format(entry.At)</span>
+                <span class="timeline__title">@entry.Title</span>
+                @if (entry.Detail is { Length: > 0 } detail)
+                {
+                    <span class="timeline__detail">@detail</span>
+                }
+                @if (entry.Actor is { } actor)
+                {
+                    <span class="timeline__actor">@actor</span>
+                }
+            </li>
+        }
+    </ol>
+    <form class="timeline__note" method="post" action="/admin/orders/@order.Id/not">
+        @Html.AntiForgeryToken()
+        <div class="field">
+            <label class="field__label" for="note-text">İç not (müşteri görmez)</label>
+            <textarea class="field__input" id="note-text" name="text" rows="2" maxlength="1000" required></textarea>
+        </div>
+        <button class="btn btn--secondary" type="submit">Not ekle</button>
+    </form>
+</section>
 
 <form class="form-card surface-elevated invoice-form" method="post" action="/admin/orders/@order.Id/fatura" enctype="multipart/form-data">
     @Html.AntiForgeryToken()

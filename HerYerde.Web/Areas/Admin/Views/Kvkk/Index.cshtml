@@ -1,0 +1,140 @@
+@using HerYerde.Business.Concrete
+@using HerYerde.Web.Models
+@model KvkkPageViewModel
+@{
+    ViewData["Title"] = "KVKK başvurusu";
+    var person = Model.Person;
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Kişisel veri</p>
+        <h1 class="display-2">KVKK başvurusu</h1>
+        <p class="page-head__note">İlgili kişiyi telefon ya da e-postayla bulun; erişim dökümünü verin ya da kapanmış kayıtlarını anonimleştirin. Başvuru en geç 30 gün içinde yanıtlanır. Her işlem denetim izine kişi maskelenerek yazılır.</p>
+    </div>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+@if (Model.Notice is not null)
+{
+    <p class="form-alert form-alert--notice" role="status">@Model.Notice</p>
+}
+
+<div class="kvkk">
+    <section class="form-card surface-elevated" aria-labelledby="kvkk-search-title">
+        <h2 class="heading-3" id="kvkk-search-title">Kişiyi bul</h2>
+        <form class="kvkk__search" method="post" action="/admin/kvkk">
+            @Html.AntiForgeryToken()
+            <div class="field">
+                <label class="field__label" for="ara">Telefon ya da e-posta</label>
+                <input class="field__input" id="ara" name="ara" value="@Model.Query" maxlength="200" autocomplete="off" required />
+                <span class="field__hint">0542…, 90542… ve +90 542… aynı kişiyi bulur.</span>
+            </div>
+            <button class="btn btn--primary" type="submit">Kayıtları getir</button>
+        </form>
+
+        @if (person is not null)
+        {
+            <dl class="order-facts kvkk__counts">
+                <div><dt>Sipariş</dt><dd data-kvkk="orders">@person.Orders.Count</dd></div>
+                <div><dt>Havale bildirimi</dt><dd>@person.PaymentNotices.Count</dd></div>
+                <div><dt>İade talebi</dt><dd>@person.ReturnRequests.Count</dd></div>
+                <div><dt>İletişim mesajı</dt><dd>@person.ContactMessages.Count</dd></div>
+                <div><dt>Yorum</dt><dd>@person.Reviews.Count</dd></div>
+            </dl>
+
+            @if (person.Orders.Count > 0)
+            {
+                <div class="table-wrap">
+                    <table class="table">
+                        <caption class="visually-hidden">Kişinin siparişleri</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Sipariş</th>
+                                <th scope="col">Tarih</th>
+                                <th scope="col">Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var order in person.Orders)
+                        {
+                            <tr>
+                                <th scope="row"><a href="/admin/orders/detail/@order.Id">@order.OrderNo</a></th>
+                                <td><span class="cell-mono">@IstanbulTime.Format(order.CreatedAt)</span></td>
+                                <td><partial name="Components/_StatusPill" model="order.Status" /></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="order-actions">
+                <form method="post" action="/admin/kvkk/dokum-pdf">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ara" value="@Model.Query" />
+                    <button class="btn btn--secondary" type="submit">Erişim dökümü (PDF)</button>
+                </form>
+                <form method="post" action="/admin/kvkk/dokum-json">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ara" value="@Model.Query" />
+                    <button class="btn btn--ghost" type="submit">Erişim dökümü (JSON)</button>
+                </form>
+                <form method="post" action="/admin/kvkk/anonimlestir">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ara" value="@Model.Query" />
+                    <button class="btn btn--danger" type="submit">Anonimleştir (tümü)</button>
+                </form>
+            </div>
+            <p class="side-card__note">Anonimleştirme yalnız teslim edilmiş ya da iptal edilmiş siparişlere uygulanır; dekont ve iade fotoğrafları silinir, iletişim mesajları silinir, yorum adı maskelenir. Açık sipariş atlanır ve sonuçta listelenir.</p>
+        }
+    </section>
+
+    <section class="form-card surface-elevated" aria-labelledby="kvkk-requests-title">
+        <h2 class="heading-3" id="kvkk-requests-title">Başvurular</h2>
+        <form class="kvkk__request" method="post" action="/admin/kvkk/basvuru">
+            @Html.AntiForgeryToken()
+            <div class="field">
+                <label class="field__label" for="subject">Başvuran (telefon ya da e-posta)</label>
+                <input class="field__input" id="subject" name="subject" maxlength="200" autocomplete="off" required />
+            </div>
+            <div class="field">
+                <label class="field__label" for="receivedOn">Başvuru tarihi</label>
+                <input class="field__input" id="receivedOn" name="receivedOn" type="date" />
+            </div>
+            <button class="btn btn--secondary" type="submit">Başvuruyu kaydet</button>
+        </form>
+
+        @if (Model.Requests.Count == 0)
+        {
+            <p class="side-card__note">Kayıtlı başvuru yok.</p>
+        }
+        else
+        {
+            <ul class="kvkk__list">
+                @foreach (var row in Model.Requests)
+                {
+                    <li class="kvkk__item">
+                        <span class="cell-mono">@KvkkManager.Masked(row.Request.Subject)</span>
+                        <span>@IstanbulTime.Format(row.Request.ReceivedAt)</span>
+                        @if (row.DaysLeft is { } left)
+                        {
+                            <span class="tag @(left <= 5 ? "tag--low" : "tag--draft")">@(left < 0 ? $"{-left} gün gecikti" : $"{left} gün kaldı")</span>
+                            <form method="post" action="/admin/kvkk/basvuru/@row.Request.Id/tamamla">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn--ghost btn--sm" type="submit">Yanıtlandı</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="tag tag--draft">Yanıtlandı</span>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>

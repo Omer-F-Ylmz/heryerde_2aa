@@ -20,6 +20,7 @@ public class OrdersController : Controller
     private readonly IOrderService _orderService;
     private readonly IPaymentService _paymentService;
     private readonly IReturnService _returnService;
+    private readonly IOrderTimelineService _timeline;
     private readonly TimeProvider _clock;
     private readonly IAdminAuditService _auditService;
     private readonly IPrivateFileStorage _files;
@@ -29,6 +30,7 @@ public class OrdersController : Controller
         IOrderService orderService,
         IPaymentService paymentService,
         IReturnService returnService,
+        IOrderTimelineService timeline,
         TimeProvider clock,
         IAdminAuditService auditService,
         IPrivateFileStorage files,
@@ -37,6 +39,7 @@ public class OrdersController : Controller
         _orderService = orderService;
         _paymentService = paymentService;
         _returnService = returnService;
+        _timeline = timeline;
         _clock = clock;
         _auditService = auditService;
         _files = files;
@@ -138,7 +141,7 @@ public class OrdersController : Controller
 
         // Detayı açmak siparişi okunmuş sayar; başlıktaki rozet buradan düşer.
         await _orderService.MarkSeenAsync(id, cancellationToken);
-        return View(ViewFor(detail.Data!));
+        return View(await ViewForAsync(detail.Data!, null, cancellationToken));
     }
 
     [HttpPost]
@@ -310,6 +313,66 @@ public class OrdersController : Controller
         return RedirectToAction(nameof(Detail), new { id });
     }
 
+    /// <summary>İç not: müşteri görmez, zaman çizelgesine ve denetim izine girer.</summary>
+    [HttpPost("admin/orders/{id:int}/not")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddNote(int id, string? text, CancellationToken cancellationToken)
+    {
+        var adminId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var admin) ? admin : 0;
+        var (status, result) = await _timeline.AddNoteAsync(id, adminId, text ?? string.Empty, cancellationToken);
+        if (status == HttpStatusCode.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (status != HttpStatusCode.Created)
+        {
+            return await DetailWithErrorAsync(id, status, result.Message, cancellationToken);
+        }
+
+        await _auditService.WriteAsync(HttpContext, "iç not", "sipariş", id);
+        return RedirectToAction(nameof(Detail), new { id });
+    }
+
+    [HttpGet("admin/orders/{id:int}/fis")]
+    public async Task<IActionResult> Slip(int id, CancellationToken cancellationToken)
+        => await PrintAsync([id], "fis", cancellationToken);
+
+    [HttpGet("admin/orders/{id:int}/etiket")]
+    public async Task<IActionResult> Label(int id, CancellationToken cancellationToken)
+        => await PrintAsync([id], "etiket", cancellationToken);
+
+    /// <summary>Listeden seçilen siparişlerin fişleri ya da etiketleri tek PDF'te, her sipariş bir sayfa.</summary>
+    [HttpPost("admin/orders/yazdir")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PrintSelected(string? tur, int[] ids, CancellationToken cancellationToken)
+        => ids.Length == 0 || tur is not ("fis" or "etiket")
+            ? BadRequest("Yazdırmak için en az bir sipariş ve belge türü seçin.")
+            : await PrintAsync(ids.Distinct().Take(200).ToList(), tur, cancellationToken);
+
+    private async Task<IActionResult> PrintAsync(IReadOnlyList<int> ids, string kind, CancellationToken cancellationToken)
+    {
+        var details = new List<OrderDetail>();
+        foreach (var id in ids)
+        {
+            var (status, detail) = await _orderService.GetByIdAsync(id, cancellationToken);
+            if (status == HttpStatusCode.OK)
+            {
+                details.Add(detail.Data!);
+            }
+        }
+
+        if (details.Count == 0)
+        {
+            return NotFound();
+        }
+
+        var name = details.Count == 1 ? details[0].Order.OrderNo : $"{details.Count}-siparis";
+        return kind == "fis"
+            ? File(OrderPdf.Slips(details), "application/pdf", $"fis-{name}.pdf")
+            : File(OrderPdf.Labels(details), "application/pdf", $"etiket-{name}.pdf");
+    }
+
     /// <summary>Müşterinin iptal ettiği onaylı havalenin IBAN'a elle geri ödemesi yapıldı.</summary>
     [HttpPost("admin/orders/{id:int}/geri-odendi")]
     [ValidateAntiForgeryToken]
@@ -364,7 +427,7 @@ public class OrdersController : Controller
         }
 
         Response.StatusCode = (int)status;
-        return View("Detail", ViewFor(detail.Data!, message));
+        return View("Detail", await ViewForAsync(detail.Data!, message, cancellationToken));
     }
 
     /// <summary>Dosya yoksa, boşsa ya da sınırı aşıyorsa null.</summary>
@@ -390,11 +453,12 @@ public class OrdersController : Controller
         return form;
     }
 
-    private OrderDetailViewModel ViewFor(OrderDetail detail, string? errorMessage = null) => new()
+    private async Task<OrderDetailViewModel> ViewForAsync(OrderDetail detail, string? errorMessage, CancellationToken cancellationToken) => new()
     {
         Detail = detail,
         ErrorMessage = errorMessage,
         Carriers = _shipping.Carriers.Select(c => c.Name).ToList(),
-        TrackingUrl = _shipping.TrackingUrl(detail.Order.Carrier, detail.Order.TrackingNo)
+        TrackingUrl = _shipping.TrackingUrl(detail.Order.Carrier, detail.Order.TrackingNo),
+        Timeline = await _timeline.GetAsync(detail.Order.Id, cancellationToken)
     };
 }

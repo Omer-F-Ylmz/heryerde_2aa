@@ -25,6 +25,7 @@ public partial class CheckoutController(
     IPrivateFileStorage files,
     ILegalPdfArchive legalPdfs,
     IReturnService returnService,
+    IAdminAuditService auditService,
     TimeProvider clock) : Controller
 {
     private ShopSettings Shop => shop.Value;
@@ -273,6 +274,8 @@ public partial class CheckoutController(
 
         if (status == HttpStatusCode.OK)
         {
+            // Yönetici olmayan işlem: izde yönetici kimliği 0 ("Müşteri"), siparişin zaman çizelgesinde görünür.
+            await auditService.WriteAsync(HttpContext, "müşteri iptali", "sipariş", detail.Data!.Order.Id);
             TempData[OrderMessageKey] = result.Message;
             return SeeOther($"/siparis/{orderNo}/tesekkur?t={t}");
         }

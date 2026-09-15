@@ -399,10 +399,12 @@
     flex-wrap: wrap;
   }
 
-  /* Telefonda menü tek sütun: kısa adlı iki bağlantı (İadeler, Rapor) aynı satıra düşmesin. */
+  /* Telefonda menü markanın altında tam genişlik iki eşit sütun: satırlar hizalı, pano ilk ekranda başlar. */
   @media (max-width: 767.98px) {
     .admin-nav {
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex-basis: 100%;
     }
   }
 
@@ -3395,6 +3397,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    /* seçim sütunu eklenince dar ekranda numara tireden bölünmesin; tablo kendi kabında kayar */
+    white-space: nowrap;
   }
 
   .order-row__new {
@@ -4329,6 +4333,221 @@
 
   .report__subhead {
     margin-top: 32px;
+  }
+
+  /* Sipariş zaman çizelgesi: sol çizgi üzerinde işaretli satırlar, eskiden yeniye */
+  .timeline {
+    margin-top: 24px;
+  }
+
+  .timeline__list {
+    margin: 16px 0 24px;
+    padding: 0 0 0 24px;
+    list-style: none;
+    border-left: 2px solid var(--c-neutral-200);
+  }
+
+  .timeline__item {
+    position: relative;
+    display: grid;
+    gap: 0 16px;
+    padding-bottom: 16px;
+  }
+
+  .timeline__item::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: -31px;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--c-neutral-50);
+    border: 2px solid var(--c-accent);
+  }
+
+  .timeline__item--not::before {
+    background: var(--c-brand-100);
+    border-color: var(--c-brand);
+  }
+
+  .timeline__item--iade::before {
+    border-color: var(--c-brand);
+  }
+
+  .timeline__at {
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .timeline__title {
+    font-weight: 600;
+    color: var(--c-neutral-900);
+  }
+
+  .timeline__detail {
+    color: var(--c-neutral-900);
+    overflow-wrap: anywhere;
+  }
+
+  .timeline__actor {
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .timeline__note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+  }
+
+  .timeline__note .field {
+    margin-bottom: 0;
+    flex: 1 1 280px;
+  }
+
+  @media (min-width: 1024px) {
+    .timeline__item {
+      grid-template-columns: 160px minmax(0, 1fr);
+    }
+
+    .timeline__detail,
+    .timeline__actor {
+      grid-column: 2;
+    }
+  }
+
+  /* Sipariş listesi: seçili siparişlerin fiş/etiketini toplu yazdırma */
+  .kvkk {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .kvkk__search,
+  .kvkk__request {
+    display: grid;
+    gap: 16px;
+    justify-items: start;
+    margin: 16px 0 24px;
+  }
+
+  .kvkk__search .field,
+  .kvkk__request .field {
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 0;
+  }
+
+  .kvkk__counts {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .kvkk__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .kvkk__item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    min-height: 48px;
+    padding-block: 8px;
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .kvkk__item form {
+    margin-left: auto;
+  }
+
+  @media (min-width: 768px) {
+    .kvkk__request {
+      grid-template-columns: minmax(0, 1fr) 200px auto;
+      align-items: end;
+    }
+
+    .kvkk__request .field {
+      max-width: none;
+    }
+  }
+
+  .bulk-print {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 16px;
+  }
+
+  .bulk-print__label {
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .table__check {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--c-accent);
+  }
+
+  .table__check:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  /* Pano: bekleyen işler ve gecikmiş kargo listesi */
+  .todo {
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .todo li + li {
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .todo__link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 48px;
+    padding: 8px 0;
+    color: var(--c-neutral-700);
+    transition: color 240ms var(--ease);
+  }
+
+  .todo__link--open {
+    color: var(--c-neutral-900);
+    font-weight: 600;
+  }
+
+  .todo__link:hover {
+    color: var(--c-brand-700);
+  }
+
+  .todo__link:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .todo__count {
+    min-width: 32px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--c-neutral-200);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .todo__link--open .todo__count {
+    background: var(--c-brand-100);
+    color: var(--c-brand-900);
   }
 
   @media (min-width: 1024px) {

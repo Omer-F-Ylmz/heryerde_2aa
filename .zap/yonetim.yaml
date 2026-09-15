@@ -1,0 +1,74 @@
+# Yönetim paneli taraması (Automation Framework). zap-baseline/full-scan hedefi köke kırptığı için bağlam /admin ile
+# başlatılamıyordu; plan örümceği doğrudan /admin/products'tan başlatır. Oturum çerezi zap.sh'a -config replacer ile verilir.
+env:
+  contexts:
+    - name: yonetim
+      urls:
+        - http://localhost:8080/admin/products
+      includePaths:
+        - "http://localhost:8080/admin.*"
+      excludePaths:
+        - "http://localhost:8080/admin/auth/logout.*"
+        - "http://localhost:8080/admin/sifre.*"
+        - "http://localhost:8080/admin/oturumlar.*"
+        - "http://localhost:8080/admin/iki-adim.*"
+        - "http://localhost:8080/admin/.*[Dd]elete.*"
+        - "http://localhost:8080/admin/orders/anonymize.*"
+        - "http://localhost:8080/admin/orders/[0-9]+/iade.*"
+        - "http://localhost:8080/admin/kvkk/anonimlestir.*"
+        - "http://localhost:8080/admin/kvkk/basvuru/[0-9]+/tamamla.*"
+        - "http://localhost:8080/admin/orders/[0-9]+/geri-odendi.*"
+        - "http://localhost:8080/admin/iadeler/[0-9]+/(onayla|reddet|teslim-al|geri-odendi).*"
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  # Doğrulanmış yanlış pozitif (docs/zap-3.md): 6-5 "URL dosya adı parametre değeri" sezgisi, int Id/SortOrder'da formun
+  # 200/302/400 dalgalanmasıyla tetikleniyor; değer dosya yoluna ulaşmıyor, yanıtta dosya içeriği yok.
+  - type: alertFilter
+    alertFilters:
+      - ruleId: 6
+        newRisk: "False Positive"
+        url: "http://localhost:8080/admin/categories/edit/[0-9]+"
+        urlRegex: true
+        parameter: "Id|SortOrder"
+        parameterRegex: true
+
+  - type: spider
+    parameters:
+      context: yonetim
+      url: http://localhost:8080/admin/products
+      maxDuration: 5
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 10
+
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: /zap/wrk
+      reportFile: yonetim-baseline
+
+  - type: activeScan
+    parameters:
+      context: yonetim
+      maxScanDurationInMins: 40
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: /zap/wrk
+      reportFile: yonetim-full
+
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: /zap/wrk
+      reportFile: yonetim-full

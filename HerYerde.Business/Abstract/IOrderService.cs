@@ -73,6 +73,7 @@ public interface IOrderService
     Task<(HttpStatusCode, IResult)> MarkSeenAsync(int orderId, CancellationToken cancellationToken = default);
 
     /// <summary>Kapanmış (teslim/iptal) siparişin ad, telefon, e-posta ve adresini maskeler, notu siler, erişim anahtarını yeniler;
-    /// açık siparişte 409. Data: kayıttan düşen dekont dosyaları (silinmeleri çağıranın işi).</summary>
+    /// açık siparişte 409. İade talebinin neden, IBAN ve fotoğrafı da silinir. Data: kayıttan düşen dekont ve iade fotoğrafı dosyaları
+    /// (silinmeleri çağıranın işi).</summary>
     Task<(HttpStatusCode, IDataResult<IReadOnlyList<string>>)> AnonymizeAsync(int orderId, CancellationToken cancellationToken = default);
 }

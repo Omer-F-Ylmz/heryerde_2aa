@@ -128,6 +128,8 @@ public static class TestData
         NewNotificationManager(context, clock: clock),
         new EfPaymentDal(context),
         new EfPaymentNoticeDal(context),
+        new EfReturnRequestDal(context),
+        new EfOrderNoteDal(context),
         Options.Create(NewShopSettings(freeShippingOver)),
         Options.Create(NewShippingSettings()),
         clock ?? TestClock.Fixed);
@@ -160,6 +162,20 @@ public static class TestData
         NewPaymentManager(context, provider, clock),
         NewOrderManager(context, clock),
         NewNotificationManager(context, clock: clock),
+        new EfUnitOfWork(context),
+        clock ?? TestClock.Fixed);
+
+    public static KvkkManager NewKvkkManager(HerYerdeContext context, TimeProvider? clock = null) => new(
+        new EfOrderDal(context),
+        new EfOrderItemDal(context),
+        new EfPaymentDal(context),
+        new EfPaymentNoticeDal(context),
+        new EfReturnRequestDal(context),
+        new EfReturnRequestItemDal(context),
+        new EfContactMessageDal(context),
+        new EfProductReviewDal(context),
+        new EfKvkkRequestDal(context),
+        NewOrderManager(context, clock),
         new EfUnitOfWork(context),
         clock ?? TestClock.Fixed);
 

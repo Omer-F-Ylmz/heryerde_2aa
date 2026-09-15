@@ -14,6 +14,11 @@ public interface IOrderDal : IEntityRepository<Order>
     /// ikinci istek 0 alır (ör. müşteri iptalinde stok iki kez dönmesin).</summary>
     Task<int> TryChangeStatusAsync(int orderId, OrderStatus from, OrderStatus to, CancellationToken cancellationToken = default);
 
+    /// <summary>Pano sayaçları tek sorguda: [todayStart, ∞) ve [weekStart, ∞) aralığında iptal dışı sipariş sayısı ve kasaya giren
+    /// ciro (kart çekimi başarılı, havale onaylı, kapıda/elden teslim edilmiş), bekleyen havale bildirimi, iade talebi, onaysız yorum,
+    /// okunmamış iletişim mesajı.</summary>
+    Task<DashboardCounts> DashboardCountsAsync(DateTime todayStartUtc, DateTime weekStartUtc, CancellationToken cancellationToken = default);
+
     /// <summary>Yönetimde hiç açılmamış sipariş sayısı.</summary>
     Task<int> UnseenCountAsync(CancellationToken cancellationToken = default);
 }

@@ -43,4 +43,6 @@ Informational (karar gerekmez): 10111/10112 giriş ve oturum isteği tanıma, 10
 
 Kapsam notları: teşekkür sayfası, havale bildirimi ve fatura indirme yalnız sayfa baseline'ında (anahtar yalnız o adıma verilir; full
 taramada `/siparis/{no}` anahtarsız 404). Yönetim aktif taraması 40 dk tavanında durdu. Kalıcı haftalık tarama: CI `zap-scan` job'u
-(vitrin baseline `-a -j`), Medium+ bulguda kırmızı; elle tetiklenen koşu yeşil.
+(vitrin baseline `-a -j`), Medium+ bulguda kırmızı; elle tetiklenen koşu yeşil. D13'ten beri aynı job tarama hesabıyla
+`.zap/yonetim.yaml` planını da koşar (aktif tarama 40 dk tavan, 6-5 yanlış pozitif filtresi; KVKK anonimleştirme, başvuru tamamlama,
+iade onay/ret/teslim/geri ödeme uçları dışarıda); oturum kanıtı `/admin/rapor` 200, yanlış pozitif dışındaki Medium+ bulguda kırmızı.

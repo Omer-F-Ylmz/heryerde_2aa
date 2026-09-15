@@ -9,4 +9,7 @@ public interface IAdminAuditLogDal : IEntityRepository<AdminAuditLog>
     Task<List<AdminAuditRow>> GetRecentAsync(int skip, int take, CancellationToken cancellationToken = default);
 
     Task<int> CountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Bir kaydın izleri, eskiden yeniye, yönetici e-postasıyla (sipariş zaman çizelgesi).</summary>
+    Task<List<AdminAuditRow>> GetForEntityAsync(string entity, int entityId, CancellationToken cancellationToken = default);
 }

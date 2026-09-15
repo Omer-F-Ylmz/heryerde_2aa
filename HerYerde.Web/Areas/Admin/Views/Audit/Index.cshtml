@@ -35,7 +35,11 @@ else
             {
                 <tr>
                     <th scope="row"><span class="cell-mono">@IstanbulTime.Format(entry.Log.At)</span></th>
-                    @if (entry.AdminEmail is null)
+                    @if (entry.Log.AdminId == 0)
+                    {
+                        <td>Müşteri</td>
+                    }
+                    else if (entry.AdminEmail is null)
                     {
                         <td><span class="cell-mono">#@entry.Log.AdminId</span></td>
                     }

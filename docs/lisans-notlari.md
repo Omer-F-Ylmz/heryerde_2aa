@@ -46,6 +46,14 @@ Sözleşme arşivi (ön bilgilendirme + mesafeli satış sözleşmesi) ve cayma 
   <https://www.questpdf.com/license/community.html>
 - **[MÜŞTERİ]:** işletmenin yıllık brüt gelirinin eşiğin altında olduğu teyit edilmeli; eşik aşılırsa lisans satın alınır.
 
+## ZXing.Net 0.16.11
+
+Kargo etiketindeki sipariş numarası Code128 barkodunu üretmek için (`HerYerde.Web/Infrastructure/OrderPdf.cs`); piksel verisi
+ImageSharp ile PNG'ye çevrilir (System.Drawing yok).
+
+- Lisans: **Apache-2.0**. Ticari kullanım serbest; NOTICE/lisans metninin korunması yeterli:
+  <https://github.com/micjahn/ZXing.Net/blob/master/COPYING>
+
 ## PdfPig 0.1.16 (yalnız test)
 
 Testlerde üretilen PDF'lerin metnini okumak için (`tests/HerYerde.Tests`). Lisans: **Apache-2.0**; üretime gitmez.

@@ -1,0 +1,87 @@
+@using HerYerde.Business.Dtos
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
+@model DashboardView
+@{
+    ViewData["Title"] = "Pano";
+    var todos = new (string Metric, string Label, int Count, string Href)[]
+    {
+        ("pending-notices", "Onay bekleyen havale bildirimi", Model.PendingNotices, "/admin/orders?durum=" + (int)OrderStatus.Beklemede),
+        ("pending-returns", "Bekleyen iade / değişim talebi", Model.PendingReturns, "/admin/iadeler"),
+        ("pending-reviews", "Onay bekleyen yorum", Model.PendingReviews, "/admin/yorumlar"),
+        ("unread-messages", "Okunmamış mesaj", Model.UnreadMessages, "/admin/mesajlar"),
+        ("low-stock", "Düşük stoklu ürün ve varyant", Model.LowStock, "/admin/stok")
+    };
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Bugün</p>
+        <h1 class="display-2">Pano</h1>
+        <p class="page-head__note">Ciro yalnız parası alınmış siparişlerden (rapordaki kural); sipariş sayısına iptaller girmez. Hafta pazartesi başlar.</p>
+    </div>
+    <div class="page-head__actions">
+        <a class="btn btn--secondary" href="/admin/orders">Siparişler</a>
+    </div>
+</div>
+
+<section class="report__kpis" aria-label="Sipariş ve ciro">
+    <div class="surface-elevated report__kpi report__kpi--lead">
+        <p class="report__kpi-label">Bugünkü ciro</p>
+        <p class="report__kpi-value" data-metric="today-revenue">@Money.Tl(Model.TodayRevenue)</p>
+        <p class="report__kpi-note">Bu hafta <span data-metric="week-revenue">@Money.Tl(Model.WeekRevenue)</span></p>
+    </div>
+    <div class="surface-elevated report__kpi">
+        <p class="report__kpi-label">Bugünkü sipariş</p>
+        <p class="report__kpi-value" data-metric="today-orders">@Model.TodayOrders</p>
+    </div>
+    <div class="surface-elevated report__kpi">
+        <p class="report__kpi-label">Haftalık sipariş</p>
+        <p class="report__kpi-value" data-metric="week-orders">@Model.WeekOrders</p>
+    </div>
+    <div class="surface-elevated report__kpi">
+        <p class="report__kpi-label">Gecikmiş kargo</p>
+        <p class="report__kpi-value" data-metric="late-dispatch">@Model.LateDispatch.Count</p>
+        <p class="report__kpi-note">@Shop.Value.DispatchDays iş gününü geçen onaylı sipariş</p>
+    </div>
+</section>
+
+<div class="report__grid">
+    <section class="surface-elevated report__panel" aria-labelledby="bekleyen">
+        <h2 class="heading-3" id="bekleyen">Bekleyen işler</h2>
+        <ul class="todo">
+            @foreach (var todo in todos)
+            {
+                <li>
+                    <a class="todo__link @(todo.Count > 0 ? "todo__link--open" : null)" href="@todo.Href">
+                        <span>@todo.Label</span>
+                        <span class="todo__count" data-metric="@todo.Metric">@todo.Count</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </section>
+
+    <section class="surface-elevated report__panel" aria-labelledby="gecikmis">
+        <h2 class="heading-3" id="gecikmis">Kargoya verilmemiş</h2>
+        @if (Model.LateDispatch.Count == 0)
+        {
+            <p class="side-card__note">Söz verilen sürede kargoya verilmemiş onaylı sipariş yok.</p>
+        }
+        else
+        {
+            <ul class="todo">
+                @foreach (var order in Model.LateDispatch)
+                {
+                    <li>
+                        <a class="todo__link todo__link--open" href="/admin/orders/detail/@order.Id">
+                            <span class="cell-mono">@order.OrderNo</span>
+                            <span>@IstanbulTime.Format(order.CreatedAt)</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>

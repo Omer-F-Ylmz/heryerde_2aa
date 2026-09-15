@@ -27,6 +27,8 @@ public class HerYerdeContext : DbContext
     public DbSet<PaymentNotice> PaymentNotices => Set<PaymentNotice>();
     public DbSet<ReturnRequest> ReturnRequests => Set<ReturnRequest>();
     public DbSet<ReturnRequestItem> ReturnRequestItems => Set<ReturnRequestItem>();
+    public DbSet<KvkkRequest> KvkkRequests => Set<KvkkRequest>();
+    public DbSet<OrderNote> OrderNotes => Set<OrderNote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -291,6 +293,29 @@ public class HerYerdeContext : DbContext
             e.HasOne<ReturnRequest>().WithMany().HasForeignKey(i => i.ReturnRequestId).OnDelete(DeleteBehavior.Cascade);
             // Sipariş silinince talep üzerinden zaten silinir; ikinci basamaklı yol SQL Server'da çakışır.
             e.HasOne<OrderItem>().WithMany().HasForeignKey(i => i.OrderItemId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<KvkkRequest>(e =>
+        {
+            e.ToTable("kvkk_request");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id");
+            e.Property(r => r.Subject).HasColumnName("subject").HasMaxLength(200).IsRequired();
+            e.Property(r => r.ReceivedAt).HasColumnName("received_at");
+            e.Property(r => r.CompletedAt).HasColumnName("completed_at");
+        });
+
+        modelBuilder.Entity<OrderNote>(e =>
+        {
+            e.ToTable("order_note");
+            e.HasKey(n => n.Id);
+            e.Property(n => n.Id).HasColumnName("id");
+            e.Property(n => n.OrderId).HasColumnName("order_id");
+            e.Property(n => n.AdminId).HasColumnName("admin_id");
+            e.Property(n => n.Text).HasColumnName("text").HasMaxLength(1000).IsRequired();
+            e.Property(n => n.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(n => n.OrderId).HasDatabaseName("ix_order_note_order_id");
+            e.HasOne<Order>().WithMany().HasForeignKey(n => n.OrderId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<OutboxMessage>(e =>

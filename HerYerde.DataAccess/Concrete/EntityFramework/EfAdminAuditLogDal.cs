@@ -24,4 +24,13 @@ public class EfAdminAuditLogDal : EfEntityRepositoryBase<AdminAuditLog, HerYerde
 
     public Task<int> CountAsync(CancellationToken cancellationToken = default)
         => Context.AdminAuditLogs.CountAsync(cancellationToken);
+
+    public Task<List<AdminAuditRow>> GetForEntityAsync(string entity, int entityId, CancellationToken cancellationToken = default)
+        => (from entry in Context.AdminAuditLogs.AsNoTracking()
+            join admin in Context.AdminUsers on entry.AdminId equals admin.Id into admins
+            from admin in admins.DefaultIfEmpty()
+            where entry.Entity == entity && entry.EntityId == entityId
+            orderby entry.At, entry.Id
+            select new AdminAuditRow(entry, admin == null ? null : admin.Email))
+            .ToListAsync(cancellationToken);
 }
