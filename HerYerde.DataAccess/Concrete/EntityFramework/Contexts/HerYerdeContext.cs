@@ -228,6 +228,8 @@ public class HerYerdeContext : DbContext
             e.Property(m => m.Body).HasColumnName("body").HasColumnType("nvarchar(max)").IsRequired();
             e.Property(m => m.Status).HasColumnName("status").HasConversion<int>();
             e.Property(m => m.TryCount).HasColumnName("try_count");
+            // Değer verilmeyen eski kayıtlar ve testlerin elle eklediği satırlar sunucu saatini alır.
+            e.Property(m => m.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("SYSUTCDATETIME()");
             e.Property(m => m.NextTryAt).HasColumnName("next_try_at");
             e.Property(m => m.SentAt).HasColumnName("sent_at");
             // Dağıtım turu: yalnız bekleyen ve sırası gelmiş kayıtlar okunur.

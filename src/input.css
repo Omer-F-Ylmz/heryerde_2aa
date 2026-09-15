@@ -1988,6 +1988,20 @@
     min-height: 44px;
   }
 
+  /* ETBİS kaydı: Legal:EtbisNo doluyken altbilgi sonunda tam genişlik bant */
+  .store-footer__etbis {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--c-neutral-200);
+  }
+
+  .store-footer__etbis-no {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--c-neutral-900);
+  }
+
   @media (min-width: 768px) {
     /* Kurumsal ve Yasal sütunları sağda iki satırı kaplar; sosyal bağlantılar ve telif solda alt alta */
     .store-footer__corporate,

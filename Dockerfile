@@ -27,7 +27,11 @@ WORKDIR /app
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 COPY --from=build /app .
-# Serilog dosya sink'i /app/logs'a yazar; uygulama kullanıcısı root değil.
-RUN mkdir -p /app/logs && chown $APP_UID /app/logs
+# --ithal varsayılan tabloyu depo köküne göre arar; imajda depo kökü /app.
+COPY docs/ithal-1.md docs/ithal-2.md ./docs/
+# Serilog dosya sink'i /app/logs'a, yüklenen görseller /app/wwwroot/uploads'a (kalıcı volume) yazar; uygulama kullanıcısı root değil.
+RUN mkdir -p /app/logs /app/wwwroot/uploads && chown $APP_UID /app/logs /app/wwwroot/uploads
 USER $APP_UID
+# İmajda curl/wget yok; aynı dll /health'e tek istek atıp çıkış koduyla bildirir.
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD ["dotnet", "HerYerde.Web.dll", "--healthcheck"]
 ENTRYPOINT ["dotnet", "HerYerde.Web.dll"]

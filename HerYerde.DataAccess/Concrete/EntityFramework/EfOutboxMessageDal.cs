@@ -19,4 +19,9 @@ public class EfOutboxMessageDal : EfEntityRepositoryBase<OutboxMessage, HerYerde
             .OrderBy(m => m.Id)
             .Take(take)
             .ToListAsync(cancellationToken);
+
+    public Task<DateTime?> OldestPendingCreatedAtAsync(CancellationToken cancellationToken = default)
+        => Context.OutboxMessages
+            .Where(m => m.Status == OutboxStatus.Bekliyor)
+            .MinAsync(m => (DateTime?)m.CreatedAt, cancellationToken);
 }

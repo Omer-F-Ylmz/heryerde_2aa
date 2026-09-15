@@ -31,12 +31,18 @@ public sealed class RateLimitSettings
 public static class RateLimitPolicy
 {
     /// <summary>Yol ve yönteme göre tek bir bölüm seçer: yönetici girişi, görsel yükleme, sepet, 3D dönüşü, ödeme, iletişim, yorum ya da genel.
-    /// Hata sayfası yeniden çalıştırıldığında sınır uygulanmaz, yoksa 429 sayfası da 429 olurdu.</summary>
+    /// Hata sayfası yeniden çalıştırıldığında sınır uygulanmaz, yoksa 429 sayfası da 429 olurdu. Sağlık uçları da
+    /// sınırsızdır: izleme servisi sık yoklar, 429 kesinti gibi görünür.</summary>
     public static RateLimitPartition<string> Select(HttpContext context)
     {
         if (context.Features.Get<IStatusCodeReExecuteFeature>() is not null)
         {
             return RateLimitPartition.GetNoLimiter("yeniden-calistirma");
+        }
+
+        if (context.Request.Path.StartsWithSegments("/health"))
+        {
+            return RateLimitPartition.GetNoLimiter("saglik");
         }
 
         var settings = context.RequestServices.GetRequiredService<IOptions<RateLimitSettings>>().Value;

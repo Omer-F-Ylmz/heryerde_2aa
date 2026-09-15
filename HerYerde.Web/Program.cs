@@ -14,12 +14,14 @@ using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Primitives;
+using Sentry.Extensibility;
 using Serilog;
 using Serilog.Events;
 
@@ -37,16 +39,24 @@ builder.Host.ConfigureContainer<ContainerBuilder>(container => container.Registe
 // Konsol + 14 gün tutulan günlük dosya; telefon/e-posta/adres PiiMaskEnricher ile maskelenir.
 // DI'daki ek sink'ler (testlerin bellek sink'i) ReadFrom.Services ile bağlanır; DI'a sonradan eklenen
 // ILoggerProvider'lar (testlerin sorgu sayacı) writeToProviders ile beslenir. Varsayılan konsol sağlayıcısı
-// Serilog konsoluyla çift yazmasın diye temizlenir.
+// Serilog konsoluyla çift yazmasın diye temizlenir. Sentry:Dsn doluysa hatalar Sentry'ye de gider (SentryReporting).
 builder.Logging.ClearProviders();
-builder.Services.AddSerilog((services, logger) => logger
-    .MinimumLevel.Information()
-    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-    .Enrich.FromLogContext()
-    .Enrich.With<PiiMaskEnricher>()
-    .WriteTo.Console()
-    .WriteTo.File("logs/heryerde-.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
-    .ReadFrom.Services(services),
+builder.Services.AddSerilog((services, logger) =>
+    {
+        var sentryDsn = services.GetRequiredService<IConfiguration>()["Sentry:Dsn"];
+        logger
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+            .Enrich.FromLogContext()
+            .Enrich.With<PiiMaskEnricher>()
+            .WriteTo.Console()
+            .WriteTo.File("logs/heryerde-.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
+            .ReadFrom.Services(services);
+        if (SentryReporting.Enabled(sentryDsn))
+        {
+            logger.WriteTo.Sentry(options => SentryReporting.Configure(options, sentryDsn!, services.GetService<ITransport>()));
+        }
+    },
     preserveStaticLogger: true,
     writeToProviders: true);
 
@@ -99,7 +109,7 @@ builder.Services.AddOutputCache();
 
 builder.Services.AddDbContext<HerYerdeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks().AddCheck<ReadinessCheck>("hazirlik", tags: [ReadinessCheck.Tag]);
 
 // TLS'i sonlandıran vekil arkasında şema ve istemci IP'si başlıktan okunur. Başlık yalnız tanımlı vekilden
 // gelirse geçerlidir: liste boşken middleware her kaynağa güvenirdi ve X-Forwarded-For ile hız sınırı atlatılırdı.
@@ -199,7 +209,10 @@ app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health");
+// /health canlılık: süreç ayakta mı (konteyner sağlık denetimi); /health/ready trafiği karşılayabilir mi.
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains(ReadinessCheck.Tag) })
+    .AllowAnonymous();
 app.MapControllerRoute(
     name: "admin-root",
     pattern: "admin",
@@ -210,6 +223,25 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Yedek komutları geçişlerden önce: gece yedeği şemaya dokunmaz, geri yükleme bozuk şemada da çalışır.
+if (BackupCommand.BackupFolderFrom(args) is { } backupFolder)
+{
+    var backup = await BackupCommand.BackupAsync(
+        app.Configuration.GetConnectionString("Default")!,
+        app.Services.GetRequiredService<IProductImageStorage>().UploadsPath,
+        backupFolder,
+        app.Services.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime);
+    Console.WriteLine($"Yedek: {backup.Database}, arşiv: {backup.Archive ?? "(uploads yok)"}, silinen: {backup.Removed.Count}.");
+    return;
+}
+
+if (BackupCommand.RestoreFileFrom(args) is { } restoreFile)
+{
+    var restored = await BackupCommand.RestoreAsync(app.Configuration.GetConnectionString("Default")!, restoreFile);
+    Console.WriteLine($"Geri yükleme: {restored.Database}, {restored.Products} ürün.");
+    return;
+}
 
 await DatabaseMigrator.ApplyAsync(
     app.Environment,

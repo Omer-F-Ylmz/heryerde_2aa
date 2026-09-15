@@ -18,6 +18,9 @@ public class OutboxMessage : IEntity
     public OutboxStatus Status { get; set; }
     public int TryCount { get; set; }
 
+    /// <summary>Kuyruğa giriş anı; hazırlık denetimi bekleyen en eski kaydın gecikmesini buradan ölçer.</summary>
+    public DateTime CreatedAt { get; set; }
+
     /// <summary>Başarısız denemeden sonraki en erken yeniden deneme anı; ilk kayıtta boştur.</summary>
     public DateTime? NextTryAt { get; set; }
 

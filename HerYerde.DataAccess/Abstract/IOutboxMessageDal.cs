@@ -7,4 +7,7 @@ public interface IOutboxMessageDal : IEntityRepository<OutboxMessage>
 {
     /// <summary>Gönderilmeyi bekleyen, yeniden deneme anı gelmiş kayıtlar; izlenir, dağıtımda güncellenir.</summary>
     Task<List<OutboxMessage>> DueAsync(DateTime moment, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>Hâlâ bekleyen en eski kaydın kuyruğa giriş anı; bekleyen yoksa null.</summary>
+    Task<DateTime?> OldestPendingCreatedAtAsync(CancellationToken cancellationToken = default);
 }

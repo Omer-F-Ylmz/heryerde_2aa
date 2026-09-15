@@ -28,6 +28,9 @@ public interface INotificationService
 
     /// <summary>Siparişin tüm postalarını (alıcı, ad, token'lı bağlantı) siler; anonimleştirmede kullanılır. Kaydetmez.</summary>
     Task ForgetOrderAsync(Order order, CancellationToken cancellationToken = default);
+
+    /// <summary>Bekleyen en eski postanın kuyrukta geçirdiği süre; bekleyen yoksa null.</summary>
+    Task<TimeSpan?> OldestPendingAgeAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>Bir dağıtım turunun sonucu; <see cref="Skipped"/> SMTP ayarsızken doludur.</summary>

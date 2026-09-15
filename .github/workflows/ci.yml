@@ -9,6 +9,31 @@ on:
     # Her pazartesi 06:00 UTC: yeni yayımlanan güvenlik açıkları için haftalık tarama.
     - cron: "0 6 * * 1"
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Smoke hedefi (bos birakilirsa compose ile yerel prod imaji)"
+        required: false
+        default: ""
+
+# docker-compose.prod.yml'in zorunlu değişkenleri (docs/dis-hesaplar.md); zap-scan, restore-check ve smoke aynı değerlerle kalkar.
+env:
+  HERYERDE_DB_PASSWORD: "HerYerde_Zap_P4ssw0rd!"
+  HERYERDE_CONNECTION_STRING: "Server=db;Database=HerYerde;User Id=sa;Password=HerYerde_Zap_P4ssw0rd!;TrustServerCertificate=True"
+  HERYERDE_ADMIN_EMAIL: "zap@heryerde.local"
+  HERYERDE_ADMIN_PASSWORD: "Zap-Tarama-Parola-2026"
+  HERYERDE_BASE_URL: "http://localhost:8080"
+  HERYERDE_ALLOWED_HOSTS: "localhost"
+  HERYERDE_IBAN: "TR00 0000 0000 0000 0000 0000 00"
+  HERYERDE_SMTP_HOST: "smtp.invalid"
+  HERYERDE_SMTP_USER: "ci"
+  HERYERDE_SMTP_PASSWORD: "ci"
+  HERYERDE_SMTP_FROM: "siparis@heryerde.local"
+  HERYERDE_STORE_EMAIL: "magaza@heryerde.local"
+  HERYERDE_IYZICO_API_KEY: "ci-sahte-anahtar"
+  HERYERDE_IYZICO_SECRET_KEY: "ci-sahte-gizli"
+  HERYERDE_IYZICO_BASE_URL: "https://sandbox-api.iyzipay.com"
+  HERYERDE_IYZICO_CSP_SOURCE: "https://sandbox-api.iyzipay.com"
+  HERYERDE_SENTRY_DSN: "https://ci@sentry.invalid/1"
 
 jobs:
   build-test:
@@ -22,6 +47,9 @@ jobs:
           MSSQL_SA_PASSWORD: "HerYerde_Ci_P4ssw0rd!"
         ports:
           - 1433:1433
+        # Yedek testleri: BACKUP DATABASE konteynerin diskine yazar, test aynı yoldan okur.
+        volumes:
+          - /tmp/heryerde-yedek:/tmp/heryerde-yedek
         options: >-
           --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'HerYerde_Ci_P4ssw0rd!' -C -Q 'SELECT 1' || exit 1"
           --health-interval 10s
@@ -32,6 +60,7 @@ jobs:
       DOTNET_NOLOGO: "1"
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       ConnectionStrings__Default: "Server=localhost,1433;Database=HerYerdeTest;User Id=sa;Password=HerYerde_Ci_P4ssw0rd!;TrustServerCertificate=True"
+      HERYERDE_TEST_BACKUP_DIR: /tmp/heryerde-yedek
 
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +72,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Backup folder permissions
+        # Klasörü docker root olarak açar; mssql (10001) ve runner kullanıcısı birlikte yazar.
+        run: docker exec -u 0 ${{ job.services.sqlserver.id }} chmod 777 /tmp/heryerde-yedek
+
+      - name: Compose required env
+        # Zorunlu değişkenlerden biri boşken prod compose yorumlanamaz; hepsi doluyken yorumlanır.
+        run: |
+          if env -i PATH="$PATH" HOME="$HOME" docker compose -f docker-compose.prod.yml config > /dev/null 2> missing.txt; then
+            echo "::error::Zorunlu env boşken docker compose config başarılı oldu."; exit 1
+          fi
+          grep -q "gerekli" missing.txt
+          for name in HERYERDE_SENTRY_DSN HERYERDE_IYZICO_API_KEY HERYERDE_SMTP_HOST HERYERDE_ALLOWED_HOSTS HERYERDE_BASE_URL; do
+            if env -u "$name" docker compose -f docker-compose.prod.yml config > /dev/null 2>&1; then
+              echo "::error::$name eksikken docker compose config başarılı oldu."; exit 1
+            fi
+          done
+          docker compose -f docker-compose.prod.yml config > /dev/null
 
       - name: Restore
         run: dotnet restore HerYerde.sln
@@ -158,12 +205,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      HERYERDE_DB_PASSWORD: "HerYerde_Zap_P4ssw0rd!"
-      HERYERDE_CONNECTION_STRING: "Server=db;Database=HerYerde;User Id=sa;Password=HerYerde_Zap_P4ssw0rd!;TrustServerCertificate=True"
-      HERYERDE_ADMIN_EMAIL: "zap@heryerde.local"
-      HERYERDE_ADMIN_PASSWORD: "Zap-Tarama-Parola-2026"
-      HERYERDE_BASE_URL: "http://localhost:8080"
-      HERYERDE_ALLOWED_HOSTS: "localhost"
       COMPOSE: docker compose -f docker-compose.prod.yml -f docker-compose.zap.yml
 
     steps:
@@ -194,3 +235,80 @@ jobs:
         with:
           name: zap-report
           path: zap-out/
+
+  restore-check:
+    # Haftalık yedek provası (docs/yedekleme.md): prod imajı kalkar, örnek veri --ithal ile imajda girer, gece yedeği elle
+    # tetiklenir, son .bak ayrı veritabanına açılır; ürün sayısı eşit ve o veritabanıyla açılan uygulama /health/ready 200.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    env:
+      COMPOSE: docker compose -f docker-compose.prod.yml
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start app (compose)
+        run: |
+          sudo install -d -m 0770 -o 10001 -g 1654 backups
+          $COMPOSE up -d --build --wait --wait-timeout 300 || { $COMPOSE logs web; exit 1; }
+          curl -fsS http://localhost:8080/health/ready
+
+      - name: Sample data (--ithal, --gorsel-yenile in image)
+        run: bash tools/ci-ornek-veri.sh
+
+      - name: Backup (--yedek-al)
+        run: |
+          $COMPOSE run --rm backup "dotnet HerYerde.Web.dll --yedek-al /backups"
+          sudo ls -l backups
+          latest=$(sudo ls -1 backups | grep '\.bak$' | sort | tail -1)
+          archive=$(sudo ls -1 backups | grep '^uploads-.*\.tar\.gz$' | sort | tail -1)
+          test -n "$latest" && test -n "$archive"
+          sudo tar -tzf "backups/$archive" | grep -q 'products/'
+          echo "LATEST_BACKUP=$latest" >> "$GITHUB_ENV"
+
+      - name: Restore (--yedek-yukle)
+        run: $COMPOSE run --rm backup "dotnet HerYerde.Web.dll --yedek-yukle /backups/$LATEST_BACKUP"
+
+      - name: Verify restored database
+        run: |
+          count() {
+            $COMPOSE exec -T db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$HERYERDE_DB_PASSWORD" -C -b -h -1 -W \
+              -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM [$1].dbo.product" | tr -d '[:space:]'
+          }
+          live=$(count HerYerde)
+          restored=$(count HerYerde_prova)
+          echo "canli=$live prova=$restored"
+          test "$live" -ge 1 && test "$live" = "$restored"
+          $COMPOSE run -d --name heryerde-prova -p 8081:8080 \
+            -e "ConnectionStrings__Default=${HERYERDE_CONNECTION_STRING/Database=HerYerde;/Database=HerYerde_prova;}" web
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8081/health/ready; then exit 0; fi
+            sleep 2
+          done
+          docker logs heryerde-prova
+          exit 1
+
+  smoke:
+    # tools/smoke.ps1: base_url verilirse o adrese (yayın sonrası), verilmezse compose ile kalkan prod imajına karşı.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    env:
+      COMPOSE: docker compose -f docker-compose.prod.yml
+      SMOKE_BASE_URL: ${{ inputs.base_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start app (compose)
+        if: env.SMOKE_BASE_URL == ''
+        run: |
+          $COMPOSE up -d --build --wait --wait-timeout 300 || { $COMPOSE logs web; exit 1; }
+          bash tools/ci-ornek-veri.sh
+
+      - name: Smoke
+        shell: pwsh
+        run: |
+          $target = if ($env:SMOKE_BASE_URL) { $env:SMOKE_BASE_URL } else { 'http://localhost:8080' }
+          ./tools/smoke.ps1 -BaseUrl $target

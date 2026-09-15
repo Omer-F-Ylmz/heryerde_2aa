@@ -113,6 +113,10 @@
             </ul>
         </nav>
         <span>HerYerde, @DateTime.UtcNow.Year · <span class="site-footer__note">Kapıda ödeme &amp; havale/EFT</span></span>
+        @if (Config["Legal:EtbisNo"] is { Length: > 0 } etbisNo)
+        {
+            <p class="store-footer__etbis">ETBİS'e kayıtlıdır · Kayıt no: <span class="store-footer__etbis-no">@etbisNo</span></p>
+        }
     </footer>
     <script src="~/js/site.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)

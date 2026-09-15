@@ -163,6 +163,11 @@ public class NotificationManager : INotificationService
         }
     }
 
+    public async Task<TimeSpan?> OldestPendingAgeAsync(CancellationToken cancellationToken = default)
+        => await _outboxDal.OldestPendingCreatedAtAsync(cancellationToken) is { } createdAt
+            ? _clock.GetUtcNow().UtcDateTime - createdAt
+            : null;
+
     private Task QueueAsync(string type, string to, string subject, string body, CancellationToken cancellationToken)
         => _outboxDal.AddAsync(
             new OutboxMessage
@@ -171,7 +176,8 @@ public class NotificationManager : INotificationService
                 To = to,
                 Subject = subject,
                 Body = body,
-                Status = OutboxStatus.Bekliyor
+                Status = OutboxStatus.Bekliyor,
+                CreatedAt = _clock.GetUtcNow().UtcDateTime
             },
             cancellationToken);
 }

@@ -1,7 +1,6 @@
-# Prod şablonu. Gizli değerler ortamdan gelir (.env dosyası veya CI secret):
-#   HERYERDE_DB_PASSWORD, HERYERDE_CONNECTION_STRING, HERYERDE_ADMIN_EMAIL, HERYERDE_ADMIN_PASSWORD,
-#   HERYERDE_BASE_URL (canonical/OG/sitemap kökü, ör. https://alanadi.com)
-#   HERYERDE_ALLOWED_HOSTS (Host başlığı süzgeci, ör. alanadi.com;www.alanadi.com)
+# Prod şablonu. Değerler ortamdan gelir (.env dosyası veya CI secret); her değişkenin anlamı ve kaynağı
+# docs/dis-hesaplar.md tablosunda. ":?" ile işaretli olan boşsa "docker compose up" yorumlama aşamasında durur.
+# Yedek klasörü (docs/yedekleme.md): sudo install -d -m 0770 -o 10001 -g 1654 backups
 services:
   web:
     build:
@@ -17,7 +16,22 @@ services:
       Admin__Email: ${HERYERDE_ADMIN_EMAIL:?HERYERDE_ADMIN_EMAIL gerekli}
       Admin__Password: ${HERYERDE_ADMIN_PASSWORD:?HERYERDE_ADMIN_PASSWORD gerekli}
       Shop__BaseUrl: ${HERYERDE_BASE_URL:?HERYERDE_BASE_URL gerekli}
+      Shop__Iban: ${HERYERDE_IBAN:?HERYERDE_IBAN gerekli}
       AllowedHosts: ${HERYERDE_ALLOWED_HOSTS:?HERYERDE_ALLOWED_HOSTS gerekli}
+      Notifications__Host: ${HERYERDE_SMTP_HOST:?HERYERDE_SMTP_HOST gerekli}
+      Notifications__Port: ${HERYERDE_SMTP_PORT:-587}
+      Notifications__User: ${HERYERDE_SMTP_USER:?HERYERDE_SMTP_USER gerekli}
+      Notifications__Password: ${HERYERDE_SMTP_PASSWORD:?HERYERDE_SMTP_PASSWORD gerekli}
+      Notifications__From: ${HERYERDE_SMTP_FROM:?HERYERDE_SMTP_FROM gerekli}
+      Notifications__StoreTo: ${HERYERDE_STORE_EMAIL:?HERYERDE_STORE_EMAIL gerekli}
+      Iyzico__ApiKey: ${HERYERDE_IYZICO_API_KEY:?HERYERDE_IYZICO_API_KEY gerekli}
+      Iyzico__SecretKey: ${HERYERDE_IYZICO_SECRET_KEY:?HERYERDE_IYZICO_SECRET_KEY gerekli}
+      Iyzico__BaseUrl: ${HERYERDE_IYZICO_BASE_URL:?HERYERDE_IYZICO_BASE_URL gerekli}
+      Iyzico__CspSources__0: ${HERYERDE_IYZICO_CSP_SOURCE:?HERYERDE_IYZICO_CSP_SOURCE gerekli}
+      Sentry__Dsn: ${HERYERDE_SENTRY_DSN:?HERYERDE_SENTRY_DSN gerekli}
+      Legal__EtbisNo: ${HERYERDE_ETBIS_NO:-}
+    volumes:
+      - heryerde-uploads:/app/wwwroot/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -28,6 +42,28 @@ services:
       timeout: 5s
       retries: 3
 
+  # Gecelik yedek: her gün 00:00 UTC (03:00 İstanbul) .bak + uploads arşivi, klasörde 14'er dosya kalır.
+  # Elle: docker compose -f docker-compose.prod.yml run --rm backup "dotnet HerYerde.Web.dll --yedek-al /backups"
+  backup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: heryerde-web:latest
+    restart: unless-stopped
+    entrypoint: ["sh", "-c"]
+    command: ["while :; do sleep $$((86400 - $$(date +%s) % 86400)); dotnet HerYerde.Web.dll --yedek-al /backups; done"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: ${HERYERDE_CONNECTION_STRING:?HERYERDE_CONNECTION_STRING gerekli}
+    volumes:
+      - ./backups:/backups
+      - heryerde-uploads:/app/wwwroot/uploads:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     restart: unless-stopped
@@ -36,6 +72,8 @@ services:
       MSSQL_SA_PASSWORD: ${HERYERDE_DB_PASSWORD:?HERYERDE_DB_PASSWORD gerekli}
     volumes:
       - heryerde-mssql:/var/opt/mssql
+      # BACKUP DATABASE dosyayı SQL Server'ın diskine yazar; yedek servisiyle aynı yoldan paylaşılır.
+      - ./backups:/backups
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
       interval: 10s
@@ -44,3 +82,4 @@ services:
 
 volumes:
   heryerde-mssql:
+  heryerde-uploads:
