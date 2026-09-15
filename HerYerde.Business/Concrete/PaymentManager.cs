@@ -1,5 +1,7 @@
 using System.Net;
-using System.Text.RegularExpressions;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using HerYerde.Business.Abstract;
 using HerYerde.Business.Dtos;
 using HerYerde.Core.DataAccess;
@@ -11,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace HerYerde.Business.Concrete;
 
-public partial class PaymentManager : IPaymentService
+public class PaymentManager : IPaymentService
 {
     public const string Provider = "iyzico";
 
@@ -256,23 +258,78 @@ public partial class PaymentManager : IPaymentService
             ? (HttpStatusCode.OK, new SuccessDataResult<Order>(order, "Ödemeniz alındı."))
             : (HttpStatusCode.PaymentRequired, new ErrorDataResult<Order>(Declined));
 
-    /// <summary>12-19 haneli sayı dizileri (kart numarası) ve cvc alanları maskelenir, yanıt kırpılır.</summary>
+    /// <summary>Yalnız kart alanları maskelenir (numara ve BIN son 4 hane hariç, cvc, kart sahibi); basketId, systemTime gibi
+    /// alanlar olduğu gibi kalır. Sınırı aşan yanıtta üst düzey dizi/nesneler atılır: kayıt her zaman geçerli JSON'dur.
+    /// JSON olmayan yanıt kart verisi taşıyabileceği için saklanmaz.</summary>
     public static string? MaskRaw(string? raw)
     {
-        if (string.IsNullOrEmpty(raw))
+        JsonObject? json;
+        try
+        {
+            json = string.IsNullOrEmpty(raw) ? null : JsonNode.Parse(raw) as JsonObject;
+        }
+        catch (JsonException)
         {
             return null;
         }
 
-        var masked = CvcPattern().Replace(CardNumberPattern().Replace(raw, "****"), "$1***$2");
-        return masked.Length <= RawResponseLimit ? masked : masked[..RawResponseLimit];
+        if (json is null)
+        {
+            return null;
+        }
+
+        MaskCardFields(json);
+        var masked = json.ToJsonString(RawJson);
+        if (masked.Length <= RawResponseLimit)
+        {
+            return masked;
+        }
+
+        foreach (var key in json.Where(p => p.Value is JsonObject or JsonArray).Select(p => p.Key).ToList())
+        {
+            json.Remove(key);
+        }
+
+        masked = json.ToJsonString(RawJson);
+        return masked.Length <= RawResponseLimit ? masked : null;
     }
 
-    [GeneratedRegex(@"\d(?:[ -]?\d){11,18}")]
-    private static partial Regex CardNumberPattern();
+    /// <summary>Alan adı → son 4 hane açık kalsın mı.</summary>
+    private static readonly Dictionary<string, bool> CardFields = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["cardNumber"] = true,
+        ["binNumber"] = true,
+        ["cvc"] = false,
+        ["cardHolderName"] = false
+    };
 
-    [GeneratedRegex(@"(""cvc""\s*:\s*"")[^""]*("")", RegexOptions.IgnoreCase)]
-    private static partial Regex CvcPattern();
+    private static readonly JsonSerializerOptions RawJson = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+    private static void MaskCardFields(JsonNode? node)
+    {
+        if (node is JsonArray array)
+        {
+            foreach (var item in array)
+            {
+                MaskCardFields(item);
+            }
+        }
+        else if (node is JsonObject json)
+        {
+            foreach (var (key, value) in json.ToList())
+            {
+                if (value is JsonValue && CardFields.TryGetValue(key, out var keepLastFour))
+                {
+                    var text = value.ToString();
+                    json[key] = keepLastFour && text.Length > 4 ? new string('*', text.Length - 4) + text[^4..] : "***";
+                }
+                else
+                {
+                    MaskCardFields(value);
+                }
+            }
+        }
+    }
 
     private sealed class AlreadyClosedException : Exception;
 

@@ -22,7 +22,8 @@ Havale/EFT seçilince IBAN kutusu açılır (`Shop:Iban`).
 4. Reddedilen/imzası tutmayan/tutarı uyuşmayan dönüşte işlem geri alınır: sipariş `IptalEdildi`,
    ödeme `Basarisiz`, stok değişmez; `/odeme`'ye mesajla 303, sepet yerinde kalır.
 - Kart bilgisi yalnız istek belleğinde sağlayıcıya iletilir; `payment.raw_response` 4000 karakterde
-  kırpılır, 12-19 haneli sayılar ve `cvc` alanı maskelenir, 3DS HTML'i saklanmaz.
+  sığmazsa üst düzey dizi/nesneleri atılır (geçerli JSON kalır); yalnız `cardNumber`/`binNumber` (son 4 hane hariç),
+  `cvc`, `cardHolderName` alanları maskelenir, 3DS HTML'i saklanmaz. İmzasız başarılı init/auth yanıtı reddedilir.
 - CSP `form-action` ve `frame-src` yalnız `/odeme*` yollarında `Iyzico:CspSources` kökenlerini alır.
 - Dönüş adresi `Shop:BaseUrl`'den kurulur (Host başlığından değil). İade (D8) ve taksit yok.
 

@@ -93,7 +93,8 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
         }
 
         var paymentId = Text(json, "paymentId");
-        if (Text(json, "signature") is { } signature && !Matches(signature, paymentId, Text(json, "conversationId")))
+        // Sandbox her başarılı yanıtı imzalar; imzasız "success" kabul edilmez.
+        if (Text(json, "signature") is not { } signature || !Matches(signature, paymentId, Text(json, "conversationId")))
         {
             return new PaymentInitResult(false, paymentId, null, "Sağlayıcı yanıtının imzası doğrulanamadı.", raw);
         }
@@ -129,7 +130,7 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
         }
 
         var paidPrice = decimal.TryParse(Text(json, "paidPrice"), NumberStyles.Number, CultureInfo.InvariantCulture, out var paid) ? paid : -1m;
-        var signed = Text(json, "signature") is not { } signature || Matches(
+        var signed = Text(json, "signature") is { } signature && Matches(
             signature,
             Text(json, "paymentId"),
             Text(json, "currency"),

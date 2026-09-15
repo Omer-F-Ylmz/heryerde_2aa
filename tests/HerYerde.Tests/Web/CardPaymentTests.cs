@@ -1,10 +1,16 @@
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json.Nodes;
+using HerYerde.Business;
 using HerYerde.Business.Abstract;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Entities.Concrete;
 using HerYerde.Entities.Enums;
+using HerYerde.Web.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace HerYerde.Tests.Web;
 
@@ -395,6 +401,83 @@ public sealed class CardPaymentTests : IAsyncLifetime
         }
     }
 
+    /// <summary>İYZİCO-FIX: gerçek sağlayıcı sınıfı, İyzico yerine sahte HTTP yanıtı. İmzasız başarılı çekim yanıtı kabul edilmez.</summary>
+    [Fact]
+    public async Task Imzasiz_cekim_yaniti_odemeyi_basarisiz_yapar_siparisi_iptal_eder_stok_dusmez()
+    {
+        using var factory = new SignedIyzicoFactory();
+        factory.Iyzico.SignAuth = false;
+        await using var context = TestDb.NewContext();
+        var client = factory.CreateNonRedirectingClient();
+        var productId = await FillCartAsync(context, client);
+        await PostCheckoutAsync(client, PaymentMethod.KrediKarti);
+        var payment = Assert.Single(await new EfPaymentDal(context).GetListAsync());
+
+        var response = await PostCallbackAsync(client, payment, signature: SignedIyzicoFactory.CallbackSignature(payment));
+
+        Assert.Equal("/odeme", response.Headers.Location?.OriginalString);
+        Assert.Equal(1, factory.Iyzico.AuthCalls);
+        Assert.Equal(OrderStatus.IptalEdildi, Assert.Single(await new EfOrderDal(context).GetListAsync()).Status);
+        Assert.Equal(PaymentStatus.Basarisiz, (await new EfPaymentDal(context).GetAsync(p => p.Id == payment.Id))!.Status);
+        Assert.Equal(5, await TestData.ProductStockAsync(context, productId));
+        Assert.DoesNotContain(await Outbox(context), m => m.Type == OutboxType.OrderPlaced);
+    }
+
+    [Fact]
+    public async Task Imzasiz_baslatma_yaniti_siparisi_iptal_eder()
+    {
+        using var factory = new SignedIyzicoFactory();
+        factory.Iyzico.SignInit = false;
+        await using var context = TestDb.NewContext();
+        var client = factory.CreateNonRedirectingClient();
+        var productId = await FillCartAsync(context, client);
+
+        var response = await PostCheckoutAsync(client, PaymentMethod.KrediKarti);
+
+        Assert.Equal(HttpStatusCode.PaymentRequired, response.StatusCode);
+        Assert.Equal(OrderStatus.IptalEdildi, Assert.Single(await new EfOrderDal(context).GetListAsync()).Status);
+        Assert.Equal(PaymentStatus.Basarisiz, Assert.Single(await new EfPaymentDal(context).GetListAsync()).Status);
+        Assert.Equal(5, await TestData.ProductStockAsync(context, productId));
+    }
+
+    [Fact]
+    public async Task Imzasiz_donus_gercek_saglayicida_reddedilir_cekim_istenmez()
+    {
+        using var factory = new SignedIyzicoFactory();
+        await using var context = TestDb.NewContext();
+        var client = factory.CreateNonRedirectingClient();
+        var productId = await FillCartAsync(context, client);
+        await PostCheckoutAsync(client, PaymentMethod.KrediKarti);
+        var payment = Assert.Single(await new EfPaymentDal(context).GetListAsync());
+
+        var response = await PostCallbackAsync(client, payment, signature: "");
+
+        Assert.Equal("/odeme", response.Headers.Location?.OriginalString);
+        Assert.Equal(0, factory.Iyzico.AuthCalls);
+        Assert.Equal(OrderStatus.IptalEdildi, Assert.Single(await new EfOrderDal(context).GetListAsync()).Status);
+        Assert.Equal(5, await TestData.ProductStockAsync(context, productId));
+    }
+
+    [Fact]
+    public async Task Imzali_gercek_bicimli_cekim_yaniti_odemeyi_basarili_yapar_ham_yanit_json_kalir()
+    {
+        using var factory = new SignedIyzicoFactory();
+        await using var context = TestDb.NewContext();
+        var client = factory.CreateNonRedirectingClient();
+        var productId = await FillCartAsync(context, client);
+        await PostCheckoutAsync(client, PaymentMethod.KrediKarti);
+        var payment = Assert.Single(await new EfPaymentDal(context).GetListAsync());
+
+        var response = await PostCallbackAsync(client, payment, signature: SignedIyzicoFactory.CallbackSignature(payment));
+
+        var order = Assert.Single(await new EfOrderDal(context).GetListAsync());
+        Assert.Equal($"/siparis/{order.OrderNo}/tesekkur?t={order.AccessToken}", response.Headers.Location?.OriginalString);
+        Assert.Equal(4, await TestData.ProductStockAsync(context, productId));
+        var paid = (await new EfPaymentDal(context).GetAsync(p => p.Id == payment.Id))!;
+        Assert.Equal(PaymentStatus.Basarili, paid.Status);
+        Assert.Equal(order.OrderNo, (string?)JsonNode.Parse(paid.RawResponse!)!["basketId"]);
+    }
+
     private static string Csp(HttpResponseMessage response) => string.Join(' ', response.Headers.GetValues("Content-Security-Policy"));
 
     private static Task<List<OutboxMessage>> Outbox(HerYerdeContext context) => new EfOutboxMessageDal(context).GetListAsync();
@@ -428,7 +511,7 @@ public sealed class CardPaymentTests : IAsyncLifetime
             ["LegalConsent"] = "true"
         });
 
-    private static Task<HttpResponseMessage> PostCallbackAsync(HttpClient client, Payment payment, string status = "success", string mdStatus = "1")
+    private static Task<HttpResponseMessage> PostCallbackAsync(HttpClient client, Payment payment, string status = "success", string mdStatus = "1", string signature = "imza")
         => client.PostAsync(Callback, new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["status"] = status,
@@ -436,8 +519,74 @@ public sealed class CardPaymentTests : IAsyncLifetime
             ["conversationId"] = payment.ConversationId,
             ["conversationData"] = "3ds-veri",
             ["mdStatus"] = mdStatus,
-            ["signature"] = "imza"
+            ["signature"] = signature
         }));
+}
+
+/// <summary>Gerçek <see cref="IyzicoPaymentProvider"/>; ağ yerine sandbox yanıt biçimini taklit eden handler.</summary>
+public sealed class SignedIyzicoFactory : AdminWebFactory
+{
+    public const string Secret = "sandbox-secret-key";
+
+    public IyzicoStubHandler Iyzico { get; } = new();
+
+    public static string CallbackSignature(Payment payment)
+        => IyzicoStubHandler.Sign("3ds-veri", payment.ConversationId, "1", payment.PaymentId!, "success");
+
+    protected override void Configure(Dictionary<string, string?> settings)
+    {
+        settings["Iyzico:ApiKey"] = "sandbox-api-key";
+        settings["Iyzico:SecretKey"] = Secret;
+        settings["Iyzico:CspSources:0"] = "https://sandbox-api.iyzipay.com";
+    }
+
+    protected override void ConfigureServices(IServiceCollection services)
+        => services.AddSingleton<IPaymentProvider>(new IyzicoPaymentProvider(
+            new HttpClient(Iyzico),
+            Options.Create(new IyzicoSettings { ApiKey = "sandbox-api-key", SecretKey = Secret, BaseUrl = "https://sandbox-api.iyzipay.com" })));
+}
+
+/// <summary>Sandbox'ta görülen yanıtlar: init paymentId+conversationId imzalı, auth tutarları 8 ondalık ve imzalı.</summary>
+public sealed class IyzicoStubHandler : HttpMessageHandler
+{
+    private readonly Dictionary<string, (string BasketId, string Price)> _inits = [];
+
+    public bool SignInit { get; set; } = true;
+
+    public bool SignAuth { get; set; } = true;
+
+    public int AuthCalls { get; private set; }
+
+    public static string Sign(params string[] fields)
+        => Convert.ToHexString(HMACSHA256.HashData(
+            Encoding.UTF8.GetBytes(SignedIyzicoFactory.Secret),
+            Encoding.UTF8.GetBytes(string.Join(':', fields)))).ToLowerInvariant();
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var body = JsonNode.Parse(await request.Content!.ReadAsStringAsync(cancellationToken))!;
+        var conversationId = (string)body["conversationId"]!;
+        string json;
+        if (request.RequestUri!.AbsolutePath.EndsWith("/initialize"))
+        {
+            _inits[conversationId] = ((string)body["basketId"]!, (string)body["paidPrice"]!);
+            var html = Convert.ToBase64String(Encoding.UTF8.GetBytes(
+                $"<form action=\"{FakePaymentProvider.FormAction}\" method=\"post\"><input type=\"hidden\" name=\"orderId\" value=\"1\"></form>"));
+            var signature = SignInit ? $",\"signature\":\"{Sign("pay-1", conversationId)}\"" : "";
+            json = $"{{\"status\":\"success\",\"locale\":\"tr\",\"systemTime\":1757928000000,\"conversationId\":\"{conversationId}\",\"paymentId\":\"pay-1\",\"threeDSHtmlContent\":\"{html}\"{signature}}}";
+        }
+        else
+        {
+            AuthCalls++;
+            var (basketId, price) = _inits[conversationId];
+            var trimmed = price.TrimEnd('0').TrimEnd('.');
+            var signature = SignAuth ? $",\"signature\":\"{Sign("pay-1", "TRY", basketId, conversationId, trimmed, trimmed)}\"" : "";
+            json = $"{{\"status\":\"success\",\"locale\":\"tr\",\"systemTime\":1757928000000,\"conversationId\":\"{conversationId}\",\"price\":{price}000000,\"paidPrice\":{price}000000,"
+                   + $"\"paymentId\":\"pay-1\",\"binNumber\":\"552879\",\"lastFourDigits\":\"0008\",\"basketId\":\"{basketId}\",\"currency\":\"TRY\",\"mdStatus\":1{signature}}}";
+        }
+
+        return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
+    }
 }
 
 /// <summary>İyzico anahtarları dolu; sağlayıcı sahte.</summary>
