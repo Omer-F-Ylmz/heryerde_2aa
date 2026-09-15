@@ -6,6 +6,7 @@ using HerYerde.Core.DataAccess;
 using HerYerde.Core.Utilities.Results;
 using HerYerde.DataAccess.Abstract;
 using HerYerde.Entities.Concrete;
+using Microsoft.EntityFrameworkCore;
 
 namespace HerYerde.Business.Concrete;
 
@@ -47,8 +48,8 @@ public class CategoryManager : ICategoryService
 
         category.Slug = await UniqueSlugAsync(category.Name, excludedId: 0, cancellationToken);
         await _categoryDal.AddAsync(category, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return (HttpStatusCode.Created, new SuccessResult("Kategori eklendi."));
+        return await SaveAsync(category.Slug, excludedId: 0, cancellationToken)
+               ?? (HttpStatusCode.Created, new SuccessResult("Kategori eklendi."));
     }
 
     public async Task<(HttpStatusCode, IResult)> UpdateAsync(Category category, CancellationToken cancellationToken = default)
@@ -80,8 +81,8 @@ public class CategoryManager : ICategoryService
             }
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return (HttpStatusCode.OK, new SuccessResult("Kategori güncellendi."));
+        return await SaveAsync(stored.Slug, stored.Id, cancellationToken)
+               ?? (HttpStatusCode.OK, new SuccessResult("Kategori güncellendi."));
     }
 
     public async Task<(HttpStatusCode, IResult)> DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -151,6 +152,25 @@ public class CategoryManager : ICategoryService
         return CategoryRules.CanBeParent(parent)
             ? null
             : (HttpStatusCode.BadRequest, new ErrorResult("Kategori ağacı iki seviyedir; alt kategorinin altına kategori açılmaz."));
+    }
+
+    /// <summary>Slug denetimiyle kayıt arasında aynı adla eşzamanlı istek yazılırsa benzersiz indeks yakalar: 500 yerine 409.</summary>
+    private async Task<(HttpStatusCode, IResult)?> SaveAsync(string slug, int excludedId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return null;
+        }
+        catch (DbUpdateException)
+        {
+            if ((await _categoryDal.GetListAsync(c => c.Slug == slug && c.Id != excludedId, cancellationToken)).Count == 0)
+            {
+                throw;
+            }
+
+            return (HttpStatusCode.Conflict, new ErrorResult("Aynı adla bir kategori az önce kaydedildi; sayfayı yenileyip yeniden deneyin."));
+        }
     }
 
     private Task<string> UniqueSlugAsync(string name, int excludedId, CancellationToken cancellationToken)
