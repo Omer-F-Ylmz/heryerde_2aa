@@ -25,6 +25,7 @@ public class OrdersController : Controller
     private readonly IAdminAuditService _auditService;
     private readonly IPrivateFileStorage _files;
     private readonly ShippingSettings _shipping;
+    private readonly ICustomerService _customers;
 
     public OrdersController(
         IOrderService orderService,
@@ -34,8 +35,10 @@ public class OrdersController : Controller
         TimeProvider clock,
         IAdminAuditService auditService,
         IPrivateFileStorage files,
-        IOptions<ShippingSettings> shipping)
+        IOptions<ShippingSettings> shipping,
+        ICustomerService customers)
     {
+        _customers = customers;
         _orderService = orderService;
         _paymentService = paymentService;
         _returnService = returnService;
@@ -461,6 +464,7 @@ public class OrdersController : Controller
         ErrorMessage = errorMessage,
         Carriers = _shipping.Carriers.Select(c => c.Name).ToList(),
         TrackingUrl = _shipping.TrackingUrl(detail.Order.Carrier, detail.Order.TrackingNo),
-        Timeline = await _timeline.GetAsync(detail.Order.Id, cancellationToken)
+        Timeline = await _timeline.GetAsync(detail.Order.Id, cancellationToken),
+        Member = detail.Order.CustomerId is { } customerId ? await _customers.GetAsync(customerId, cancellationToken) : null
     };
 }

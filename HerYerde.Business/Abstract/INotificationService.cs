@@ -44,6 +44,15 @@ public interface INotificationService
     /// <summary>Yönetici parola sıfırlama bağlantısı; anahtar yalnız postada açık, veritabanında özeti durur. Kaydetmez.</summary>
     Task QueueAdminPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default);
 
+    /// <summary>Üyelik doğrulama bağlantısı (24 saat). Anahtar yalnız postada açık. Kaydetmez.</summary>
+    Task QueueCustomerVerifyAsync(string email, string token, CancellationToken cancellationToken = default);
+
+    /// <summary>Parolasız giriş bağlantısı (15 dakika, tek kullanımlık). Kaydetmez.</summary>
+    Task QueueCustomerLoginLinkAsync(string email, string token, CancellationToken cancellationToken = default);
+
+    /// <summary>Üye parola sıfırlama bağlantısı (30 dakika). Kaydetmez.</summary>
+    Task QueueCustomerPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default);
+
     /// <summary>İletişim formu mesajı: yalnız mağazaya; StoreTo boşsa atlanır. Kaydetmez.</summary>
     Task QueueContactMessageAsync(ContactMessage message, CancellationToken cancellationToken = default);
 

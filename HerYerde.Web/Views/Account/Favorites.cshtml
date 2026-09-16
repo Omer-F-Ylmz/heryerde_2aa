@@ -1,0 +1,25 @@
+@using HerYerde.Web.Models
+@model AccountFavoritesViewModel
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = "Favorilerim";
+}
+
+<h1 class="display-2 h-mark">Favorilerim</h1>
+@if (Model.Cards.Count == 0)
+{
+    <div class="empty surface-elevated">
+        <p class="empty__title">Favoriniz yok.</p>
+        <p>Ürün kartlarındaki ve ürün sayfasındaki kalbe dokunarak ekleyebilirsiniz.</p>
+        <a class="btn btn--outline" href="/ev">Ürünlere göz atın</a>
+    </div>
+}
+else
+{
+    <div class="grid account__grid">
+        @foreach (var card in Model.Cards)
+        {
+            <partial name="Components/_ProductCard" model="card" />
+        }
+    </div>
+}

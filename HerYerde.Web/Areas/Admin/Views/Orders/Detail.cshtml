@@ -38,6 +38,21 @@
             <dt>Müşteri</dt>
             <dd>@order.FullName<br />@order.Phone@(order.Email is null ? "" : " · " + order.Email)</dd>
         </div>
+        @if (Model.Member is { } member)
+        {
+            @* KVKK aracı kişiyi POST ile arar: e-posta adres satırına ve tarayıcı geçmişine girmez. *@
+            <div>
+                <dt>Üye hesabı</dt>
+                <dd>
+                    @member.Email · üyelik @member.CreatedAt.ToString("d MMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))
+                    <form method="post" action="/admin/kvkk" class="order-facts__form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ara" value="@member.Email" />
+                        <button class="btn btn--ghost btn--sm" type="submit">Üyenin kayıtları</button>
+                    </form>
+                </dd>
+            </div>
+        }
         <div>
             <dt>Adres</dt>
             <dd>@order.Address<br />@order.District / @order.City</dd>

@@ -171,9 +171,13 @@ builder.Services.AddSingleton<AnalyticsWriter>();
 builder.Services.AddHostedService<AnalyticsHostedService>();
 builder.Services.AddHttpClient<IPaymentProvider, IyzicoPaymentProvider>(client => client.Timeout = TimeSpan.FromSeconds(30));
 
+// İki ayrı çerez: /admin altında yönetici (heryerde.admin), vitrinde üye (heryerde.customer). Varsayılan şema yola göre seçer;
+// yönetici çerezi vitrinde, üye çerezi yönetimde kimlik taşımaz.
 builder.Services
-    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+    .AddAuthentication(CustomerPolicy.SelectorScheme)
+    .AddPolicyScheme(CustomerPolicy.SelectorScheme, null, options => options.ForwardDefaultSelector = CustomerPolicy.SelectScheme)
+    .AddCookie(CustomerPolicy.Scheme, CustomerPolicy.Configure)
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
         options.Cookie.Name = "heryerde.admin";
         options.Cookie.HttpOnly = true;
@@ -189,7 +193,12 @@ builder.Services
     });
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(AdminPolicy.Name, policy => policy.RequireClaim(AdminPolicy.ClaimType, AdminPolicy.ClaimValue));
+    .AddPolicy(AdminPolicy.Name, policy => policy
+        .AddAuthenticationSchemes(CookieAuthenticationDefaults.AuthenticationScheme)
+        .RequireClaim(AdminPolicy.ClaimType, AdminPolicy.ClaimValue))
+    .AddPolicy(CustomerPolicy.Name, policy => policy
+        .AddAuthenticationSchemes(CustomerPolicy.Scheme)
+        .RequireClaim(CustomerPolicy.IdClaim));
 
 var app = builder.Build();
 

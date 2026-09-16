@@ -96,13 +96,29 @@
                 <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             </button>
         </form>
-        <a class="icon-btn icon-btn--cart" href="/sepet" aria-label="Sepet@(cartCount > 0 ? $", {cartCount} ürün" : ", boş")">
-            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            @if (cartCount > 0)
+        <div class="store-header__actions">
+            @* Hesap simgesi çerezdeki kimliğe bakar, sorgu yapmaz; ad yazılmaz (vitrin sayfaları cihazda çevrimdışı yedeklenir). *@
+            @if (HerYerde.Web.Infrastructure.CustomerPolicy.CustomerId(Context.User) is null)
             {
-                <span class="cart-badge" aria-hidden="true">@cartCount</span>
+                <a class="icon-btn" href="/hesap/giris" aria-label="Giriş yap ya da üye ol">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+                </a>
             }
-        </a>
+            else
+            {
+                <a class="icon-btn icon-btn--account" href="/hesap" aria-label="Hesabım">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+                    <span class="account-dot" aria-hidden="true"></span>
+                </a>
+            }
+            <a class="icon-btn icon-btn--cart" href="/sepet" aria-label="Sepet@(cartCount > 0 ? $", {cartCount} ürün" : ", boş")">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                @if (cartCount > 0)
+                {
+                    <span class="cart-badge" aria-hidden="true">@cartCount</span>
+                }
+            </a>
+        </div>
     </header>
     <main id="main" class="store-main">
         @RenderBody()
@@ -127,6 +143,8 @@
                 }
                 <li><a class="footer-link" href="/siparis-sorgula">Sipariş sorgula</a></li>
                 <li><a class="footer-link" href="/ceyizlistesi/yeni">Çeyiz listesi oluştur</a></li>
+                <li><a class="footer-link" href="/hesap">Hesabım</a></li>
+                <li><a class="footer-link" href="/hesap/sil">Hesabımı sil</a></li>
             </ul>
         </nav>
         <nav class="store-footer__legal" aria-label="Yasal">

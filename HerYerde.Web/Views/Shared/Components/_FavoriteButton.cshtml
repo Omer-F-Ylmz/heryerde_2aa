@@ -1,0 +1,36 @@
+@using HerYerde.Web.Infrastructure
+@using HerYerde.Web.Models
+@model FavoriteButtonVm
+@inject HerYerde.Business.Abstract.ICustomerService Customers
+@* Girişsiz: kalp giriş sayfasına bu sayfaya dönüşle götürür. Girişli: aç/kapa düğmesi (aria-pressed), JS'siz form olarak
+   çalışır; site.js sayfa yenilemeden gönderip durumu çevirir. Ad sabit kalır, durum aria-pressed ve dolu kalple okunur.
+   Favori kümesi istek başına bir kez okunur (CustomerFavorites). *@
+@{
+    var favorites = await CustomerFavorites.IdsAsync(Context, Customers);
+    var modifier = Model.Large ? " fav--wide btn btn--outline btn--lg" : "";
+    var heart = "M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z";
+}
+@if (favorites is null)
+{
+    <a class="fav@(modifier)" href="/hesap/giris?@(CustomerPolicy.ReturnParameter)=@Uri.EscapeDataString(Model.ReturnPath)" aria-label="Favorilere eklemek için giriş yapın">
+        <svg class="icon fav__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="@heart"/></svg>
+        @if (Model.Large)
+        {
+            <span>Favori</span>
+        }
+    </a>
+}
+else
+{
+    <form class="fav-form@(Model.Large ? " fav-form--wide" : "")" method="post" action="/hesap/favoriler/@Model.ProductId" data-favorite-form>
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="@CustomerPolicy.ReturnParameter" value="@Model.ReturnPath" />
+        <button class="fav@(modifier)" type="submit" aria-pressed="@(favorites.Contains(Model.ProductId) ? "true" : "false")" aria-label="@(Model.Large ? null : "Favori: " + Model.ProductName)" data-favorite="@Model.ProductId">
+            <svg class="icon fav__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="@heart"/></svg>
+            @if (Model.Large)
+            {
+                <span>Favori</span>
+            }
+        </button>
+    </form>
+}

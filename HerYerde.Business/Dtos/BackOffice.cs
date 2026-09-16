@@ -12,7 +12,9 @@ public sealed record KvkkPerson(
     List<ReturnRequest> ReturnRequests,
     List<ReturnRequestItem> ReturnRequestItems,
     List<ContactMessage> ContactMessages,
-    List<ProductReview> Reviews);
+    List<ProductReview> Reviews,
+    KvkkAccount? Account,
+    List<CustomerAddress> Addresses);
 
 /// <summary>Tümünü anonimleştir sonucu; Files silinecek gizli belgeler (çağıranın işi), açık siparişler atlanır.</summary>
 public sealed record KvkkAnonymizeResult(

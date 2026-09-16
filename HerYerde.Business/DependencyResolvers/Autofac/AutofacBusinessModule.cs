@@ -32,6 +32,9 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfContactMessageDal>().As<IContactMessageDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfSearchLogDal>().As<ISearchLogDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfPageViewDal>().As<IPageViewDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfCustomerDal>().As<ICustomerDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfCustomerAddressDal>().As<ICustomerAddressDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfCustomerFavoriteDal>().As<ICustomerFavoriteDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductReviewDal>().As<IProductReviewDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfSlugHistoryDal>().As<ISlugHistoryDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfPaymentNoticeDal>().As<IPaymentNoticeDal>().InstancePerLifetimeScope();
@@ -68,6 +71,7 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<AnnouncementManager>().As<IAnnouncementService>().InstancePerLifetimeScope();
         builder.RegisterType<CouponManager>().As<ICouponService>().InstancePerLifetimeScope();
         builder.RegisterType<GiftRegistryManager>().As<IGiftRegistryService>().InstancePerLifetimeScope();
+        builder.RegisterType<CustomerManager>().As<ICustomerService>().InstancePerLifetimeScope();
         // Taksit önbelleği istekler arası yaşamalı; yöneticinin kendisi istek kapsamında kalır.
         builder.RegisterType<InstallmentCache>().AsSelf().SingleInstance();
     }

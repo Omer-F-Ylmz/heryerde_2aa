@@ -421,7 +421,8 @@ public class StoreController(
                 Name = form.Name.Trim(),
                 Rating = form.Rating,
                 Comment = form.Comment.Trim(),
-                OrderNo = form.OrderNo
+                OrderNo = form.OrderNo,
+                CustomerId = CustomerPolicy.CustomerId(User)
             }, cancellationToken);
 
             if (added == System.Net.HttpStatusCode.Created)

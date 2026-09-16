@@ -34,6 +34,12 @@ public sealed class RateLimitSettings
     /// <summary>Havale bildirimi (dekont yüklemesi olabilir).</summary>
     public int PaymentNoticePerMinute { get; set; } = 5;
 
+    /// <summary>Üye kaydı; saatlik pencere (doğrulama postası üretir).</summary>
+    public int CustomerSignupPerHour { get; set; } = 5;
+
+    /// <summary>Üye girişi, giriş bağlantısı, doğrulama ve parola sıfırlama gönderimleri birlikte sayılır.</summary>
+    public int CustomerLoginPerMinute { get; set; } = 10;
+
     public int GeneralPerMinute { get; set; } = 300;
 }
 
@@ -85,12 +91,21 @@ public static class RateLimitPolicy
                                         ? ("ceyiz-olustur", settings.ContactPerMinute)
                                         : isPost && path.StartsWithSegments("/siparis") && IsOrderActionPost(path)
                                             ? ("odeme-bildir", settings.PaymentNoticePerMinute)
-                                            : ("genel", settings.GeneralPerMinute);
+                                            : isPost && path.StartsWithSegments("/hesap/kayit")
+                                                ? ("uye-kayit", settings.CustomerSignupPerHour)
+                                                : isPost && IsCustomerAuthPost(path)
+                                                    ? ("uye-giris", settings.CustomerLoginPerMinute)
+                                                    : ("genel", settings.GeneralPerMinute);
 
         return RateLimitPartition.GetFixedWindowLimiter($"{bucket}:{client}", _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = permit,
-            Window = bucket == "yorum" ? TimeSpan.FromDays(1) : TimeSpan.FromMinutes(1),
+            Window = bucket switch
+            {
+                "yorum" => TimeSpan.FromDays(1),
+                "uye-kayit" => TimeSpan.FromHours(1),
+                _ => TimeSpan.FromMinutes(1)
+            },
             QueueLimit = 0
         });
     }
@@ -100,6 +115,15 @@ public static class RateLimitPolicy
         => path.Value!.EndsWith("/odeme-bildir", StringComparison.OrdinalIgnoreCase)
            || path.Value.EndsWith("/iade", StringComparison.OrdinalIgnoreCase)
            || path.Value.EndsWith("/iptal", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Parola, bağlantı ve kod tahmini aynı kovada toplamda sınırlanır.</summary>
+    private static bool IsCustomerAuthPost(PathString path)
+        => path.StartsWithSegments("/hesap/giris")
+           || path.StartsWithSegments("/hesap/giris-baglantisi")
+           || path.StartsWithSegments("/hesap/baglanti")
+           || path.StartsWithSegments("/hesap/dogrula")
+           || path.StartsWithSegments("/hesap/sifremi-unuttum")
+           || path.StartsWithSegments("/hesap/sifre-sifirla");
 
     /// <summary>/urun/{slug}/yorum</summary>
     private static bool IsReviewPost(PathString path)

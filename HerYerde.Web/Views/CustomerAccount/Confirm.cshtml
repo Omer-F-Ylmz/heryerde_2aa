@@ -1,0 +1,43 @@
+@using HerYerde.Web.Models
+@model LinkConfirmViewModel
+@{
+    ViewData["Title"] = Model.Verify ? "E-postanızı doğrulayın" : "Bağlantıyla giriş";
+    ViewData["Robots"] = "noindex, nofollow";
+}
+
+<div class="container section auth auth--single">
+    <div class="auth__forms">
+        <section class="form-card surface-elevated auth__card" aria-labelledby="confirm-title">
+            <p class="eyebrow">Hesabım</p>
+            <h1 id="confirm-title" class="display-2 h-mark">@(Model.Verify ? "E-postanızı doğrulayın" : "Giriş yapın")</h1>
+            @if (Model.ErrorMessage is { } error)
+            {
+                <p class="form-alert" role="alert">@error</p>
+            }
+            @if (Model.Invalid)
+            {
+                <p class="lead">Bağlantı geçersiz ya da süresi dolmuş. Yeni bir giriş bağlantısı isteyebilirsiniz.</p>
+                <a class="btn btn--cta btn--lg" href="/hesap/giris">Yeni bağlantı iste</a>
+            }
+            else
+            {
+                <p class="lead">@(Model.Verify
+                    ? "Doğrulayınca bu e-postayla verdiğiniz önceki siparişler hesabınıza eklenir."
+                    : "Bağlantı tek kullanımlıktır; düğmeye bastığınızda hesabınız bu tarayıcıda açılır.")</p>
+                <form method="post" action="@(Model.Verify ? "/hesap/dogrula" : "/hesap/baglanti")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Token" value="@Model.Token" />
+                    @if (Model.AskPassword)
+                    {
+                        <div class="field">
+                            <label class="field__label" for="Password">Parolanız</label>
+                            <input class="field__input" id="Password" name="Password" type="password" maxlength="200" autocomplete="current-password" required aria-describedby="Password-hint" />
+                            <span class="field__hint" id="Password-hint">Üye olurken belirlediğiniz parola. Hatırlamıyorsanız <a href="/hesap/giris">giriş bağlantısı isteyin</a>.</span>
+                        </div>
+                    }
+                    <button class="btn btn--cta btn--lg" type="submit">@(Model.Verify ? "Doğrula ve giriş yap" : "Giriş yap")</button>
+                </form>
+            }
+        </section>
+    </div>
+</div>

@@ -71,7 +71,8 @@ public class GiftRegistryManager : IGiftRegistryService
             EventDate = draft.EventDate.Date,
             Message = string.IsNullOrWhiteSpace(draft.Message) ? null : draft.Message.Trim(),
             IsPublic = true,
-            CreatedAt = _clock.GetUtcNow().UtcDateTime
+            CreatedAt = _clock.GetUtcNow().UtcDateTime,
+            CustomerId = draft.CustomerId
         };
 
         await _registryDal.AddAsync(registry, cancellationToken);

@@ -22,7 +22,9 @@ public static class KvkkPdf
         ("İade ve değişim talepleri", p => p.ReturnRequests),
         ("İade talebi kalemleri", p => p.ReturnRequestItems),
         ("İletişim mesajları", p => p.ContactMessages),
-        ("Ürün yorumları", p => p.Reviews)
+        ("Ürün yorumları", p => p.Reviews),
+        ("Üye hesabı", p => p.Account is null ? Array.Empty<object>() : new object[] { p.Account }),
+        ("Adres defteri", p => p.Addresses)
     ];
 
     public static byte[] Dump(KvkkPerson person, DateTime nowUtc)
@@ -65,6 +67,7 @@ public static class KvkkPdf
             {
                 DateTime at => IstanbulTime.Format(at),
                 decimal amount => amount.ToString("0.00", CultureInfo.InvariantCulture),
+                IEnumerable<int> ids => string.Join(", ", ids),
                 _ => p.Value!.ToString()
             }}"));
 }

@@ -1,0 +1,54 @@
+@using HerYerde.Web.Models
+@model AccountPageViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Robots"] = "noindex, nofollow";
+    var current = Context.Request.Path.Value ?? "/hesap";
+    var tabs = new (string Url, string Label)[]
+    {
+        ("/hesap", "Siparişlerim"),
+        ("/hesap/adresler", "Adreslerim"),
+        ("/hesap/favoriler", "Favorilerim"),
+        ("/hesap/yorumlar", "Yorumlarım"),
+        ("/hesap/ceyiz-listeleri", "Çeyiz listelerim"),
+        ("/hesap/ayarlar", "Ayarlar")
+    };
+    bool IsCurrent(string url) => url == "/hesap" ? current == "/hesap" : current.StartsWith(url, StringComparison.Ordinal);
+    var greeting = Model.Customer.FullName is { Length: > 0 } name ? name.Split(' ')[0] : null;
+}
+
+<div class="container section account">
+    <header class="account__head">
+        <p class="eyebrow">Hesabım</p>
+        <p class="account__greeting">@(greeting is null ? "Hoş geldiniz" : $"Merhaba {greeting}")</p>
+        <p class="account__email">@Model.Customer.Email</p>
+    </header>
+
+    <nav class="account__nav" aria-label="Hesap bölümleri">
+        <ul class="account__tabs">
+            @foreach (var (url, label) in tabs)
+            {
+                <li><a class="account__tab" href="@url" aria-current="@(IsCurrent(url) ? "page" : null)">@label</a></li>
+            }
+        </ul>
+        <form class="account__logout" method="post" action="/hesap/cikis">
+            @Html.AntiForgeryToken()
+            <button class="btn btn--ghost btn--sm" type="submit">
+                <svg class="icon icon--sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+                Çıkış yap
+            </button>
+        </form>
+    </nav>
+
+    <div class="account__body">
+        @if (Model.Notice is { } notice)
+        {
+            <p class="form-alert form-alert--notice" role="status">@notice</p>
+        }
+        @if (Model.ErrorMessage is { } error)
+        {
+            <p class="form-alert" role="alert">@error</p>
+        }
+        @RenderBody()
+    </div>
+</div>

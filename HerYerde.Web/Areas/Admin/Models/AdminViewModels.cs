@@ -494,6 +494,9 @@ public sealed class OrderDetailViewModel
 
     public string? TrackingUrl { get; set; }
 
+    /// <summary>Siparişi veren üye; misafir siparişinde null.</summary>
+    public HerYerde.Entities.Concrete.Customer? Member { get; set; }
+
     /// <summary>Sipariş, postalar, işlemler, iade talepleri ve iç notlar eskiden yeniye.</summary>
     public IReadOnlyList<TimelineEntry> Timeline { get; set; } = [];
 

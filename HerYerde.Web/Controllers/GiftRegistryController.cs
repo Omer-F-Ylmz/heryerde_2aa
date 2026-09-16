@@ -33,7 +33,7 @@ public class GiftRegistryController(
             return View("New", new GiftRegistryNewVm(form, null));
         }
 
-        var (status, result) = await registries.CreateAsync(Draft(form), cancellationToken);
+        var (status, result) = await registries.CreateAsync(Draft(form) with { CustomerId = CustomerPolicy.CustomerId(User) }, cancellationToken);
         if (status != HttpStatusCode.Created)
         {
             Response.StatusCode = (int)status;

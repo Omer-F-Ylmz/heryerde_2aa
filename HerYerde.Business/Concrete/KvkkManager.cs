@@ -26,6 +26,9 @@ public class KvkkManager : IKvkkService
     private readonly IContactMessageDal _messageDal;
     private readonly IProductReviewDal _reviewDal;
     private readonly IKvkkRequestDal _requestDal;
+    private readonly ICustomerDal _customerDal;
+    private readonly ICustomerAddressDal _addressDal;
+    private readonly ICustomerFavoriteDal _favoriteDal;
     private readonly IOrderService _orders;
     private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _clock;
@@ -40,6 +43,9 @@ public class KvkkManager : IKvkkService
         IContactMessageDal messageDal,
         IProductReviewDal reviewDal,
         IKvkkRequestDal requestDal,
+        ICustomerDal customerDal,
+        ICustomerAddressDal addressDal,
+        ICustomerFavoriteDal favoriteDal,
         IOrderService orders,
         IUnitOfWork unitOfWork,
         TimeProvider clock)
@@ -53,6 +59,9 @@ public class KvkkManager : IKvkkService
         _messageDal = messageDal;
         _reviewDal = reviewDal;
         _requestDal = requestDal;
+        _customerDal = customerDal;
+        _addressDal = addressDal;
+        _favoriteDal = favoriteDal;
         _orders = orders;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -82,9 +91,14 @@ public class KvkkManager : IKvkkService
         }
 
         var byEmail = subject.Contains('@');
+        // Üye hesabı e-postasıyla ya da hesaptaki telefonla bulunur; hesaba bağlı siparişler başka e-postayla verilmiş olsa da gelir.
+        var accounts = byEmail
+            ? await _customerDal.GetListAsync(c => c.Email == subject, cancellationToken)
+            : await _customerDal.GetListAsync(c => c.Phone == subject, cancellationToken);
+        var accountIds = accounts.Select(c => (int?)c.Id).ToList();
         var orders = byEmail
-            ? await _orderDal.GetListAsync(o => o.Email != null && o.Email.ToLower() == subject, cancellationToken)
-            : await _orderDal.GetListAsync(o => o.Phone == subject, cancellationToken);
+            ? await _orderDal.GetListAsync(o => (o.Email != null && o.Email.ToLower() == subject) || accountIds.Contains(o.CustomerId), cancellationToken)
+            : await _orderDal.GetListAsync(o => o.Phone == subject || accountIds.Contains(o.CustomerId), cancellationToken);
         var ids = orders.Select(o => o.Id).ToList();
         var numbers = orders.Select(o => o.OrderNo).ToList();
         var returns = ids.Count == 0 ? [] : await _returnDal.GetListAsync(r => ids.Contains(r.OrderId), cancellationToken);
@@ -106,7 +120,22 @@ public class KvkkManager : IKvkkService
             returns,
             returnIds.Count == 0 ? [] : await _returnItemDal.GetListAsync(i => returnIds.Contains(i.ReturnRequestId), cancellationToken),
             messages,
-            numbers.Count == 0 ? [] : await _reviewDal.GetListAsync(r => r.OrderNo != null && numbers.Contains(r.OrderNo), cancellationToken))));
+            await _reviewDal.GetListAsync(r => (r.OrderNo != null && numbers.Contains(r.OrderNo)) || accountIds.Contains(r.CustomerId), cancellationToken),
+            accounts.FirstOrDefault() is { } account
+                ? new KvkkAccount(
+                    account.Email,
+                    account.FullName,
+                    account.Phone,
+                    account.CreatedAt,
+                    account.EmailVerifiedAt,
+                    account.KvkkConsentAt,
+                    account.LegalVersion,
+                    account.MarketingConsent,
+                    account.MarketingConsentAt,
+                    account.PasswordHash is not null,
+                    (await _favoriteDal.ProductIdsAsync(account.Id, cancellationToken)).Order().ToList())
+                : null,
+            accountIds.Count == 0 ? [] : await _addressDal.GetListAsync(a => accountIds.Contains(a.CustomerId), cancellationToken))));
     }
 
     public async Task<(HttpStatusCode, IDataResult<KvkkAnonymizeResult>)> AnonymizeAllAsync(string query, CancellationToken cancellationToken = default)
@@ -144,6 +173,12 @@ public class KvkkManager : IKvkkService
         {
             var tracked = (await _reviewDal.GetTrackedAsync(r => r.Id == review.Id, cancellationToken))!;
             tracked.Name = PersonalDataMask.Name(tracked.Name);
+        }
+
+        // Üye hesabı adresleri ve favorileriyle silinir (yabancı anahtar); açık siparişin hesap bağı boşalır, sipariş kalır.
+        foreach (var account in await _customerDal.GetListAsync(c => person.Account != null && c.Email == person.Account.Email, cancellationToken))
+        {
+            _customerDal.Delete((await _customerDal.GetTrackedAsync(c => c.Id == account.Id, cancellationToken))!);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

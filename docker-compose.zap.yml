@@ -15,3 +15,5 @@ services:
       RateLimit__OrderLookupPerMinute: "100000"
       RateLimit__PaymentNoticePerMinute: "100000"
       RateLimit__VideoUploadPerMinute: "100000"
+      RateLimit__CustomerSignupPerHour: "100000"
+      RateLimit__CustomerLoginPerMinute: "100000"

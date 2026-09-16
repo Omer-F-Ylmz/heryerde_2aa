@@ -213,9 +213,40 @@ public static class TestData
         new EfContactMessageDal(context),
         new EfProductReviewDal(context),
         new EfKvkkRequestDal(context),
+        new EfCustomerDal(context),
+        new EfCustomerAddressDal(context),
+        new EfCustomerFavoriteDal(context),
         NewOrderManager(context, clock),
         new EfUnitOfWork(context),
         clock ?? TestClock.Fixed);
+
+    /// <summary>Üye hesabı; password null ise parolasız hesap. Varsayılan olarak e-postası doğrulanmış.</summary>
+    public static async Task<int> AddCustomerAsync(
+        HerYerdeContext context,
+        string email,
+        string? password,
+        bool verified = true,
+        string? phone = null)
+    {
+        var customer = new Customer
+        {
+            Email = email,
+            Phone = phone,
+            EmailVerifiedAt = verified ? TestClock.Now : null,
+            KvkkConsentAt = TestClock.Now,
+            LegalVersion = LegalDocs.Version,
+            CreatedAt = TestClock.Now,
+            SessionStamp = DateTime.UtcNow
+        };
+        if (password is not null)
+        {
+            customer.PasswordHash = new Microsoft.AspNetCore.Identity.PasswordHasher<Customer>().HashPassword(customer, password);
+        }
+
+        await new EfCustomerDal(context).AddAsync(customer);
+        await new EfUnitOfWork(context).SaveChangesAsync();
+        return customer.Id;
+    }
 
     /// <summary>Ev alanında varyantsız ürün.</summary>
     public static async Task<int> AddHomeProductAsync(

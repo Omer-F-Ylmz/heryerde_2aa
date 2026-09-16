@@ -33,6 +33,8 @@ public sealed record InstallmentTableVm(
 
 public sealed class ProductCardVm
 {
+    /// <summary>Kalp düğmesi için; 0 ise (stil rehberi örnekleri) kalp çizilmez.</summary>
+    public int ProductId { get; init; }
     public string Name { get; init; } = string.Empty;
     public string Slug { get; init; } = string.Empty;
     public decimal Price { get; init; }

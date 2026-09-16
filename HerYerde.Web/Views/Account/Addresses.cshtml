@@ -1,0 +1,44 @@
+@using HerYerde.Business.Rules
+@using HerYerde.Web.Models
+@model AccountAddressesViewModel
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = "Adreslerim";
+}
+
+<div class="account__title-row">
+    <h1 class="display-2 h-mark">Adreslerim</h1>
+    <a class="btn btn--primary" href="/hesap/adresler/yeni">Yeni adres</a>
+</div>
+@if (Model.Addresses.Count == 0)
+{
+    <div class="empty surface-elevated">
+        <p class="empty__title">Kayıtlı adresiniz yok.</p>
+        <p>Varsayılan adresiniz ödeme adımında formu kendiliğinden doldurur.</p>
+    </div>
+}
+else
+{
+    <ul class="address-list">
+        @foreach (var address in Model.Addresses)
+        {
+            <li class="address-card surface-elevated@(address.IsDefault ? " address-card--default" : "")">
+                <p class="address-card__title">
+                    @address.Title
+                    @if (address.IsDefault)
+                    {
+                        <span class="tag tag--live">Varsayılan</span>
+                    }
+                </p>
+                <p class="address-card__body">@address.FullName · @PhoneRules.Display(address.Phone)<br />@address.Address<br />@address.District / @address.City</p>
+                <div class="address-card__actions">
+                    <a class="btn btn--ghost btn--sm" href="/hesap/adresler/@address.Id">Düzenle</a>
+                    <form method="post" action="/hesap/adresler/@address.Id/sil">
+                        @Html.AntiForgeryToken()
+                        <button class="btn btn--danger btn--sm" type="submit">Sil</button>
+                    </form>
+                </div>
+            </li>
+        }
+    </ul>
+}

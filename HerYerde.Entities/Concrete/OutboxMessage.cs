@@ -44,4 +44,7 @@ public static class OutboxType
     public const string ReviewInvite = "degerlendirme-daveti";
     public const string GiftRegistryCreated = "ceyiz-listesi-yonetim";
     public const string GiftRegistryPurchase = "ceyiz-listesi-hediye";
+    public const string CustomerVerify = "hesap-dogrulama";
+    public const string CustomerLoginLink = "hesap-giris-baglantisi";
+    public const string CustomerPasswordReset = "hesap-sifre-sifirlama";
 }

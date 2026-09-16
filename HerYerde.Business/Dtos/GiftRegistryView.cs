@@ -8,7 +8,8 @@ public sealed record GiftRegistryDraft(
     string? Email,
     DateTime EventDate,
     string? Message,
-    bool IsPublic = true);
+    bool IsPublic = true,
+    int? CustomerId = null);
 
 /// <summary>Listedeki bir ürün: vitrin bilgisi anlık okunur, adetler kalemden gelir.
 /// Available: ürün yayında ve (varyantlıysa) varyant duruyor; değilse hediye edilemez.</summary>

@@ -29,6 +29,7 @@ public partial class CheckoutController(
     IInstallmentService installments,
     IProvinceDirectory provinces,
     AnalyticsRecorder analytics,
+    ICustomerService customers,
     TimeProvider clock) : Controller
 {
     private ShopSettings Shop => shop.Value;
@@ -58,13 +59,33 @@ public partial class CheckoutController(
 
         // Kart ödemesi reddedilip buraya dönüldüyse sebep TempData'dadır.
         return View(new CheckoutPageViewModel(
-            new CheckoutFormViewModel(),
+            await PrefilledFormAsync(cancellationToken),
             cart,
             Shop.Iban,
             TempData[CartController.ErrorKey] as string,
             revalued > 0 ? PriceChangedMessage : null,
             CardEnabled,
             CardEnabled && installments.Enabled));
+    }
+
+    /// <summary>Girişli üyede ad, telefon ve e-posta hesaptan; adres, il ve ilçe varsayılan adresten gelir. Misafirde boş form.</summary>
+    private async Task<CheckoutFormViewModel> PrefilledFormAsync(CancellationToken cancellationToken)
+    {
+        if (CustomerPolicy.CustomerId(User) is not { } customerId || await customers.GetAsync(customerId, cancellationToken) is not { } customer)
+        {
+            return new CheckoutFormViewModel();
+        }
+
+        var address = (await customers.GetAddressesAsync(customerId, cancellationToken)).FirstOrDefault(a => a.IsDefault);
+        return new CheckoutFormViewModel
+        {
+            FullName = address?.FullName ?? customer.FullName ?? string.Empty,
+            Phone = PhoneRules.Display(address?.Phone ?? customer.Phone),
+            Email = customer.Email,
+            Address = address?.Address ?? string.Empty,
+            City = address?.City ?? string.Empty,
+            District = address?.District ?? string.Empty
+        };
     }
 
     /// <summary>İl seçilince ilçe listesini tazeler. JS'siz de çalışsın diye POST: kart alanları sorgu dizesine düşmez,
@@ -154,7 +175,8 @@ public partial class CheckoutController(
             form.City,
             form.District,
             form.Note,
-            form.PaymentMethod), cancellationToken);
+            form.PaymentMethod,
+            CustomerPolicy.CustomerId(User)), cancellationToken);
 
         if (status == HttpStatusCode.Created && card is not null)
         {

@@ -1,0 +1,35 @@
+@using System.Globalization
+@using HerYerde.Web.Models
+@model AccountRegistriesViewModel
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = "Çeyiz listelerim";
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+}
+
+<div class="account__title-row">
+    <h1 class="display-2 h-mark">Çeyiz listelerim</h1>
+    <a class="btn btn--primary" href="/ceyizlistesi/yeni">Yeni liste</a>
+</div>
+@if (Model.Registries.Count == 0)
+{
+    <div class="empty surface-elevated">
+        <p class="empty__title">Çeyiz listeniz yok.</p>
+        <p>Giriş yapmışken açtığınız ya da e-postanız aynı olan listeler burada görünür.</p>
+    </div>
+}
+else
+{
+    <ul class="account-list">
+        @foreach (var registry in Model.Registries)
+        {
+            <li class="account-row surface-elevated">
+                <div class="account-row__main">
+                    <p class="account-row__title">@registry.OwnerName</p>
+                    <p class="account-row__meta">@registry.EventDate.ToString("d MMMM yyyy", turkish) · @(registry.IsPublic ? "Paylaşımda" : "Paylaşım kapalı")</p>
+                </div>
+                <a class="btn btn--outline btn--sm account-row__action" href="/ceyizlistesi/yonet?t=@registry.ManageToken">Listeyi yönet</a>
+            </li>
+        }
+    </ul>
+}

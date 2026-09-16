@@ -37,6 +37,14 @@ public class EfProductReviewDal : EfEntityRepositoryBase<ProductReview, HerYerde
             .Take(take)
             .ToListAsync(cancellationToken);
 
+    public Task<List<ReviewRow>> GetByCustomerAsync(int customerId, CancellationToken cancellationToken = default)
+        => (from review in Context.ProductReviews.AsNoTracking()
+            join product in Context.Products.IgnoreQueryFilters() on review.ProductId equals product.Id
+            where review.CustomerId == customerId
+            orderby review.CreatedAt descending, review.Id descending
+            select new ReviewRow(review, product.Name, product.Slug))
+            .ToListAsync(cancellationToken);
+
     public Task<bool> IsPurchaseAsync(string orderNo, int productId, CancellationToken cancellationToken = default)
         => (from order in Context.Orders
             join item in Context.OrderItems on order.Id equals item.OrderId

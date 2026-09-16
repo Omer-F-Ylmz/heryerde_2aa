@@ -1,0 +1,57 @@
+@using HerYerde.Web.Models
+@model SignUpViewModel
+@{
+    ViewData["Title"] = "Üye ol";
+    ViewData["Description"] = "HerYerde'ye üye olun: sipariş geçmişi, adres defteri ve favoriler. Üyelik isteğe bağlıdır.";
+    ViewData["Robots"] = "noindex, follow";
+}
+
+<div class="container section auth">
+    <partial name="_AuthIntro" model="@("Üye olun, siparişleriniz bir arada dursun.")" />
+
+    <div class="auth__forms">
+        @if (Model.Sent is { } sent)
+        {
+            <section class="form-card surface-elevated auth__card" aria-labelledby="sent-title">
+                <h2 id="sent-title" class="heading-3">Postanızı kontrol edin</h2>
+                <p class="form-alert form-alert--notice" role="status">@sent</p>
+                <p class="field__hint">Posta gelmediyse gereksiz klasörüne bakın. Bu adresle zaten üyeyseniz bağlantı doğrudan giriş yapar.</p>
+                <a class="btn btn--outline" href="/hesap/giris">Giriş sayfasına dön</a>
+            </section>
+        }
+        else
+        {
+            <section class="form-card surface-elevated auth__card" aria-labelledby="signup-title">
+                <h2 id="signup-title" class="heading-3">Üyelik bilgileri</h2>
+                @if (Model.ErrorMessage is { } error)
+                {
+                    <p class="form-alert" role="alert">@error</p>
+                }
+                <form method="post" action="/hesap/kayit">
+                    @Html.AntiForgeryToken()
+                    <div class="field">
+                        <label class="field__label" for="Email">E-posta</label>
+                        <input class="field__input" id="Email" name="Email" type="email" value="@Model.Email" maxlength="200" autocomplete="email" required />
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="Password">Parola (isteğe bağlı)</label>
+                        <input class="field__input" id="Password" name="Password" type="password" minlength="10" maxlength="200" autocomplete="new-password" aria-describedby="Password-hint" />
+                        <span class="field__hint" id="Password-hint">En az 10 karakter. Boş bırakırsanız her girişte e-postanıza tek kullanımlık bağlantı göndeririz.</span>
+                    </div>
+                    <div class="field">
+                        <label class="switch">
+                            <input type="checkbox" name="KvkkConsent" value="true" required checked="@Model.KvkkConsent" />
+                            <span><a href="/yasal/kvkk-aydinlatma" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum; üyelik için bilgilerimin işlenmesini anladım.</span>
+                        </label>
+                        <label class="switch">
+                            <input type="checkbox" name="MarketingConsent" value="true" checked="@Model.MarketingConsent" />
+                            <span class="switch__text--soft">Kampanya ve yeni ürün haberleri almak istiyorum (isteğe bağlı; ayarlardan istediğiniz an kapatırsınız).</span>
+                        </label>
+                    </div>
+                    <button class="btn btn--cta btn--lg" type="submit">Üye ol</button>
+                </form>
+                <p class="auth__switch">Zaten üye misiniz? <a href="/hesap/giris">Giriş yapın</a></p>
+            </section>
+        }
+    </div>
+</div>

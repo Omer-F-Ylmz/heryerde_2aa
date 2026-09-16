@@ -561,6 +561,217 @@ namespace HerYerde.DataAccess.Migrations
                         });
                 });
 
+            modelBuilder.Entity("HerYerde.Entities.Concrete.Customer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTime?>("EmailVerifiedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("email_verified_at");
+
+                    b.Property<string>("FullName")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)")
+                        .HasColumnName("full_name");
+
+                    b.Property<DateTime>("KvkkConsentAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("kvkk_consent_at");
+
+                    b.Property<string>("LegalVersion")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("legal_version");
+
+                    b.Property<DateTime?>("LoginTokenExpiresAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("login_token_expires_at");
+
+                    b.Property<string>("LoginTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("login_token_hash");
+
+                    b.Property<bool>("MarketingConsent")
+                        .HasColumnType("bit")
+                        .HasColumnName("marketing_consent");
+
+                    b.Property<DateTime?>("MarketingConsentAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("marketing_consent_at");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)")
+                        .HasColumnName("phone");
+
+                    b.Property<DateTime?>("ResetTokenExpiresAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("reset_token_expires_at");
+
+                    b.Property<string>("ResetTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("reset_token_hash");
+
+                    b.Property<DateTime>("SessionStamp")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("session_stamp");
+
+                    b.Property<DateTime?>("VerifyTokenExpiresAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("verify_token_expires_at");
+
+                    b.Property<string>("VerifyTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("verify_token_hash");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customer_email");
+
+                    b.HasIndex("LoginTokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customer_login_token_hash")
+                        .HasFilter("[login_token_hash] IS NOT NULL");
+
+                    b.HasIndex("Phone")
+                        .HasDatabaseName("ix_customer_phone");
+
+                    b.HasIndex("ResetTokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customer_reset_token_hash")
+                        .HasFilter("[reset_token_hash] IS NOT NULL");
+
+                    b.HasIndex("VerifyTokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customer_verify_token_hash")
+                        .HasFilter("[verify_token_hash] IS NOT NULL");
+
+                    b.ToTable("customer", (string)null);
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.CustomerAddress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("address");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("city");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("District")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("district");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)")
+                        .HasColumnName("full_name");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_default");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("ix_customer_address_customer_id");
+
+                    b.ToTable("customer_address", (string)null);
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.CustomerFavorite", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int")
+                        .HasColumnName("customer_id");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int")
+                        .HasColumnName("product_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("CustomerId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customer_favorite_customer_product");
+
+                    b.ToTable("customer_favorite", (string)null);
+                });
+
             modelBuilder.Entity("HerYerde.Entities.Concrete.GiftRegistry", b =>
                 {
                     b.Property<int>("Id")
@@ -573,6 +784,10 @@ namespace HerYerde.DataAccess.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
+
+                    b.Property<int?>("CustomerId")
+                        .HasColumnType("int")
+                        .HasColumnName("customer_id");
 
                     b.Property<string>("Email")
                         .HasMaxLength(200)
@@ -615,6 +830,9 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnName("slug");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("ix_gift_registry_customer_id");
 
                     b.HasIndex("EventDate")
                         .HasDatabaseName("ix_gift_registry_event_date");
@@ -749,6 +967,10 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
 
+                    b.Property<int?>("CustomerId")
+                        .HasColumnType("int")
+                        .HasColumnName("customer_id");
+
                     b.Property<DateTime?>("DeliveredAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("delivered_at");
@@ -874,6 +1096,9 @@ namespace HerYerde.DataAccess.Migrations
                     b.HasIndex("AccessToken")
                         .IsUnique()
                         .HasDatabaseName("ux_order_access_token");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("ix_order_customer_id");
 
                     b.HasIndex("OrderNo")
                         .IsUnique()
@@ -1461,6 +1686,10 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
 
+                    b.Property<int?>("CustomerId")
+                        .HasColumnType("int")
+                        .HasColumnName("customer_id");
+
                     b.Property<bool>("IsApproved")
                         .HasColumnType("bit")
                         .HasColumnName("is_approved");
@@ -1485,6 +1714,9 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnName("rating");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("ix_product_review_customer_id");
 
                     b.HasIndex("ProductId", "IsApproved", "CreatedAt")
                         .IsDescending(false, false, true)
@@ -1827,6 +2059,38 @@ namespace HerYerde.DataAccess.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("HerYerde.Entities.Concrete.CustomerAddress", b =>
+                {
+                    b.HasOne("HerYerde.Entities.Concrete.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.CustomerFavorite", b =>
+                {
+                    b.HasOne("HerYerde.Entities.Concrete.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HerYerde.Entities.Concrete.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.GiftRegistry", b =>
+                {
+                    b.HasOne("HerYerde.Entities.Concrete.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("HerYerde.Entities.Concrete.GiftRegistryItem", b =>
                 {
                     b.HasOne("HerYerde.Entities.Concrete.GiftRegistry", null)
@@ -1845,6 +2109,14 @@ namespace HerYerde.DataAccess.Migrations
                         .WithMany()
                         .HasForeignKey("VariantId")
                         .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.Order", b =>
+                {
+                    b.HasOne("HerYerde.Entities.Concrete.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.OrderItem", b =>
@@ -1922,6 +2194,11 @@ namespace HerYerde.DataAccess.Migrations
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.ProductReview", b =>
                 {
+                    b.HasOne("HerYerde.Entities.Concrete.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HerYerde.Entities.Concrete.Product", null)
                         .WithMany()
                         .HasForeignKey("ProductId")

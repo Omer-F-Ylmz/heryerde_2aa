@@ -420,3 +420,27 @@ if ("serviceWorker" in navigator) {
     try { window.localStorage.setItem("heryerde.ipucu-kapatildi", String(Date.now())); } catch (e) { /* yok sayılır */ }
   });
 })();
+
+// Favori kalbi: form JS'siz de çalışır (303 ile sayfaya döner). Burada sayfa yenilenmeden gönderilir; aynı ürünün sayfadaki
+// diğer kalpleri de çevrilir. Oturum düşmüşse (JSON gelmez) form normal gönderilir ve giriş sayfasına gider.
+document.addEventListener("submit", function (event) {
+  var form = event.target.closest && event.target.closest("[data-favorite-form]");
+  if (!form || !window.fetch) { return; }
+  event.preventDefault();
+  var button = form.querySelector("[data-favorite]");
+  if (button.getAttribute("aria-busy") === "true") { return; }
+  button.setAttribute("aria-busy", "true");
+  fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" }, credentials: "same-origin" })
+    .then(function (response) {
+      var type = response.headers.get("Content-Type") || "";
+      if (!response.ok || type.indexOf("application/json") === -1) { throw new Error("oturum"); }
+      return response.json();
+    })
+    .then(function (result) {
+      document.querySelectorAll('[data-favorite="' + button.getAttribute("data-favorite") + '"]').forEach(function (heart) {
+        heart.setAttribute("aria-pressed", result.favorite ? "true" : "false");
+      });
+    })
+    .catch(function () { form.submit(); })
+    .finally(function () { button.removeAttribute("aria-busy"); });
+});

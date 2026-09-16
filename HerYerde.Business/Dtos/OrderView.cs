@@ -12,7 +12,8 @@ public sealed record OrderDraft(
     string City,
     string District,
     string? Note,
-    PaymentMethod PaymentMethod);
+    PaymentMethod PaymentMethod,
+    int? CustomerId = null);
 
 /// <summary>Payment yalnız kartla ödenen siparişte dolu; Notices yalnız havale siparişinde.</summary>
 public sealed record OrderDetail(Order Order, IReadOnlyList<OrderItem> Items, Payment? Payment = null, IReadOnlyList<PaymentNotice>? Notices = null);

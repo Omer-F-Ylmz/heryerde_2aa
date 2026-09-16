@@ -27,6 +27,8 @@ public static class TestDb
         await context.PageViews.ExecuteDeleteAsync();
         await context.AnalyticsDailies.ExecuteDeleteAsync();
         await context.ProductReviews.ExecuteDeleteAsync();
+        await context.CustomerFavorites.ExecuteDeleteAsync();
+        await context.CustomerAddresses.ExecuteDeleteAsync();
         await context.KvkkRequests.ExecuteDeleteAsync();
         await context.Announcements.ExecuteDeleteAsync();
         await context.Coupons.ExecuteDeleteAsync();
@@ -40,6 +42,7 @@ public static class TestDb
         await context.Carts.ExecuteDeleteAsync();
         await context.GiftRegistryItems.ExecuteDeleteAsync();
         await context.GiftRegistries.ExecuteDeleteAsync();
+        await context.Customers.ExecuteDeleteAsync();
         await context.ProductImages.ExecuteDeleteAsync();
         await context.ProductVideos.ExecuteDeleteAsync();
         await context.ProductAttributes.ExecuteDeleteAsync();

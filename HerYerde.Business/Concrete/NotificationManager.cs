@@ -203,6 +203,24 @@ public class NotificationManager : INotificationService
         return QueueAsync(OutboxType.AdminPasswordReset, email, subject, body, cancellationToken);
     }
 
+    public Task QueueCustomerVerifyAsync(string email, string token, CancellationToken cancellationToken = default)
+    {
+        var (subject, body) = NotificationTemplates.CustomerVerify($"{_shop.BaseUrl}/hesap/dogrula?t={token}");
+        return QueueAsync(OutboxType.CustomerVerify, email, subject, body, cancellationToken);
+    }
+
+    public Task QueueCustomerLoginLinkAsync(string email, string token, CancellationToken cancellationToken = default)
+    {
+        var (subject, body) = NotificationTemplates.CustomerLoginLink($"{_shop.BaseUrl}/hesap/baglanti?t={token}");
+        return QueueAsync(OutboxType.CustomerLoginLink, email, subject, body, cancellationToken);
+    }
+
+    public Task QueueCustomerPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default)
+    {
+        var (subject, body) = NotificationTemplates.CustomerPasswordReset($"{_shop.BaseUrl}/hesap/sifre-sifirla?t={token}");
+        return QueueAsync(OutboxType.CustomerPasswordReset, email, subject, body, cancellationToken);
+    }
+
     public async Task QueueContactMessageAsync(ContactMessage message, CancellationToken cancellationToken = default)
     {
         if (_notifications.StoreTo is not { Length: > 0 } storeTo)

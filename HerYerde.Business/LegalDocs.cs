@@ -4,7 +4,7 @@ namespace HerYerde.Business;
 /// Metin değişince sürüm ve tarih birlikte ilerler; sipariş onayladığı sürümü saklar.</summary>
 public static class LegalDocs
 {
-    public const string Version = "2026-09-16.3";
+    public const string Version = "2026-09-16.4";
     public static readonly DateTime UpdatedAt = new(2026, 9, 16);
 
     /// <summary>Sürümün ön bilgilendirme + mesafeli satış sözleşmesi PDF'inin gizli depodaki yolu; sürüm yürürlükteyken üretilip

@@ -1,0 +1,81 @@
+@using HerYerde.Web.Models
+@model AccountAddressFormViewModel
+@inject IProvinceDirectory Provinces
+@{
+    Layout = "_AccountLayout";
+    var form = Model.Form;
+    var isNew = form.Id == 0;
+    ViewData["Title"] = isNew ? "Yeni adres" : "Adresi düzenle";
+    var action = isNew ? "/hesap/adresler/yeni" : $"/hesap/adresler/{form.Id}";
+    var districts = Provinces.DistrictsOf(form.City);
+    string? Error(string field) => ViewData.ModelState[field]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+
+<h1 class="display-2 h-mark">@(isNew ? "Yeni adres" : "Adresi düzenle")</h1>
+<section class="form-card surface-elevated">
+    @if (form.ErrorMessage is { } error)
+    {
+        <p class="form-alert" role="alert">@error</p>
+    }
+    <form method="post" action="@action">
+        @Html.AntiForgeryToken()
+        <div class="field-row">
+            <div class="field">
+                <label class="field__label" for="Title">Adres adı</label>
+                <input class="field__input" id="Title" name="Title" value="@form.Title" maxlength="40" placeholder="Ev, İş" required aria-describedby="Title-error" />
+                <span class="field__error" id="Title-error">@Error("Title")</span>
+            </div>
+            <div class="field">
+                <label class="field__label" for="FullName">Ad soyad</label>
+                <input class="field__input" id="FullName" name="FullName" value="@form.FullName" maxlength="120" autocomplete="name" required aria-describedby="FullName-error" />
+                <span class="field__error" id="FullName-error">@Error("FullName")</span>
+            </div>
+        </div>
+        <div class="field">
+            <label class="field__label" for="Phone">Cep telefonu</label>
+            <input class="field__input" id="Phone" name="Phone" value="@form.Phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0542 497 09 82" required aria-describedby="Phone-error" />
+            <span class="field__error" id="Phone-error">@Error("Phone")</span>
+        </div>
+        <div class="field">
+            <label class="field__label" for="Address">Adres</label>
+            <textarea class="field__input field__input--area" id="Address" name="Address" rows="3" maxlength="500" autocomplete="street-address" required aria-describedby="Address-error">@form.Address</textarea>
+            <span class="field__error" id="Address-error">@Error("Address")</span>
+        </div>
+        @* Ödeme formundaki bağımlı il/ilçe seçimiyle aynı: JS yoksa "İlçeleri getir" sayfayı yeniler. *@
+        <div class="field-row" data-address>
+            <div class="field">
+                <label class="field__label" for="City">İl</label>
+                <select class="field__input" id="City" name="City" autocomplete="address-level1" data-province required>
+                    <option value="">İl seçin</option>
+                    @foreach (var province in Provinces.Names)
+                    {
+                        <option value="@province" selected="@(province == form.City)">@province</option>
+                    }
+                </select>
+                <span class="field__error">@Error("City")</span>
+            </div>
+            <div class="field">
+                <label class="field__label" for="District">İlçe</label>
+                <select class="field__input" id="District" name="District" autocomplete="address-level2" data-district disabled="@(districts.Count == 0)" required aria-describedby="District-error">
+                    <option value="">@(districts.Count == 0 ? "Önce il seçin" : "İlçe seçin")</option>
+                    @foreach (var district in districts)
+                    {
+                        <option value="@district" selected="@(district == form.District)">@district</option>
+                    }
+                </select>
+                <span class="field__error" id="District-error">@Error("District")</span>
+            </div>
+        </div>
+        <p class="field__hint">
+            <button class="btn btn--ghost btn--sm" type="submit" formaction="/hesap/adresler/ilce" formnovalidate data-district-refresh>İlçeleri getir</button>
+        </p>
+        <label class="switch">
+            <input type="checkbox" name="IsDefault" value="true" checked="@form.IsDefault" />
+            <span>Varsayılan adres: ödeme formunu bu adres doldursun</span>
+        </label>
+        <div class="form-card__foot">
+            <a class="btn btn--ghost" href="/hesap/adresler">Vazgeç</a>
+            <button class="btn btn--cta btn--lg" type="submit">Adresi kaydet</button>
+        </div>
+    </form>
+</section>

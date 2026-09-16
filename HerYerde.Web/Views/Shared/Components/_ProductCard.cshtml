@@ -29,6 +29,10 @@
             <partial name="Components/_Badge" model="Model.Badge" />
         }
     </a>
+    @if (Model.ProductId > 0)
+    {
+        <partial name="Components/_FavoriteButton" model="new FavoriteButtonVm(Model.ProductId, Model.Name, Context.Request.Path + Context.Request.QueryString)" />
+    }
     <div class="card__body">
         <h3 class="card__title"><a href="@Model.Url">@Model.Name</a></h3>
         <partial name="Components/_PriceBlock" model="new PriceBlockVm(Model.Price, Model.CampaignPrice)" />

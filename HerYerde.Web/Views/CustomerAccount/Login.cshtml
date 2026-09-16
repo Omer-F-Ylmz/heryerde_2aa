@@ -1,0 +1,60 @@
+@using HerYerde.Web.Controllers
+@using HerYerde.Web.Infrastructure
+@using HerYerde.Web.Models
+@model CustomerLoginViewModel
+@{
+    ViewData["Title"] = "Giriş yap";
+    ViewData["Description"] = "HerYerde hesabınıza parolayla ya da e-postanıza gelen bağlantıyla girin.";
+    ViewData["Robots"] = "noindex, follow";
+    var action = Model.ReturnUrl is { Length: > 0 } returnUrl
+        ? "/hesap/giris?" + CustomerPolicy.ReturnParameter + "=" + Uri.EscapeDataString(returnUrl)
+        : "/hesap/giris";
+    var notice = Model.Notice ?? TempData[CustomerAccountController.LoginNoticeKey] as string;
+}
+
+<div class="container section auth">
+    <partial name="_AuthIntro" model="@("Hesabınıza girin.")" />
+
+    <div class="auth__forms">
+        @if (notice is not null)
+        {
+            <p class="form-alert form-alert--notice" role="status">@notice</p>
+        }
+        <section class="form-card surface-elevated auth__card" aria-labelledby="password-title">
+            <h2 id="password-title" class="heading-3">Parolayla giriş</h2>
+            @if (Model.ErrorMessage is { } error)
+            {
+                <p class="form-alert" role="alert">@error</p>
+            }
+            <form method="post" action="@action">
+                @Html.AntiForgeryToken()
+                <div class="field">
+                    <label class="field__label" for="Email">E-posta</label>
+                    <input class="field__input" id="Email" name="Email" type="email" value="@Model.Email" maxlength="200" autocomplete="email" required />
+                </div>
+                <div class="field">
+                    <label class="field__label" for="Password">Parola</label>
+                    <input class="field__input" id="Password" name="Password" type="password" maxlength="200" autocomplete="current-password" required />
+                    <a class="field__hint auth__link" href="/hesap/sifremi-unuttum">Parolamı unuttum</a>
+                </div>
+                <button class="btn btn--cta btn--lg" type="submit">Giriş yap</button>
+            </form>
+        </section>
+
+        <section class="form-card surface-elevated auth__card auth__card--quiet" aria-labelledby="link-title">
+            <h2 id="link-title" class="heading-3">Parolasız giriş</h2>
+            <p class="field__hint">E-postanıza 15 dakika geçerli, tek kullanımlık bir giriş bağlantısı gönderelim.</p>
+            <form method="post" action="/hesap/giris-baglantisi">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+                <div class="field">
+                    <label class="field__label" for="LinkEmail">E-posta</label>
+                    <input class="field__input" id="LinkEmail" name="Email" type="email" value="@Model.Email" maxlength="200" autocomplete="email" required />
+                </div>
+                <button class="btn btn--outline" type="submit">Bağlantı gönder</button>
+            </form>
+        </section>
+
+        <p class="auth__switch">Hesabınız yok mu? <a href="/hesap/kayit">Üye olun</a></p>
+    </div>
+</div>

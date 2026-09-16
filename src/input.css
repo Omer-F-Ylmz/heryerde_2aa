@@ -2606,6 +2606,444 @@
     color: var(--c-neutral-700);
   }
 
+  /* D16b üyelik: başlıktaki hesap simgesi, favori kalbi, giriş/kayıt ve hesap sayfaları */
+  .store-header__actions {
+    grid-area: cart;
+    display: flex;
+    gap: 8px;
+  }
+
+  .icon-btn--account {
+    position: relative;
+  }
+
+  /* Girişli olduğunu gösteren küçük yeşil nokta; ad yazılmaz */
+  .account-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--c-accent);
+    box-shadow: 0 0 0 2px var(--c-neutral-50);
+  }
+
+  .fav-form {
+    margin: 0;
+  }
+
+  /* Kartta: görselin sağ üst köşesinde yüzen yuvarlak düğme */
+  .card > .fav,
+  .card > .fav-form {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+  }
+
+  .fav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: 50%;
+    background: var(--c-neutral-50);
+    color: var(--c-brand-900);
+    box-shadow: var(--shadow-floating);
+    cursor: pointer;
+    transition: transform 240ms var(--ease), background-color 240ms var(--ease);
+  }
+
+  .fav:hover {
+    background: var(--c-brand-100);
+  }
+
+  .fav:active {
+    transform: scale(0.92);
+  }
+
+  .fav:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .fav[aria-pressed="true"] .fav__icon {
+    fill: var(--c-brand);
+    color: var(--c-brand);
+  }
+
+  .fav[aria-busy="true"] {
+    opacity: 0.6;
+  }
+
+  /* Ürün sayfasında: sepete ekle ve WhatsApp düğmelerinin yanında, yazılı */
+  .fav--wide {
+    width: auto;
+    height: auto;
+    gap: 8px;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .fav--wide[aria-pressed="true"] {
+    border-color: var(--c-brand-300);
+    background: var(--c-brand-100);
+  }
+
+  .auth {
+    display: grid;
+    gap: 32px;
+  }
+
+  .auth__intro .display-2 {
+    margin-bottom: 16px;
+  }
+
+  .auth__perks {
+    display: grid;
+    gap: 16px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .auth__perks li {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    color: var(--c-neutral-900);
+  }
+
+  .auth__perks .icon {
+    flex: none;
+    color: var(--c-accent);
+  }
+
+  .auth__forms {
+    display: grid;
+    gap: 24px;
+    align-content: start;
+  }
+
+  .auth__card--quiet {
+    background: transparent;
+    box-shadow: none;
+    border: 1px dashed var(--c-neutral-200);
+  }
+
+  .switch__text--soft {
+    font-weight: 400;
+    color: var(--c-neutral-700);
+  }
+
+  .auth__link,
+  .auth__switch a {
+    color: var(--c-brand-700);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .auth__link:hover,
+  .auth__switch a:hover {
+    color: var(--c-brand-900);
+  }
+
+  .auth__link:focus-visible,
+  .auth__switch a:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .auth__switch {
+    margin: 0;
+  }
+
+  .auth__card .auth__switch {
+    margin-top: 16px;
+  }
+
+  .auth--single .auth__forms {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .account {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  /* Selam sayfa başlığıyla (h1) yarışmasın: bir kademe küçük */
+  .account__greeting {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--c-brand-900);
+  }
+
+  .account__email {
+    margin: 0;
+    color: var(--c-neutral-700);
+    overflow-wrap: anywhere;
+  }
+
+  .account__nav {
+    display: grid;
+    gap: 16px;
+  }
+
+  /* Mobilde yatay kaydırılan sekmeler; 1024+'da solda dikey liste */
+  .account__tabs {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    padding: 0 0 8px;
+    list-style: none;
+    overflow-x: auto;
+  }
+
+  .account__tab {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 16px;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: 8px;
+    background: var(--c-neutral-50);
+    color: var(--c-neutral-900);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 240ms var(--ease), color 240ms var(--ease);
+  }
+
+  .account__tab:hover {
+    background: var(--c-brand-100);
+  }
+
+  .account__tab:active {
+    background: var(--c-neutral-200);
+  }
+
+  .account__tab:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .account__tab[aria-current="page"] {
+    border-color: var(--c-brand-900);
+    background: var(--c-brand-900);
+    color: var(--c-neutral-50);
+  }
+
+  .account__logout {
+    margin: 0;
+  }
+
+  .account__body {
+    display: grid;
+    gap: 24px;
+    align-content: start;
+    min-width: 0;
+  }
+
+  .account__body .display-2 {
+    margin: 0;
+  }
+
+  .account__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .account-list,
+  .address-list {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .account-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 16px;
+    border-radius: var(--r-card);
+  }
+
+  .account-row__main {
+    min-width: 0;
+  }
+
+  .account-row__title {
+    margin: 0;
+    font-weight: 600;
+    color: var(--c-brand-900);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .account-row__title a {
+    color: inherit;
+  }
+
+  .account-row__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: var(--c-neutral-700);
+  }
+
+  .account-row__text {
+    margin: 8px 0 0;
+  }
+
+  .account-row__action {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .account-row--stack {
+    align-items: start;
+  }
+
+  .address-card {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border-radius: var(--r-card);
+  }
+
+  .address-card--default {
+    border: 1px solid var(--c-accent);
+  }
+
+  .address-card__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: 600;
+    color: var(--c-brand-900);
+  }
+
+  .address-card__body {
+    margin: 0;
+  }
+
+  .address-card__actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .address-card__actions form {
+    margin: 0;
+  }
+
+  .account__consequences {
+    margin: 0 0 24px;
+    padding-left: 24px;
+    list-style: disc;
+  }
+
+  .account__danger {
+    border: 1px solid var(--c-brand-300);
+  }
+
+  .order-facts__form {
+    margin-top: 8px;
+  }
+
+  @media (min-width: 768px) {
+    .account-row {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .account-row__action {
+      grid-column: auto;
+    }
+
+    .address-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    /* Kırık simetri: tanıtım dar, formlar geniş sütunda */
+    .auth {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      gap: 64px;
+      align-items: start;
+    }
+
+    .auth--single {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: center;
+    }
+
+    .account {
+      grid-template-columns: 256px minmax(0, 1fr);
+      grid-template-areas:
+        "head head"
+        "nav body";
+      column-gap: 48px;
+    }
+
+    .account__head {
+      grid-area: head;
+    }
+
+    .account__nav {
+      grid-area: nav;
+      position: sticky;
+      top: 24px;
+      align-self: start;
+    }
+
+    .account__body {
+      grid-area: body;
+    }
+
+    .account__tabs {
+      flex-direction: column;
+      overflow: visible;
+      padding: 0;
+    }
+
+    .account__tab {
+      width: 100%;
+    }
+
+    .account__greeting {
+      font-size: 32px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fav,
+    .account__tab {
+      transition: none;
+    }
+
+    .fav:active {
+      transform: none;
+    }
+  }
+
   /* Stil rehberi */
   .sg-block {
     padding-block: 32px;

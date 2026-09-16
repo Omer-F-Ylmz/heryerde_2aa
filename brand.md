@@ -97,3 +97,20 @@ ana sayfa, ikincil Ev ürünleri). İllüstrasyon ya da wifi ikonu yok.
 alttan 16px tam genişlik, 768+'da sağ altta en çok 440px. 48px uygulama simgesi, kalın başlık `#5E2214` + tek cümle,
 Android'de "Ekle" (`btn--cta`), kapat 44px ikon düğmesi. İkinci ziyaretten önce çıkmaz; kapatılınca bir yıl gizli.
 **Yasak**: tam ekran kaplama, sayfa açılır açılmaz çıkan ipucu, geri sayım.
+
+## Ek — D16b: üyelik sayfaları ve favori kalbi
+
+**Giriş / kayıt** — kırık simetri: 1024+'da solda dar tanıtım (eyebrow "Hesabım", h1 + el yazısı çizgi, üç
+yeşil ikonlu fayda satırı), sağda geniş form sütunu. Parolalı giriş yükseltilmiş kart; parolasız giriş aynı
+yerde kesik çizgili, zeminsiz ikincil kart (tek birincil eylem "Giriş yap"). Bağlantı onay, parola sıfırlama
+sayfaları tek sütun, en çok 560px.
+
+**Hesap** — başlıkta eyebrow + 24/32px Lora selam (sayfa h1'iyle yarışmaz) + e-posta; 1024+'da solda 256px
+yapışkan dikey sekme listesi (seçili: `#5E2214` dolgu, krem yazı), mobilde yatay kaydırılan sekmeler. İçerik
+satırları yükseltilmiş yüzey; sipariş durumu mevcut durum rozetiyle. Hesabı sil kartı kiremit açık çerçeveli.
+
+**Favori kalbi** — Lucide heart. Kartta görselin sağ üstünde 44px yuvarlak yüzen düğme (`#FDFAF5`, floating
+gölge); ürün sayfasında sepet/WhatsApp yanında yazılı çerçeveli düğme. Seçili: kalp `#A8442A` dolgu, geniş
+düğmede `#F2DED6` zemin. Girişsizde kalp giriş sayfasına bu sayfaya dönüşle götürür. Başlıktaki hesap
+simgesinde girişliyken 8px yeşil nokta; ad yazılmaz.
+**Yasak**: kalpte kalp patlaması/konfeti animasyonu, hesap sayfasında avatar/fotoğraf yükleme, sayaçlı rozet.

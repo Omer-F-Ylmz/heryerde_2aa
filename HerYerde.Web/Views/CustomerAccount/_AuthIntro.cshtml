@@ -1,0 +1,21 @@
+@* Üyelik sayfalarının sol sütunu: üyeliğin ne kazandırdığı ve isteğe bağlı olduğu. *@
+@model string
+<div class="auth__intro">
+    <p class="eyebrow">Hesabım</p>
+    <h1 class="display-2 h-mark">@Model</h1>
+    <p class="lead">Üyelik isteğe bağlı; misafir olarak da sipariş verebilirsiniz.</p>
+    <ul class="auth__perks">
+        <li>
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3 9 15"/><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+            <span>Siparişlerinizi ve kargo durumunu tek yerden izleyin; bu e-postayla verdiğiniz eski siparişler de gelir.</span>
+        </li>
+        <li>
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Adresinizi bir kez kaydedin, ödeme formu kendiliğinden dolsun.</span>
+        </li>
+        <li>
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            <span>Beğendiğiniz ürünleri favorilere ekleyin, çeyiz listelerinizi bir arada görün.</span>
+        </li>
+    </ul>
+</div>

@@ -176,6 +176,35 @@ public static class NotificationTemplates
         return ("Yönetim parolası sıfırlama", Page(body.ToString()));
     }
 
+    /// <summary>Üyelik doğrulaması; bağlantı açılınca onay düğmesi ister (posta tarayıcıları bağlantıyı önceden açsa da hesap doğrulanmaz).</summary>
+    public static (string Subject, string Body) CustomerVerify(string verifyUrl)
+    {
+        var body = new StringBuilder();
+        body.Append(Heading("E-postanızı doğrulayın", "HerYerde üyeliğiniz için bu adres kullanıldı."));
+        body.Append(Paragraph("Bağlantı 24 saat geçerlidir. Doğrulayınca bu e-postayla verdiğiniz önceki siparişler hesabınızda görünür. Üye olmadıysanız postayı yok sayın; hesap doğrulanmadan kullanılamaz."));
+        body.Append(Button(verifyUrl, "E-postamı doğrula"));
+        return ("HerYerde üyeliğinizi doğrulayın", Page(body.ToString()));
+    }
+
+    /// <summary>Parolasız giriş; tek kullanımlık, 15 dakika.</summary>
+    public static (string Subject, string Body) CustomerLoginLink(string loginUrl)
+    {
+        var body = new StringBuilder();
+        body.Append(Heading("Giriş bağlantınız", "HerYerde hesabınıza parolasız giriş istendi."));
+        body.Append(Paragraph("Bağlantı 15 dakika geçerlidir ve bir kez kullanılabilir. Bu isteği siz yapmadıysanız postayı yok sayın; hesabınıza kimse giremez."));
+        body.Append(Button(loginUrl, "Giriş yap"));
+        return ("HerYerde giriş bağlantınız", Page(body.ToString()));
+    }
+
+    public static (string Subject, string Body) CustomerPasswordReset(string resetUrl)
+    {
+        var body = new StringBuilder();
+        body.Append(Heading("Parola sıfırlama", "HerYerde hesabınız için parola sıfırlama istendi."));
+        body.Append(Paragraph("Bağlantı 30 dakika geçerlidir ve bir kez kullanılabilir. Bu isteği siz yapmadıysanız postayı yok sayın; parolanız değişmez."));
+        body.Append(Button(resetUrl, "Yeni parola belirle"));
+        return ("HerYerde parola sıfırlama", Page(body.ToString()));
+    }
+
     /// <summary>Müşterinin yazdığı her alan kaçışlanır; mesajdaki satır sonları korunur.</summary>
     public static (string Subject, string Body) ContactMessage(ContactMessage message, string adminUrl)
     {

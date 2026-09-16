@@ -1,0 +1,28 @@
+@using HerYerde.Web.Models
+@model AccountDeleteViewModel
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = "Hesabımı sil";
+}
+
+<h1 class="display-2 h-mark">Hesabımı sil</h1>
+<section class="form-card surface-elevated account__danger" aria-labelledby="delete-what">
+    <h2 id="delete-what" class="heading-3">Silince ne olur</h2>
+    <ul class="account__consequences">
+        <li>Hesabınız, adres defteriniz ve favorileriniz kalıcı olarak silinir.</li>
+        <li>Siparişlerinizde adınız, telefonunuz, e-postanız ve adresiniz anonimleştirilir; tutar ve fatura yasal süre boyunca kalır.</li>
+        <li>Yorumlarınızda görünen ad maskelenir, açtığınız çeyiz listeleri ve bu e-postayla yazdığınız iletişim mesajları silinir.</li>
+        <li>Teslim edilmemiş siparişiniz varsa silme, sipariş kapanana kadar yapılamaz.</li>
+    </ul>
+    <form method="post" action="/hesap/sil">
+        @Html.AntiForgeryToken()
+        <div class="field">
+            <label class="field__label" for="Email">Onay için e-posta adresinizi yazın</label>
+            <input class="field__input" id="Email" name="Email" type="email" maxlength="200" autocomplete="off" placeholder="@Model.Customer.Email" required />
+        </div>
+        <div class="form-card__foot">
+            <a class="btn btn--ghost" href="/hesap/ayarlar">Vazgeç</a>
+            <button class="btn btn--danger btn--lg" type="submit">Hesabımı kalıcı olarak sil</button>
+        </div>
+    </form>
+</section>

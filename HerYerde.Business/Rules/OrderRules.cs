@@ -79,4 +79,10 @@ public static class PhoneRules
         normalized = "0" + digits;
         return true;
     }
+
+    /// <summary>"05424970982" → "0542 497 09 82"; normalleştirilmemiş değer olduğu gibi döner.</summary>
+    public static string Display(string? normalized)
+        => normalized is { Length: 11 } phone && phone.All(char.IsAsciiDigit)
+            ? $"{phone[..4]} {phone[4..7]} {phone[7..9]} {phone[9..]}"
+            : normalized ?? string.Empty;
 }

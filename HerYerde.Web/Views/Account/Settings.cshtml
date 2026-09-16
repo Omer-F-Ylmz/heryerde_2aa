@@ -1,0 +1,86 @@
+@using System.Globalization
+@using HerYerde.Web.Models
+@model AccountSettingsPageViewModel
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = "Ayarlar";
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+    var customer = Model.Customer;
+}
+
+<h1 class="display-2 h-mark">Ayarlar</h1>
+
+<section class="form-card surface-elevated" aria-labelledby="profile-title">
+    <h2 id="profile-title" class="heading-3">Bilgilerim</h2>
+    <form method="post" action="/hesap/ayarlar">
+        @Html.AntiForgeryToken()
+        <div class="field-row">
+            <div class="field">
+                <label class="field__label" for="FullName">Ad soyad</label>
+                <input class="field__input" id="FullName" name="FullName" value="@Model.Form.FullName" maxlength="120" autocomplete="name" />
+            </div>
+            <div class="field">
+                <label class="field__label" for="Phone">Cep telefonu</label>
+                <input class="field__input" id="Phone" name="Phone" value="@Model.Form.Phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0542 497 09 82" />
+            </div>
+        </div>
+        <label class="switch">
+            <input type="checkbox" name="MarketingConsent" value="true" checked="@Model.Form.MarketingConsent" />
+            <span>Kampanya ve yeni ürün haberleri almak istiyorum</span>
+        </label>
+        <p class="field__hint">
+            @(customer.MarketingConsentAt is { } consentAt
+                ? $"Son değişiklik: {consentAt.ToString("d MMMM yyyy", turkish)}."
+                : "Varsayılan olarak kapalı.") Şimdilik kampanya iletisi göndermiyoruz; tercihiniz yalnız kaydedilir.
+        </p>
+        <button class="btn btn--primary" type="submit">Kaydet</button>
+    </form>
+</section>
+
+<section class="form-card surface-elevated" aria-labelledby="password-title">
+    <h2 id="password-title" class="heading-3">@(customer.PasswordHash is null ? "Parola belirle" : "Parolayı değiştir")</h2>
+    @if (Model.PasswordError is { } passwordError)
+    {
+        <p class="form-alert" role="alert">@passwordError</p>
+    }
+    @if (customer.PasswordHash is null)
+    {
+        <p class="field__hint">Hesabınız parolasız: girişte e-postanıza bağlantı gönderiyoruz. Parola belirlerseniz iki yolla da girebilirsiniz.</p>
+    }
+    <form method="post" action="/hesap/parola">
+        @Html.AntiForgeryToken()
+        @if (customer.PasswordHash is not null)
+        {
+            <div class="field">
+                <label class="field__label" for="CurrentPassword">Mevcut parola</label>
+                <input class="field__input" id="CurrentPassword" name="CurrentPassword" type="password" maxlength="200" autocomplete="current-password" required />
+            </div>
+        }
+        <div class="field-row">
+            <div class="field">
+                <label class="field__label" for="NewPassword">Yeni parola</label>
+                <input class="field__input" id="NewPassword" name="NewPassword" type="password" minlength="10" maxlength="200" autocomplete="new-password" required />
+            </div>
+            <div class="field">
+                <label class="field__label" for="ConfirmPassword">Yeni parola (tekrar)</label>
+                <input class="field__input" id="ConfirmPassword" name="ConfirmPassword" type="password" minlength="10" maxlength="200" autocomplete="new-password" required />
+            </div>
+        </div>
+        <button class="btn btn--primary" type="submit">Parolayı kaydet</button>
+    </form>
+</section>
+
+<section class="form-card surface-elevated" aria-labelledby="sessions-title">
+    <h2 id="sessions-title" class="heading-3">Oturumlar</h2>
+    <p class="field__hint">Başka bir cihazda açık kaldıysa hepsini kapatın; bu tarayıcıdaki oturum açık kalır.</p>
+    <form method="post" action="/hesap/oturumlar/kapat">
+        @Html.AntiForgeryToken()
+        <button class="btn btn--outline" type="submit">Tüm cihazlardan çık</button>
+    </form>
+</section>
+
+<section class="form-card surface-elevated account__danger" aria-labelledby="delete-title">
+    <h2 id="delete-title" class="heading-3">Hesabı sil</h2>
+    <p class="field__hint">Hesabınız, adresleriniz ve favorileriniz silinir; siparişlerinizdeki kişisel bilgiler anonimleştirilir.</p>
+    <a class="btn btn--danger" href="/hesap/sil">Hesabımı sil</a>
+</section>

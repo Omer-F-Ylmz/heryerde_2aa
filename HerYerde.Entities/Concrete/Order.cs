@@ -75,6 +75,10 @@ public class Order : IEntity
     /// <summary>Müşterinin iptal ettiği onaylı havale siparişinde elle geri ödenecek tutar; boşsa geri ödeme yok.</summary>
     public decimal? RefundDue { get; set; }
 
+    /// <summary>Siparişi veren üye: girişliyken verilen sipariş ya da e-posta doğrulanınca bağlanan misafir siparişi.
+    /// Hesap silinince boşalır.</summary>
+    public int? CustomerId { get; set; }
+
     /// <summary>Elle geri ödemenin yatırılacağı IBAN (boşluksuz).</summary>
     public string? RefundIban { get; set; }
 

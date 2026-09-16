@@ -1,0 +1,37 @@
+@using System.Globalization
+@using HerYerde.Web.Models
+@model AccountReviewsViewModel
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = "Yorumlarım";
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+}
+
+<h1 class="display-2 h-mark">Yorumlarım</h1>
+@if (Model.Reviews.Count == 0)
+{
+    <div class="empty surface-elevated">
+        <p class="empty__title">Henüz yorum yazmadınız.</p>
+        <p>Giriş yapmışken yazdığınız yorumlar burada durumu ile görünür.</p>
+    </div>
+}
+else
+{
+    <ul class="account-list">
+        @foreach (var row in Model.Reviews)
+        {
+            <li class="account-row account-row--stack surface-elevated">
+                <div class="account-row__main">
+                    <p class="account-row__title"><a href="/urun/@row.ProductSlug">@row.ProductName</a></p>
+                    <p class="account-row__meta">
+                        <partial name="Components/_Stars" model="row.Review.Rating" />
+                        <span class="visually-hidden">5 üzerinden @row.Review.Rating</span>
+                        · @row.Review.CreatedAt.ToString("d MMMM yyyy", turkish)
+                    </p>
+                    <p class="account-row__text">@row.Review.Comment</p>
+                </div>
+                <span class="tag@(row.Review.IsApproved ? " tag--live" : "")">@(row.Review.IsApproved ? "Yayında" : "Onay bekliyor")</span>
+            </li>
+        }
+    </ul>
+}

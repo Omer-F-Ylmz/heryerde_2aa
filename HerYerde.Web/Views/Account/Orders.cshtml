@@ -1,0 +1,34 @@
+@using System.Globalization
+@using HerYerde.Web.Models
+@model AccountOrdersViewModel
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = "Siparişlerim";
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+}
+
+<h1 class="display-2 h-mark">Siparişlerim</h1>
+@if (Model.Orders.Count == 0)
+{
+    <div class="empty surface-elevated">
+        <p class="empty__title">Henüz siparişiniz yok.</p>
+        <p>Bu e-postayla misafir olarak verdiğiniz siparişler, e-postanızı doğruladığınızda burada görünür.</p>
+        <a class="btn btn--outline" href="/ev">Ürünlere göz atın</a>
+    </div>
+}
+else
+{
+    <ul class="account-list">
+        @foreach (var order in Model.Orders)
+        {
+            <li class="account-row surface-elevated">
+                <div class="account-row__main">
+                    <p class="account-row__title">@order.OrderNo</p>
+                    <p class="account-row__meta">@order.CreatedAt.ToString("d MMMM yyyy", turkish) · @Money.Tl(order.Total)</p>
+                </div>
+                <partial name="Components/_StatusPill" model="order.Status" />
+                <a class="btn btn--outline btn--sm account-row__action" href="/siparis/@order.OrderNo/tesekkur?t=@order.AccessToken">Siparişi görüntüle</a>
+            </li>
+        }
+    </ul>
+}

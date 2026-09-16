@@ -18,4 +18,7 @@ public class ProductReview : IEntity
 
     /// <summary>Doğrulanmış alıcı: yalnız bu ürünü içeren gerçek bir siparişin numarasıysa yazılır.</summary>
     public string? OrderNo { get; set; }
+
+    /// <summary>Girişliyken yazıldıysa üye; "Yorumlarım"da listelenir, hesap silinince boşalır.</summary>
+    public int? CustomerId { get; set; }
 }

@@ -40,6 +40,9 @@ public class HerYerdeContext : DbContext
     public DbSet<SearchLog> SearchLogs => Set<SearchLog>();
     public DbSet<PageView> PageViews => Set<PageView>();
     public DbSet<AnalyticsDaily> AnalyticsDailies => Set<AnalyticsDaily>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
+    public DbSet<CustomerFavorite> CustomerFavorites => Set<CustomerFavorite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -283,6 +286,9 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.RefundDue).HasColumnName("refund_due").HasPrecision(18, 2);
             e.Property(o => o.RefundIban).HasColumnName("refund_iban").HasMaxLength(34);
             e.Property(o => o.RefundedAt).HasColumnName("refunded_at");
+            e.Property(o => o.CustomerId).HasColumnName("customer_id");
+            e.HasIndex(o => o.CustomerId).HasDatabaseName("ix_order_customer_id");
+            e.HasOne<Customer>().WithMany().HasForeignKey(o => o.CustomerId).OnDelete(DeleteBehavior.SetNull);
             e.HasIndex(o => o.OrderNo).IsUnique().HasDatabaseName("ux_order_order_no");
             e.HasIndex(o => o.AccessToken).IsUnique().HasDatabaseName("ux_order_access_token");
             // Yönetim sipariş listesi: duruma göre süzüp en yeniden eskiye.
@@ -443,6 +449,9 @@ public class HerYerdeContext : DbContext
             e.HasIndex(r => r.ManageToken).IsUnique().HasDatabaseName("ux_gift_registry_manage_token");
             // Gecelik saklama süresi taraması etkinlik tarihine bakar.
             e.HasIndex(r => r.EventDate).HasDatabaseName("ix_gift_registry_event_date");
+            e.Property(r => r.CustomerId).HasColumnName("customer_id");
+            e.HasIndex(r => r.CustomerId).HasDatabaseName("ix_gift_registry_customer_id");
+            e.HasOne<Customer>().WithMany().HasForeignKey(r => r.CustomerId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<GiftRegistryItem>(e =>
@@ -513,6 +522,67 @@ public class HerYerdeContext : DbContext
             e.Property(h => h.OldSlug).HasColumnName("old_slug").HasMaxLength(220).IsRequired();
             e.Property(h => h.CreatedAt).HasColumnName("created_at");
             e.HasIndex(h => new { h.EntityType, h.OldSlug }).IsUnique().HasDatabaseName("ux_slug_history_entity_type_old_slug");
+        });
+
+        modelBuilder.Entity<Customer>(e =>
+        {
+            e.ToTable("customer");
+            e.HasKey(c => c.Id);
+            e.Property(c => c.Id).HasColumnName("id");
+            e.Property(c => c.Email).HasColumnName("email").HasMaxLength(200).IsRequired();
+            e.Property(c => c.PasswordHash).HasColumnName("password_hash").HasMaxLength(200);
+            e.Property(c => c.FullName).HasColumnName("full_name").HasMaxLength(120);
+            e.Property(c => c.Phone).HasColumnName("phone").HasMaxLength(11);
+            e.Property(c => c.EmailVerifiedAt).HasColumnName("email_verified_at");
+            e.Property(c => c.KvkkConsentAt).HasColumnName("kvkk_consent_at");
+            e.Property(c => c.LegalVersion).HasColumnName("legal_version").HasMaxLength(20).IsRequired();
+            e.Property(c => c.MarketingConsent).HasColumnName("marketing_consent");
+            e.Property(c => c.MarketingConsentAt).HasColumnName("marketing_consent_at");
+            e.Property(c => c.CreatedAt).HasColumnName("created_at");
+            e.Property(c => c.SessionStamp).HasColumnName("session_stamp");
+            e.Property(c => c.VerifyTokenHash).HasColumnName("verify_token_hash").HasMaxLength(64);
+            e.Property(c => c.VerifyTokenExpiresAt).HasColumnName("verify_token_expires_at");
+            e.Property(c => c.LoginTokenHash).HasColumnName("login_token_hash").HasMaxLength(64);
+            e.Property(c => c.LoginTokenExpiresAt).HasColumnName("login_token_expires_at");
+            e.Property(c => c.ResetTokenHash).HasColumnName("reset_token_hash").HasMaxLength(64);
+            e.Property(c => c.ResetTokenExpiresAt).HasColumnName("reset_token_expires_at");
+            e.HasIndex(c => c.Email).IsUnique().HasDatabaseName("ux_customer_email");
+            // KVKK aracı telefonla da arar.
+            e.HasIndex(c => c.Phone).HasDatabaseName("ix_customer_phone");
+            e.HasIndex(c => c.VerifyTokenHash).IsUnique().HasFilter("[verify_token_hash] IS NOT NULL").HasDatabaseName("ux_customer_verify_token_hash");
+            e.HasIndex(c => c.LoginTokenHash).IsUnique().HasFilter("[login_token_hash] IS NOT NULL").HasDatabaseName("ux_customer_login_token_hash");
+            e.HasIndex(c => c.ResetTokenHash).IsUnique().HasFilter("[reset_token_hash] IS NOT NULL").HasDatabaseName("ux_customer_reset_token_hash");
+        });
+
+        modelBuilder.Entity<CustomerAddress>(e =>
+        {
+            e.ToTable("customer_address");
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).HasColumnName("id");
+            e.Property(a => a.CustomerId).HasColumnName("customer_id");
+            e.Property(a => a.Title).HasColumnName("title").HasMaxLength(40).IsRequired();
+            e.Property(a => a.FullName).HasColumnName("full_name").HasMaxLength(120).IsRequired();
+            e.Property(a => a.Phone).HasColumnName("phone").HasMaxLength(11).IsRequired();
+            e.Property(a => a.Address).HasColumnName("address").HasMaxLength(500).IsRequired();
+            e.Property(a => a.City).HasColumnName("city").HasMaxLength(60).IsRequired();
+            e.Property(a => a.District).HasColumnName("district").HasMaxLength(60).IsRequired();
+            e.Property(a => a.IsDefault).HasColumnName("is_default");
+            e.Property(a => a.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(a => a.CustomerId).HasDatabaseName("ix_customer_address_customer_id");
+            e.HasOne<Customer>().WithMany().HasForeignKey(a => a.CustomerId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CustomerFavorite>(e =>
+        {
+            e.ToTable("customer_favorite");
+            e.HasKey(f => f.Id);
+            e.Property(f => f.Id).HasColumnName("id");
+            e.Property(f => f.CustomerId).HasColumnName("customer_id");
+            e.Property(f => f.ProductId).HasColumnName("product_id");
+            e.Property(f => f.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(f => new { f.CustomerId, f.ProductId }).IsUnique().HasDatabaseName("ux_customer_favorite_customer_product");
+            e.HasOne<Customer>().WithMany().HasForeignKey(f => f.CustomerId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Product>().WithMany().HasForeignKey(f => f.ProductId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<PageView>(e =>
@@ -588,6 +658,9 @@ public class HerYerdeContext : DbContext
             e.Property(r => r.IsApproved).HasColumnName("is_approved");
             e.Property(r => r.CreatedAt).HasColumnName("created_at");
             e.Property(r => r.OrderNo).HasColumnName("order_no").HasMaxLength(20);
+            e.Property(r => r.CustomerId).HasColumnName("customer_id");
+            e.HasIndex(r => r.CustomerId).HasDatabaseName("ix_product_review_customer_id");
+            e.HasOne<Customer>().WithMany().HasForeignKey(r => r.CustomerId).OnDelete(DeleteBehavior.SetNull);
             // Ürün sayfası: ürünün onaylı yorumları, en yeni önce.
             e.HasIndex(r => new { r.ProductId, r.IsApproved, r.CreatedAt })
                 .IsDescending(false, false, true)

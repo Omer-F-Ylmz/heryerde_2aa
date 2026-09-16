@@ -139,7 +139,8 @@ public class OrderManager : IOrderService
             CreatedAt = now,
             // Ödeme adımı onay kutusunu zorunlu tuttuğu için sipariş anı onay anıdır.
             ConsentAt = now,
-            LegalVersion = LegalDocs.Version
+            LegalVersion = LegalDocs.Version,
+            CustomerId = draft.CustomerId
         };
 
         // Kartta stok, sepet ve müşteri postası ödeme onayına kalır; burada yalnız sipariş ve ödeme kaydı açılır.

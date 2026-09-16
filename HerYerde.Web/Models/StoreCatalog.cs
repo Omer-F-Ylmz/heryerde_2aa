@@ -111,6 +111,7 @@ public static class StoreCatalog
         var active = IsCampaignActive(product, now);
         return new ProductCardVm
         {
+            ProductId = product.Id,
             Name = product.Name,
             Slug = product.Slug,
             Price = product.Price,

@@ -44,6 +44,7 @@
                 <div><dt>İade talebi</dt><dd>@person.ReturnRequests.Count</dd></div>
                 <div><dt>İletişim mesajı</dt><dd>@person.ContactMessages.Count</dd></div>
                 <div><dt>Yorum</dt><dd>@person.Reviews.Count</dd></div>
+                <div><dt>Üye hesabı</dt><dd>@(person.Account is null ? "Yok" : $"Var · {person.Addresses.Count} adres, {person.Account.FavoriteProductIds.Count} favori")</dd></div>
             </dl>
 
             @if (person.Orders.Count > 0)

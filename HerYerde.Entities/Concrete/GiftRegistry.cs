@@ -26,4 +26,7 @@ public class GiftRegistry : IEntity
     /// <summary>Kapalıysa paylaşılan adres 404 verir; sahip yönetim sayfasından yeniden açar.</summary>
     public bool IsPublic { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>Girişliyken açıldıysa ya da e-postası doğrulanan üyeninkiyle aynıysa üye; "Çeyiz listelerim"de listelenir.</summary>
+    public int? CustomerId { get; set; }
 }
