@@ -57,6 +57,14 @@ jobs:
         urlRegex: true
         parameter: "Id|SortOrder"
         parameterRegex: true
+      # D15: aynı 6-5 sezgisi ürün ve marka formlarında (saldırı değeri adresin son parçası "1"/"edit"/"yeni", kanıt boş).
+      # Alanlar EF güncellemesine gider; dosya yolları yalnız int kimlik + GUID'den kurulur (ProductImageStorage), formdan değil.
+      - ruleId: 6
+        newRisk: "False Positive"
+        url: "http://localhost:8080/admin/(products/edit(/[0-9]+)?|markalar/yeni)"
+        urlRegex: true
+        parameter: "Id|Name|BrandId|CategoryId|CampaignPrice|FeaturedOrder|GiftMode|GiftProductId|GiftQty|Stock|VariantAxis1Label|VariantAxis2Label"
+        parameterRegex: true
 
   # D15 yüzeyleri önce ve kendi süresiyle: yönetim aktif taraması 40 dk tavanına ulaşıyor.
   - type: requestor

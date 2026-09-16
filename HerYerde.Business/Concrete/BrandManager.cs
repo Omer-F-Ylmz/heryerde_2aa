@@ -5,11 +5,14 @@ using HerYerde.Core.DataAccess;
 using HerYerde.Core.Utilities.Results;
 using HerYerde.DataAccess.Abstract;
 using HerYerde.Entities.Concrete;
+using Microsoft.EntityFrameworkCore;
 
 namespace HerYerde.Business.Concrete;
 
 public class BrandManager : IBrandService
 {
+    private const string RaceMessage = "Aynı adla bir marka az önce kaydedildi; sayfayı yenileyip yeniden deneyin.";
+
     private readonly IBrandDal _brandDal;
     private readonly IProductDal _productDal;
     private readonly IUnitOfWork _unitOfWork;
@@ -51,8 +54,9 @@ public class BrandManager : IBrandService
         {
             var created = new Brand { Name = name, Slug = slug, LogoUrl = brand.LogoUrl };
             await _brandDal.AddAsync(created, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return (HttpStatusCode.Created, new SuccessDataResult<Brand>(created, "Marka eklendi."));
+            return await SavedAsync(name, slug, excludedId: 0, cancellationToken)
+                ? (HttpStatusCode.Created, new SuccessDataResult<Brand>(created, "Marka eklendi."))
+                : (HttpStatusCode.Conflict, new ErrorDataResult<Brand>(RaceMessage));
         }
 
         var stored = await _brandDal.GetTrackedAsync(b => b.Id == brand.Id, cancellationToken);
@@ -64,8 +68,28 @@ public class BrandManager : IBrandService
         stored.Name = name;
         stored.Slug = slug;
         stored.LogoUrl = brand.LogoUrl;
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return (HttpStatusCode.OK, new SuccessDataResult<Brand>(stored, "Marka güncellendi."));
+        return await SavedAsync(name, slug, stored.Id, cancellationToken)
+            ? (HttpStatusCode.OK, new SuccessDataResult<Brand>(stored, "Marka güncellendi."))
+            : (HttpStatusCode.Conflict, new ErrorDataResult<Brand>(RaceMessage));
+    }
+
+    /// <summary>Ad/slug denetimiyle kayıt arasında aynı adla eşzamanlı istek yazılırsa benzersiz indeks yakalar: 500 yerine 409.</summary>
+    private async Task<bool> SavedAsync(string name, string slug, int excludedId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            if ((await _brandDal.GetListAsync(b => (b.Name == name || b.Slug == slug) && b.Id != excludedId, cancellationToken)).Count == 0)
+            {
+                throw;
+            }
+
+            return false;
+        }
     }
 
     public async Task<(HttpStatusCode, IResult)> DeleteAsync(int id, CancellationToken cancellationToken = default)

@@ -171,6 +171,7 @@ public class ProductManager : IProductService
         }
 
         var slug = await UniqueSlugAsync(product.Name, stored.Id, cancellationToken);
+        var oldSlug = stored.Slug;
         if (slug != stored.Slug)
         {
             await _slugHistoryDal.RecordAsync(SlugEntity.Product, stored.Id, stored.Slug, slug, DateTime.UtcNow, cancellationToken);
@@ -197,7 +198,23 @@ public class ProductManager : IProductService
         stored.Slug = slug;
         stored.UpdatedAt = DateTime.UtcNow;
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException) when (slug != oldSlug)
+        {
+            // Adres denetimiyle kayıt arasında eşzamanlı istek aynı eski adresi geçmişe yazdı ya da yeni adresi aldıysa benzersiz
+            // indeks yakalar: 500 yerine 409.
+            if (await _slugHistoryDal.FindEntityIdAsync(SlugEntity.Product, oldSlug, cancellationToken) is null
+                && (await _productDal.GetListAsync(p => p.Slug == slug && p.Id != stored.Id, cancellationToken)).Count == 0)
+            {
+                throw;
+            }
+
+            return (HttpStatusCode.Conflict, new ErrorResult("Ürün az önce başka bir istekle güncellendi; sayfayı yenileyip yeniden deneyin."));
+        }
+
         return (HttpStatusCode.OK, new SuccessResult("Ürün güncellendi."));
     }
 
