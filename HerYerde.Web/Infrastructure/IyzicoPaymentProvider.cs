@@ -203,35 +203,33 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
         var (json, _) = await PostAsync(InstallmentPath, body, cancellationToken);
         if (json is null || Text(json, "status") != "success")
         {
-            return new InstallmentResult(false, null, ErrorMessage(json));
+            return new InstallmentResult(false, [], ErrorMessage(json));
         }
 
-        // BIN verilmediğinde sağlayıcı her banka için ayrı satır döner; genel tabloda ilki yeter.
-        if ((json["installmentDetails"] as JsonArray)?.OfType<JsonObject>().FirstOrDefault() is not { } detail)
+        // BIN verilmediğinde sağlayıcı her banka için ayrı satır döner; genel tablonun bankasını InstallmentManager seçer.
+        var tables = new List<InstallmentTable>();
+        foreach (var detail in (json["installmentDetails"] as JsonArray ?? []).OfType<JsonObject>())
         {
-            return new InstallmentResult(false, null, "Taksit bilgisi bulunamadı.");
-        }
-
-        var options = new List<InstallmentOption>();
-        foreach (var row in (detail["installmentPrices"] as JsonArray ?? []).OfType<JsonObject>())
-        {
-            if (Number(row, "installmentNumber") is { } count
-                && Number(row, "installmentPrice") is { } monthly
-                && Number(row, "totalPrice") is { } total)
+            var options = new List<InstallmentOption>();
+            foreach (var row in (detail["installmentPrices"] as JsonArray ?? []).OfType<JsonObject>())
             {
-                options.Add(new InstallmentOption((int)count, monthly, total));
+                if (Number(row, "installmentNumber") is { } count
+                    && Number(row, "installmentPrice") is { } monthly
+                    && Number(row, "totalPrice") is { } total)
+                {
+                    options.Add(new InstallmentOption((int)count, monthly, total));
+                }
+            }
+
+            if (options.Count > 0)
+            {
+                tables.Add(new InstallmentTable(options.OrderBy(o => o.Count).ToList(), Text(detail, "bankName"), Text(detail, "cardFamilyName")));
             }
         }
 
-        return options.Count == 0
-            ? new InstallmentResult(false, null, "Taksit bilgisi bulunamadı.")
-            : new InstallmentResult(
-                true,
-                new InstallmentTable(
-                    options.OrderBy(o => o.Count).ToList(),
-                    Text(detail, "bankName"),
-                    Text(detail, "cardFamilyName")),
-                null);
+        return tables.Count == 0
+            ? new InstallmentResult(false, [], "Taksit bilgisi bulunamadı.")
+            : new InstallmentResult(true, tables, null);
     }
 
     /// <summary>İyzico sayıları kimi alanda dizge kimi alanda sayı yollar; ikisi de aynı yoldan okunur.</summary>

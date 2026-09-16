@@ -308,14 +308,20 @@ document.querySelectorAll("[data-iban-copy]").forEach(function (button) {
   form.appendChild(status);
   input.setAttribute("autocomplete", "off");
   input.setAttribute("aria-controls", panel.id);
-  input.setAttribute("aria-expanded", "false");
 
   var timer = null;
   var pending = null;
   var items = function () { return Array.prototype.slice.call(panel.querySelectorAll(".suggest__item")); };
   var show = function (open) {
     panel.hidden = !open;
-    input.setAttribute("aria-expanded", open ? "true" : "false");
+    // Kapalıyken düz arama kutusu (searchbox rolünde aria-expanded geçersiz); liste açıkken combobox olur ve genişlediğini bildirir.
+    if (open) {
+      input.setAttribute("role", "combobox");
+      input.setAttribute("aria-expanded", "true");
+    } else {
+      input.removeAttribute("aria-expanded");
+      input.removeAttribute("role");
+    }
   };
 
   input.addEventListener("input", function () {

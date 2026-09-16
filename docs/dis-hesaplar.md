@@ -44,6 +44,9 @@ Prod'da değerler `docker-compose.prod.yml` üzerinden verilir; son sütun orada
   kuyruktaki postalar silinmez, ayar geldiğinde ilk turda gönderilir. Bekleyen en eski posta 10 dakikayı
   geçerse `/health/ready` 503 döner (staging hariç: orada SMTP bilerek kapalıdır).
 - `Notifications__StoreTo` boşsa mağaza bildirimi hiç kuyruğa girmez; müşteri postası etkilenmez.
+- `Admin__Password` yalnız ilk açılışın tohum parolasıdır: yönetici ilk girişte değiştirmeden panel açılmaz. `Admin__Require2FA`
+  Production'da varsayılan `true`: iki adımlı doğrulamayı kurmamış yönetici yalnız `/admin/iki-adim`'e erişir (ZAP tarama ortamı
+  `docker-compose.zap.yml`'de kapatır; canlıda kapatılmaz).
 - `Iyzico__ApiKey` ya da `Iyzico__SecretKey` boşken ödeme sayfasında kart seçeneği hiç görünmez, kartla
   gelen sipariş isteği 400 alır; uygulama açılır. Canlı anahtarlar gelince `Iyzico:BaseUrl` ve
   `Iyzico:CspSources` canlı adrese çevrilir; bankanın 3DS sayfası farklı kökene yönlenirse o da listeye eklenir

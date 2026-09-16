@@ -1,6 +1,7 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
 @inject HerYerde.Business.Abstract.ICartService CartService
 @inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
+@inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.IyzicoSettings> Iyzico
 @inject HerYerde.Business.Abstract.IAnnouncementService Announcements
 @using HerYerde.Web.Models
 @{
@@ -156,7 +157,7 @@
                 }
             </ul>
         </nav>
-        <span>HerYerde, @DateTime.UtcNow.Year · <span class="site-footer__note">Kapıda ödeme &amp; havale/EFT · Fiyatlara KDV dahildir</span></span>
+        <span>HerYerde, @DateTime.UtcNow.Year · <span class="site-footer__note">@(Iyzico.Value.IsConfigured ? "Kapıda ödeme · Havale/EFT · Kart" : "Kapıda ödeme · Havale/EFT") · Fiyatlara KDV dahildir</span></span>
         @if (Config["Legal:EtbisNo"] is { Length: > 0 } etbisNo)
         {
             <p class="store-footer__etbis">ETBİS'e kayıtlıdır · Kayıt no: <span class="store-footer__etbis-no">@etbisNo</span></p>

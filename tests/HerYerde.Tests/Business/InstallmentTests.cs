@@ -1,5 +1,6 @@
 using HerYerde.Business;
 using HerYerde.Business.Concrete;
+using HerYerde.Business.Dtos;
 using Microsoft.Extensions.Options;
 
 namespace HerYerde.Tests.Business;
@@ -90,6 +91,37 @@ public sealed class InstallmentTests
 
         Assert.True(table!.HasInstallments);
     }
+
+    /// <summary>YAYIN-KAPI: BIN'siz istekte sağlayıcı banka başına tablo döner; genel tablo, öne çıkan taksitlerde en düşük aylık
+    /// tutarı veren bankanınkidir (sağlayıcının ilk sırası değil).</summary>
+    [Fact]
+    public async Task Genel_tablo_iki_bankadan_en_dusuk_taksit_tutarli_bankayi_secer()
+    {
+        var provider = new FakePaymentProvider
+        {
+            BankTables = [BankTable("Pahalı Bank", "Pahalı Kart", 0.03m), BankTable("Uygun Bank", "Uygun Kart", 0.01m)]
+        };
+        var manager = NewManager(provider);
+
+        var table = await manager.GetAsync(Price);
+
+        Assert.NotNull(table);
+        Assert.Equal("Uygun Bank", table.BankName);
+        Assert.Equal(1080.00m, table.Options.Single(o => o.Count == 9).TotalPrice);
+        Assert.Equal(120.00m, table.Options.Single(o => o.Count == 9).MonthlyPrice);
+    }
+
+    private static InstallmentTable BankTable(string bank, string family, decimal ratePerInstallment)
+        => new(
+            new[] { 1, 3, 6, 9 }
+                .Select(count =>
+                {
+                    var total = Math.Round(Price * (1m + ratePerInstallment * (count - 1)), 2);
+                    return new InstallmentOption(count, Math.Round(total / count, 2), total);
+                })
+                .ToList(),
+            bank,
+            family);
 
     private static InstallmentManager NewManager(
         FakePaymentProvider provider,

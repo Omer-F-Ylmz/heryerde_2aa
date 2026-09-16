@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using HerYerde.Web.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HerYerde.Tests.Web;
 
@@ -29,6 +31,26 @@ public sealed class SmokeScriptTests : IAsyncLifetime
         Assert.True(exitCode == 0, output);
         Assert.Contains("SMOKE OK", output);
         Assert.DoesNotContain("FAIL", output);
+    }
+
+    /// <summary>YAYIN-KAPI: müşteriye görünen metinde yer tutucu kalan üretim sunucusunda hazırlık 503 döner, smoke kırmızıdır.</summary>
+    [Fact]
+    public async Task Smoke_betigi_uretimde_yer_tutucu_kalan_metinde_kirmizi()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            await TestData.AddHomeProductAsync(context, "Cam Sürahi", "cam-surahi");
+        }
+
+        using var factory = new KestrelProductionFactory(cleanContent: false);
+        factory.UseKestrel(0);
+        factory.StartServer();
+        var baseUrl = factory.CreateClient().BaseAddress!.GetLeftPart(UriPartial.Authority);
+
+        var (exitCode, output) = await RunAsync(baseUrl);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("FAIL  GET /health/ready 200 - durum 503", output);
     }
 
     /// <summary>D16 C: yayın sonrası staging'e karşı: kapı -Credential ile geçilir, -Staging noindex başlığını ve kapalı robots'u
@@ -82,11 +104,26 @@ public sealed class SmokeScriptTests : IAsyncLifetime
         return (process.ExitCode, await stdout + await stderr);
     }
 
-    private sealed class KestrelProductionFactory : AdminWebFactory
+    /// <summary>Betiğin denetimleri içerik taslağından bağımsız sınanır: yer tutucu taraması varsayılan olarak temiz döner.</summary>
+    private sealed class KestrelProductionFactory(bool cleanContent = true) : AdminWebFactory
     {
         protected override string Environment => "Production";
 
         protected override void Configure(Dictionary<string, string?> settings)
             => settings["AllowedHosts"] = "localhost;127.0.0.1";
+
+        protected override void ConfigureServices(IServiceCollection services)
+        {
+            if (cleanContent)
+            {
+                services.AddSingleton<IPlaceholderAudit, CleanPlaceholderAudit>();
+            }
+        }
+    }
+
+    private sealed class CleanPlaceholderAudit : IPlaceholderAudit
+    {
+        public Task<IReadOnlyList<string>> FindingsAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<string>>([]);
     }
 }

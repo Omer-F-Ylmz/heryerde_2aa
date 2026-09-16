@@ -13,7 +13,7 @@ public interface IAdminAuthService
     /// <summary>TOTP kodu ya da tek kullanımlık yedek kod. Hatalar parola hatalarıyla aynı sayaçta; 5'te hesap 15 dk kilitlenir.</summary>
     Task<(HttpStatusCode, IDataResult<AdminUser>)> VerifySecondFactorAsync(int adminId, string code, CancellationToken cancellationToken = default);
 
-    /// <summary>İlk yöneticiyi oluşturur; e-posta zaten varsa dokunmaz.</summary>
+    /// <summary>İlk yöneticiyi oluşturur (ilk girişte parolasını değiştirmek zorunda); e-posta zaten varsa dokunmaz.</summary>
     Task<(HttpStatusCode, IResult)> EnsureSeedAsync(string email, string password, CancellationToken cancellationToken = default);
 
     /// <summary>Mevcut parola doğruysa yenisini yazar ve damgayı ilerletir; yeni damgayla döner.</summary>
@@ -46,4 +46,7 @@ public interface IAdminAuthService
 
     /// <summary>Çerezdeki parola damgası hâlâ geçerli mi; değilse oturum düşer.</summary>
     Task<bool> StampIsCurrentAsync(int adminId, long stamp, CancellationToken cancellationToken = default);
+
+    /// <summary>Yönetici iki adımlı doğrulamayı kurmuş mu (Admin:Require2FA kapısı).</summary>
+    Task<bool> TotpEnabledAsync(int adminId, CancellationToken cancellationToken = default);
 }

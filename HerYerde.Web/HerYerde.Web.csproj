@@ -23,7 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\docs\testimonials.json" Link="testimonials.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\docs\sss.md" Link="sss.md" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\docs\arama-esanlam.md" Link="arama-esanlam.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

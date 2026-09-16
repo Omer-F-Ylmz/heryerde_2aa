@@ -251,6 +251,9 @@ public class AdminAuthManager : IAdminAuthService
         => await _adminUserDal.GetAsync(a => a.Id == adminId, cancellationToken) is { } admin
            && admin.PasswordChangedAt.Ticks == stamp;
 
+    public async Task<bool> TotpEnabledAsync(int adminId, CancellationToken cancellationToken = default)
+        => await _adminUserDal.GetAsync(a => a.Id == adminId, cancellationToken) is { TotpEnabled: true };
+
     /// <summary>En az 10 karakter ve en az bir rakam.</summary>
     private static string? PasswordProblem(string password)
     {
@@ -269,7 +272,8 @@ public class AdminAuthManager : IAdminAuthService
             return (HttpStatusCode.OK, new SuccessResult("Yönetici zaten var."));
         }
 
-        var admin = new AdminUser { Email = email, PasswordChangedAt = DateTime.UtcNow };
+        // Tohum parolası yapılandırmada durur: ilk girişte değiştirilmeden panel açılmaz.
+        var admin = new AdminUser { Email = email, PasswordChangedAt = DateTime.UtcNow, MustChangePassword = true };
         admin.PasswordHash = _passwordHasher.HashPassword(admin, password);
 
         await _adminUserDal.AddAsync(admin, cancellationToken);

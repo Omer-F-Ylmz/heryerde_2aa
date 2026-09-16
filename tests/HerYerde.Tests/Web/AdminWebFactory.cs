@@ -1,8 +1,10 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -16,6 +18,9 @@ public class AdminWebFactory : WebApplicationFactory<Program>
     public const string BaseUrl = "https://heryerde.test";
 
     protected virtual string Environment => "Development";
+
+    /// <summary>Tohumlanan test yöneticisi ilk girişteki zorunlu parola değişimini yapmış sayılır; ilk giriş akışını sınayan test false verir.</summary>
+    protected virtual bool SeededAdminPasswordChanged => true;
 
     /// <summary>Alt sınıflar üretim ayarı gibi farklılıkları buradan ekler.</summary>
     protected virtual void Configure(Dictionary<string, string?> settings)
@@ -56,6 +61,22 @@ public class AdminWebFactory : WebApplicationFactory<Program>
 
             ConfigureServices(services);
         });
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+        var configuration = host.Services.GetRequiredService<IConfiguration>();
+        if (SeededAdminPasswordChanged && configuration["Admin:Email"] == AdminEmail)
+        {
+            // Açılışta tohumlanan yönetici: testler paneli sınar, ilk girişteki zorunlu parola değişimini değil.
+            using var context = new HerYerdeContext(new DbContextOptionsBuilder<HerYerdeContext>()
+                .UseSqlServer(configuration["ConnectionStrings:Default"])
+                .Options);
+            context.AdminUsers.Where(a => a.Email == AdminEmail).ExecuteUpdate(s => s.SetProperty(a => a.MustChangePassword, false));
+        }
+
+        return host;
     }
 
     public HttpClient CreateNonRedirectingClient()

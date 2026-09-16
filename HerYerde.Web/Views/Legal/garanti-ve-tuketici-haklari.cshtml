@@ -1,7 +1,7 @@
 @using HerYerde.Web.Models
 @model LegalPage
 @{
-    Layout = "_LegalLayout";
+    Layout = ViewData[HerYerde.Web.Infrastructure.RazorViewText.PdfFlag] is true ? null : "_LegalLayout";
 }
 @section Toc {
     <li><a class="legal__toc-link" href="#garanti">Garanti koşulları</a></li>

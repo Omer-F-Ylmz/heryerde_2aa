@@ -3,7 +3,7 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
 @model LegalPage
 @{
-    Layout = "_LegalLayout";
+    Layout = ViewData[HerYerde.Web.Infrastructure.RazorViewText.PdfFlag] is true ? null : "_LegalLayout";
 }
 @section Toc {
     <li><a class="legal__toc-link" href="#kargo">Kargo ücreti</a></li>

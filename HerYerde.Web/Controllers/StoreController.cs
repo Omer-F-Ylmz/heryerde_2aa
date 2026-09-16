@@ -57,11 +57,11 @@ public class StoreController(
         var (_, images) = await productService.GetImagesForAsync(ids, cancellationToken);
         var heroImage = hero is null ? null : images.Data!.Where(i => i.ProductId == hero.Id).OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).FirstOrDefault()?.Url;
 
-        // Onaylı yorum varsa gerçek yorumlar, yoksa sabit DM alıntıları.
+        // Yalnız onaylı gerçek yorumlar; hiç yoksa bölüm çizilmez.
         var (_, reviews) = await reviewService.GetLatestApprovedAsync(TestimonialCount, cancellationToken);
-        IReadOnlyList<TestimonialVm> testimonials = reviews.Data!.Count > 0
-            ? reviews.Data!.Select(r => new TestimonialVm(r.Review.Name, r.Review.Comment, r.ProductName + " yorumu")).ToList()
-            : TestimonialSource.Load();
+        IReadOnlyList<TestimonialVm> testimonials = reviews.Data!
+            .Select(r => new TestimonialVm(r.Review.Name, r.Review.Comment, r.ProductName + " yorumu"))
+            .ToList();
 
         // Kapı kartlarının görseli kök kategoriden.
         var (_, categories) = await categoryService.GetAllAsync(cancellationToken);

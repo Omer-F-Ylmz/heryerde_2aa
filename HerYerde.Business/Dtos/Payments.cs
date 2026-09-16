@@ -46,4 +46,5 @@ public sealed record InstallmentTable(IReadOnlyList<InstallmentOption> Options, 
     public bool HasInstallments => Options.Any(o => o.Count > 1);
 }
 
-public sealed record InstallmentResult(bool Success, InstallmentTable? Table, string? ErrorMessage);
+/// <summary>BIN verilmişse kartın bankasının tek tablosu; verilmemişse sağlayıcının döndüğü sırayla banka başına bir tablo.</summary>
+public sealed record InstallmentResult(bool Success, IReadOnlyList<InstallmentTable> Tables, string? ErrorMessage);

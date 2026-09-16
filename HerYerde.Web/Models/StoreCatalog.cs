@@ -155,23 +155,6 @@ public static class StoreCatalog
     }
 }
 
-/// <summary>docs/testimonials.json (çıktı dizinine kopyalanır) → DM alıntıları.</summary>
-public static class TestimonialSource
-{
-    private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
-
-    public static IReadOnlyList<TestimonialVm> Load()
-    {
-        var path = Path.Combine(AppContext.BaseDirectory, "testimonials.json");
-        if (!File.Exists(path))
-        {
-            return [];
-        }
-
-        return JsonSerializer.Deserialize<List<TestimonialVm>>(File.ReadAllText(path), Options) ?? [];
-    }
-}
-
 public sealed record HomeVm(
     Product? Hero,
     string? HeroImage,

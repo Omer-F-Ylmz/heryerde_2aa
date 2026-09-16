@@ -3,7 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace HerYerde.Web.Models;
 
-/// <summary>81 il ve ilçeleri; ödeme formundaki bağımlı seçim buradan beslenir. Kayıtlı siparişin il/ilçesi
+/// <summary>81 il ve ilçeleri (TÜİK ADNKS; kaynak dosyanın "kaynak" alanında, koşullar docs/lisans-notlari.md);
+/// ödeme formundaki bağımlı seçim buradan beslenir. Kayıtlı siparişin il/ilçesi
 /// serbest metindir: bu liste yalnız yeni siparişin formunu doldurur, eski kayıtları doğrulamaz.</summary>
 public interface IProvinceDirectory
 {

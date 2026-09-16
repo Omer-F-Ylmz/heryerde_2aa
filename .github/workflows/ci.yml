@@ -234,6 +234,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Draft content (CI)
+        # Yer tutucu kapısı: taslak metin örnek değerle doldurulur, imaj sınanır (tools/ci-taslak-doldur.sh; yayında yok).
+        run: bash tools/ci-taslak-doldur.sh
+
       - name: Start app (compose)
         # --wait web konteynerinin sağlık denetimini (dotnet --healthcheck) de bekler; sağlıksızsa kırmızı.
         run: |
@@ -306,6 +310,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Draft content (CI)
+        # Yer tutucu kapısı: taslak metin örnek değerle doldurulur, imaj sınanır (tools/ci-taslak-doldur.sh; yayında yok).
+        run: bash tools/ci-taslak-doldur.sh
+
       - name: Start app (compose)
         run: |
           sudo install -d -m 0770 -o 10001 -g 1654 backups
@@ -358,6 +366,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Draft content (CI)
+        # Yer tutucu kapısı: taslak metin örnek değerle doldurulur, imaj sınanır (tools/ci-taslak-doldur.sh; yayında yok).
+        if: env.SMOKE_BASE_URL == ''
+        run: bash tools/ci-taslak-doldur.sh
 
       - name: Start app (compose)
         if: env.SMOKE_BASE_URL == ''

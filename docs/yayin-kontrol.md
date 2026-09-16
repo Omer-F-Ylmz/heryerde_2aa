@@ -15,8 +15,8 @@ Değerlerin tam listesi docs/dis-hesaplar.md, yedek ayrıntısı docs/yedekleme.
 | 7 | appsettings'teki müşteri değerlerini (WhatsApp, kargo, ücret/eşik) güncelle | İlgili testler yeşil, ödeme sayfasında doğru tutar | [CC] |
 | 8 | SMTP hesabı ve gönderen alan adı (SPF/DKIM) | Test siparişinin postası gelen kutusuna düşer | [Ömer] |
 | 9 | Sentry projesi, DSN `.env`'e | Bilerek tetiklenen hata Sentry'de, telefon/e-posta maskeli | [Ömer] |
-| 10 | Yedek klasörü izinleri, `docker compose up -d` (migration açılışta uygulanır) | `/health/ready` 200; `docker compose ps` web healthy | [Ömer] |
-| 11 | İlk yönetici: `Admin__Email`/`Admin__Password` ile açılış, ilk girişte parola değişimi | `/admin` girişi, denetim kaydında giriş satırı | [MÜŞTERİ] |
+| 10 | Yedek klasörü izinleri, `docker compose up -d` (migration açılışta uygulanır) | `/health/ready` 200; `docker compose ps` web healthy. 503 ve logda/Sentry'de "yer tutucu kaldı" ise listelenen metinlerde (yasal sayfalar, Hakkımızda, İletişim, SSS, posta şablonları) `[MÜŞTERİ]`/`[ÖNERİ]` doldurulmamıştır | [Ömer] |
+| 11 | İlk yönetici: `Admin__Email`/`Admin__Password` ile açılış; ilk girişte parola değişimi zorunlu, ardından iki adımlı doğrulama kurulumu (Production'da `Admin__Require2FA` varsayılan açık: kurulana kadar yalnız `/admin/iki-adim`) | `/admin` girişi, denetim kaydında "parola değiştir" ve "iki adımlı doğrulamayı aç" satırları | [MÜŞTERİ] |
 | 12 | Ürün ithali: ham fotoğraflar sunucuya, `docker compose run --rm -v <ham>:/app/brand_assets/raw:ro web --ithal brand_assets/raw` | "İthal: N ürün" çıktısı; ürünler taslak | [Ömer] |
 | 13 | İthal edilen ürünlerin fiyat/stok/açıklamasını gir, yayına al | Vitrinde ürünler, 1 ₺ "fiyat eksik" bayrağı kalmadı | [MÜŞTERİ] |
 | 14 | İyzico canlı üye iş yeri başvurusu, canlı anahtarlar | İyzico panelinde hesap onaylı | [MÜŞTERİ] |

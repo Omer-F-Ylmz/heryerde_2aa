@@ -47,7 +47,7 @@ public class InstallmentManager : IInstallmentService
         }
 
         var result = await _provider.GetInstallmentsAsync(price, Bin(bin), cancellationToken);
-        if (!result.Success || result.Table is not { } table)
+        if (!result.Success || Cheapest(result.Tables) is not { } table)
         {
             // Başarısız yanıt önbelleğe girmez: geçici bir ağ hatası tabloyu bir saat boyunca gizlemesin.
             return null;
@@ -56,6 +56,17 @@ public class InstallmentManager : IInstallmentService
         _cache.Set(key, table, now, Lifetime);
         return table;
     }
+
+    /// <summary>Genel tablo: öne çıkan taksitlerde en düşük aylık tutarı veren banka; eşitlikte ya da hiçbirinde taksit yoksa
+    /// sağlayıcının ilk sırası. BIN'li istekte tek tablo gelir.</summary>
+    private static InstallmentTable? Cheapest(IReadOnlyList<InstallmentTable> tables)
+        => tables
+            .OrderBy(table => table.Options
+                .Where(o => o.Count > 1 && Highlighted.Contains(o.Count))
+                .Select(o => o.MonthlyPrice)
+                .DefaultIfEmpty(decimal.MaxValue)
+                .Min())
+            .FirstOrDefault();
 
     /// <summary>Kart numarasının ilk 6 hanesi; eksik ya da rakam dışı karakter varsa BIN yok sayılır.</summary>
     private static string? Bin(string? value)

@@ -130,11 +130,13 @@ public sealed class ProductReviewTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Onayli_yorum_yoksa_ana_sayfa_sabit_alintilari_gosterir()
+    public async Task Onayli_yorum_yoksa_ana_sayfada_yorum_bolumu_ve_sabit_alinti_yok()
     {
         var html = await GetHtmlAsync(_factory.CreateClient(), "/");
 
-        Assert.Contains("Tencereler tam fotoğraftaki gibi geldi", html);
+        // YAYIN-KAPI: sabit alıntılar kaldırıldı; gerçek onaylı yorum yoksa bölüm çizilmez.
+        Assert.DoesNotContain("id=\"dm\"", html);
+        Assert.DoesNotContain("Tencereler tam fotoğraftaki gibi geldi", html);
     }
 
     [Fact]

@@ -35,6 +35,9 @@ public sealed class FakePaymentProvider : IPaymentProvider
 
     public List<decimal> InstallmentPrices { get; } = [];
 
+    /// <summary>Doluysa BIN'siz istekte gerçek sağlayıcı gibi banka başına tablo döner.</summary>
+    public List<InstallmentTable>? BankTables { get; set; }
+
     /// <summary>Taksit anlaşması olmayan hesabın gerçek sandbox davranışı: yalnız tek çekim döner.</summary>
     public bool SingleInstallmentOnly { get; set; }
 
@@ -46,7 +49,12 @@ public sealed class FakePaymentProvider : IPaymentProvider
         InstallmentPrices.Add(price);
         if (InstallmentFails)
         {
-            return Task.FromResult(new InstallmentResult(false, null, "Taksit bilgisi alınamadı."));
+            return Task.FromResult(new InstallmentResult(false, [], "Taksit bilgisi alınamadı."));
+        }
+
+        if (bin is null && BankTables is { } banks)
+        {
+            return Task.FromResult(new InstallmentResult(true, banks, null));
         }
 
         var options = (SingleInstallmentOnly ? [1] : new[] { 1, 2, 3, 6, 9, 12 })
@@ -59,7 +67,7 @@ public sealed class FakePaymentProvider : IPaymentProvider
 
         return Task.FromResult(new InstallmentResult(
             true,
-            new InstallmentTable(options, bin is null ? null : "Test Bankası", bin is null ? null : "Bonus"),
+            [new InstallmentTable(options, bin is null ? null : "Test Bankası", bin is null ? null : "Bonus")],
             null));
     }
 

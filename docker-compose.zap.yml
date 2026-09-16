@@ -17,3 +17,5 @@ services:
       RateLimit__VideoUploadPerMinute: "100000"
       RateLimit__CustomerSignupPerHour: "100000"
       RateLimit__CustomerLoginPerMinute: "100000"
+      # Tarama hesabında iki adımlı doğrulama yok (.zap/yonetim-cerezi.sh); Production varsayılanı açık olduğundan burada kapatılır.
+      Admin__Require2FA: "false"

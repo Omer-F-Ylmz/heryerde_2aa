@@ -53,6 +53,32 @@ public sealed class BrowserTests : IAsyncLifetime
         Assert.Equal(390, await page.EvaluateExpressionAsync<int>("document.documentElement.scrollWidth"));
     }
 
+    /// <summary>YAYIN-KAPI: arama kutusu öneri listesi kapalıyken aria-expanded taşımaz (searchbox rolünde geçersiz öznitelik),
+    /// liste açılınca "true" olur, Esc ile kapanınca yine kalkar.</summary>
+    [Fact]
+    public async Task Arama_kutusu_oneri_kapaliyken_aria_expanded_tasimaz_acikken_true()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere");
+        }
+
+        await using var page = await _browser.NewPageAsync();
+        await page.GoToAsync(_baseUrl + "/", WaitUntilNavigation.Networkidle0);
+        const string expanded = "(() => { const i = document.querySelector('#site-search'); return i.hasAttribute('aria-expanded') ? i.getAttribute('aria-expanded') : 'yok'; })()";
+
+        var closed = await page.EvaluateExpressionAsync<string>(expanded);
+        await page.TypeAsync("#site-search", "tence");
+        await page.WaitForSelectorAsync("#search-suggest:not([hidden]) .suggest__item");
+        var open = await page.EvaluateExpressionAsync<string>(expanded);
+        await page.Keyboard.PressAsync("Escape");
+        var closedAgain = await page.EvaluateExpressionAsync<string>(expanded);
+
+        Assert.Equal("yok", closed);
+        Assert.Equal("true", open);
+        Assert.Equal("yok", closedAgain);
+    }
+
     /// <summary>D10 A3: varyantlı üründe "Son N adet" rozeti seçili varyantın stoğunu izler.</summary>
     [Fact]
     public async Task Varyant_secince_son_adet_rozeti_degisir()
@@ -222,7 +248,8 @@ public sealed class BrowserTests : IAsyncLifetime
         await page.Keyboard.PressAsync("Escape");
         Assert.Equal("site-search", await page.EvaluateExpressionAsync<string>("document.activeElement.id"));
         Assert.False(await page.EvaluateExpressionAsync<bool>("document.querySelector('.suggest').checkVisibility()"));
-        Assert.Equal("false", await page.EvaluateExpressionAsync<string>("document.querySelector('#site-search').getAttribute('aria-expanded')"));
+        // YAYIN-KAPI: kapalı liste aria-expanded taşımaz.
+        Assert.False(await page.EvaluateExpressionAsync<bool>("document.querySelector('#site-search').hasAttribute('aria-expanded')"));
     }
 
     /// <summary>D16 A2: service worker vitrin sayfalarını ve statik varlıkları önbelleğe alır, sepet/ödeme/yönetimi almaz;

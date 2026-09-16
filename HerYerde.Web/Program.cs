@@ -164,6 +164,7 @@ builder.Services.AddHostedService<CartCleanupHostedService>();
 builder.Services.AddHostedService<AuditLogCleanupHostedService>();
 builder.Services.AddHostedService<PersonalDataCleanupHostedService>();
 builder.Services.AddSingleton<ILegalPdfArchive, LegalPdfArchive>();
+builder.Services.AddSingleton<IPlaceholderAudit, PlaceholderAudit>();
 builder.Services.AddSingleton<INotificationSender, SmtpNotificationSender>();
 builder.Services.AddHostedService<OutboxHostedService>();
 builder.Services.AddHostedService<ReviewInviteHostedService>();
@@ -248,6 +249,11 @@ app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();
 app.Use(AdminPolicy.RequirePasswordChangeAsync);
+// Admin:Require2FA (Production'da varsayılan açık): iki adımlı doğrulamayı kurmamış yönetici yalnız kurulum sayfasına erişir.
+if (app.Configuration.GetValue("Admin:Require2FA", app.Environment.IsProduction()))
+{
+    app.Use(AdminPolicy.RequireTwoFactorSetupAsync);
+}
 
 // /health canlılık: süreç ayakta mı (konteyner sağlık denetimi); /health/ready trafiği karşılayabilir mi.
 app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
@@ -329,6 +335,8 @@ if (RefreshImagesCommand.Requested(args))
     return;
 }
 
+// Yer tutucu taraması açılışta arka planda başlar: bulgu logu (Production'da Sentry uyarısı) hazırlık yoklamasını beklemez.
+app.Lifetime.ApplicationStarted.Register(() => _ = app.Services.GetRequiredService<IPlaceholderAudit>().FindingsAsync());
 app.Run();
 
 static async Task SeedFirstAdminAsync(WebApplication app)
@@ -379,6 +387,8 @@ public static class AdminPolicy
 
     public const string ChangePasswordPath = "/admin/sifre";
 
+    public const string TwoFactorSetupPath = "/admin/iki-adim";
+
     public static Task RequirePasswordChangeAsync(HttpContext context, RequestDelegate next)
     {
         var path = context.Request.Path;
@@ -394,6 +404,28 @@ public static class AdminPolicy
         }
 
         return next(context);
+    }
+
+    /// <summary>Admin:Require2FA açıkken iki adımlı doğrulamayı kurmamış yönetici yalnız kurulum sayfasına (ve /admin/auth
+    /// uçlarına) erişir. Zorunlu parola değişimi önce gelir: o sırada bu kapı beklemede kalır.</summary>
+    public static async Task RequireTwoFactorSetupAsync(HttpContext context, RequestDelegate next)
+    {
+        var user = context.User;
+        var path = context.Request.Path;
+        if (user.HasClaim(ClaimType, ClaimValue)
+            && !user.HasClaim(c => c.Type == MustChangeClaim)
+            && path.StartsWithSegments("/admin")
+            && !path.StartsWithSegments(TwoFactorSetupPath)
+            && !path.StartsWithSegments("/admin/auth")
+            && int.TryParse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var admin)
+            && !await context.RequestServices.GetRequiredService<IAdminAuthService>().TotpEnabledAsync(admin, context.RequestAborted))
+        {
+            var request = context.Request;
+            context.Response.Redirect($"{request.Scheme}://{request.Host}{request.PathBase}{TwoFactorSetupPath}");
+            return;
+        }
+
+        await next(context);
     }
 
     public static async Task ValidateStampAsync(CookieValidatePrincipalContext context)

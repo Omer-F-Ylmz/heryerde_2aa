@@ -98,15 +98,18 @@
     </div>
 </section>
 
-<section class="container section" id="dm" aria-labelledby="dm-title">
-    <h2 id="dm-title" class="display-2 h-mark">Müşterilerimizden</h2>
-    <div class="dm-band">
-        @foreach (var dm in Model.Testimonials)
-        {
-            <partial name="Components/_Testimonial" model="dm" />
-        }
-    </div>
-</section>
+@if (Model.Testimonials.Count > 0)
+{
+    <section class="container section" id="dm" aria-labelledby="dm-title">
+        <h2 id="dm-title" class="display-2 h-mark">Müşterilerimizden</h2>
+        <div class="dm-band">
+            @foreach (var dm in Model.Testimonials)
+            {
+                <partial name="Components/_Testimonial" model="dm" />
+            }
+        </div>
+    </section>
+}
 
 <div class="container">
     <partial name="Components/_TrustStrip" />

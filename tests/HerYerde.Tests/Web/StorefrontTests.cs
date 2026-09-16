@@ -47,28 +47,22 @@ public sealed class StorefrontTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Ana_sayfa_ortu_kapisi_aktif_link_ve_testimonials_json_okunur()
+    public async Task Ana_sayfa_ortu_kapisi_aktif_link()
     {
         var html = await GetHtmlAsync(_factory.CreateClient(), "/");
 
         // D8: Örtü & Eşarp açıldı; kapı /ortu'ya gider, veritabanı slug'ı (giyim) adreste görünmez.
         Assert.Contains("<a class=\"door door--active\" href=\"/ortu\">", html);
         Assert.DoesNotContain("href=\"/giyim", html);
-
-        var quotes = TestimonialSourceQuotes();
-        Assert.Equal(4, quotes.Count);
-        var decoded = WebUtility.HtmlDecode(html);
-        foreach (var quote in quotes)
-        {
-            Assert.Contains(quote, decoded);
-        }
     }
 
     [Fact]
     public async Task Ana_sayfa_yeni_gelenlerde_sekiz_kart_vardir()
     {
         var html = await GetHtmlAsync(_factory.CreateClient(), "/");
-        var section = html[html.IndexOf("id=\"yeni\"", StringComparison.Ordinal)..html.IndexOf("id=\"dm\"", StringComparison.Ordinal)];
+        // Yorum bölümü yalnız onaylı yorum varken çizildiği için bölüm kendi kapanışıyla kesilir.
+        var start = html.IndexOf("id=\"yeni\"", StringComparison.Ordinal);
+        var section = html[start..html.IndexOf("</section>", start, StringComparison.Ordinal)];
 
         Assert.Equal(8, Regex.Matches(section, "<article class=\"card\"").Count);
     }
@@ -254,13 +248,5 @@ public sealed class StorefrontTests : IAsyncLifetime
         var start = html.LastIndexOf("<article class=\"card\"", at, StringComparison.Ordinal);
         var end = html.IndexOf("</article>", at, StringComparison.Ordinal);
         return html[start..end];
-    }
-
-    private static List<string> TestimonialSourceQuotes()
-    {
-        var path = Path.Combine(AppContext.BaseDirectory, "testimonials.json");
-        Assert.True(File.Exists(path), "testimonials.json çıktı dizinine kopyalanmamış.");
-        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
-        return doc.RootElement.EnumerateArray().Select(e => e.GetProperty("quote").GetString()!).ToList();
     }
 }

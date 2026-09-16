@@ -1,4 +1,12 @@
 {
+  "kaynak": {
+    "ad": "TÜİK — Adrese Dayalı Nüfus Kayıt Sistemi (ADNKS) 31.12.2021 sonuçları: ilçelere göre il/ilçe merkezleri ile belde/köy nüfusları",
+    "adres": "https://www.tuik.gov.tr/indir/duyuru/favori_raporlar.xlsx",
+    "sha256": "3901a6d86382c61175b7e9ca06db8a2b1fb16ece662bd0fb5a947f13b503e7b4",
+    "alinma": "2026-09-16",
+    "kosullar": "TÜİK Yasal Uyarı: verilerin kaynak gösterilmek suretiyle herhangi bir izine gerek duymaksızın yeniden kullanımı mümkündür.",
+    "kosullarAdres": "https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari"
+  },
   "iller": [
     {
       "kod": 1,
@@ -1330,7 +1338,7 @@
       "kod": 71,
       "ad": "Kırıkkale",
       "ilceler": [
-        "Bahşili",
+        "Bahşılı",
         "Balışeyh",
         "Çelebi",
         "Delice",

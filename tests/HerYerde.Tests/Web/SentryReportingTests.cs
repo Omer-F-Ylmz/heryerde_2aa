@@ -59,6 +59,24 @@ public sealed class SentryReportingTests : IAsyncLifetime
         Assert.DoesNotContain(Phone, sent);
     }
 
+    /// <summary>YAYIN-KAPI: Production'da müşteriye görünen metinde yer tutucu kaldıysa Sentry'ye uyarı düzeyinde olay gider.</summary>
+    [Fact]
+    public async Task Uretimde_yer_tutucu_Sentry_uyarisi_olarak_gider()
+    {
+        var transport = new RecordingTransport();
+        using (var factory = new FailingSentryFactory(dsn: "https://anahtar@sentry.invalid/1", transport))
+        {
+            var response = await factory.CreateNonRedirectingClient().GetAsync("/health/ready");
+
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+            await SentrySdk.FlushAsync(TimeSpan.FromSeconds(5));
+        }
+
+        var sent = string.Join('\n', transport.Envelopes);
+        Assert.True(sent.Contains("yer tutucu", StringComparison.Ordinal), $"{transport.Envelopes.Count} zarf: {sent}");
+        Assert.Contains("\"level\":\"warning\"", sent);
+    }
+
     [Fact]
     public void Before_send_eposta_metnini_ve_adres_alanini_maskeler()
     {
