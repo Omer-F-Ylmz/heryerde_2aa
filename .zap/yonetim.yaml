@@ -65,6 +65,13 @@ jobs:
         urlRegex: true
         parameter: "Id|Name|BrandId|CategoryId|CampaignPrice|FeaturedOrder|GiftMode|GiftProductId|GiftQty|Stock|VariantAxis1Label|VariantAxis2Label"
         parameterRegex: true
+      # D15: 40018 boolean sezgisi ürün formunun Name alanında (kanıt boş). Tarayıcının eşzamanlı istekleri aynı ürünü değiştirirken
+      # yanıt 302/409/404 arasında oynuyor; sıralı tekrarda özgün ad, '1'='1' ve '1'='2' aynı 302'yi döner. Ad yalnız EF parametresiyle yazılır.
+      - ruleId: 40018
+        newRisk: "False Positive"
+        url: "http://localhost:8080/admin/products/edit(/[0-9]+)?"
+        urlRegex: true
+        parameter: "Name"
 
   # D15 yüzeyleri önce ve kendi süresiyle: yönetim aktif taraması 40 dk tavanına ulaşıyor.
   - type: requestor
