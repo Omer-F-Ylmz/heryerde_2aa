@@ -5,7 +5,8 @@ set -euo pipefail
 
 COMPOSE=${COMPOSE:-docker compose -f docker-compose.prod.yml}
 
-$COMPOSE exec -T db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$HERYERDE_DB_PASSWORD" -C -b -d HerYerde -Q "SET NOCOUNT ON;
+# -I: sqlcmd varsayılanı QUOTED_IDENTIFIER OFF; gift_registry_item'ın süzgeçli benzersiz indeksi (variant_id IS NOT NULL) ON ister (Msg 1934).
+$COMPOSE exec -T db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$HERYERDE_DB_PASSWORD" -C -b -I -d HerYerde -Q "SET NOCOUNT ON;
 INSERT INTO brand (name, slug, logo_url) VALUES (N'Karaca', 'karaca', NULL);
 UPDATE product SET brand_id = (SELECT id FROM brand WHERE slug = 'karaca') WHERE id = (SELECT MAX(id) FROM product);
 INSERT INTO product_attribute (product_id, name, value, sort_order) SELECT MAX(id), N'Malzeme', N'Döküm', 0 FROM product;
