@@ -37,8 +37,12 @@ public enum ImportRowKind
 /// <summary>Label: satırı tanıtan slug ya da stok kodu; Reason yalnız hatalı satırda dolu.</summary>
 public sealed record ImportRowResult(int RowNumber, ImportRowKind Kind, string Label, string? Reason);
 
-public sealed record ImportPreview(IReadOnlyList<ImportRowResult> Rows)
+/// <summary>RemovedImages: uygulamada listeden düşen görsellerin adresleri; dosyalarını silmek çağıranın işi
+/// (depo Web katmanında, iş katmanı diske dokunmaz).</summary>
+public sealed record ImportPreview(IReadOnlyList<ImportRowResult> Rows, IReadOnlyList<string>? RemovedImages = null)
 {
+    public IReadOnlyList<string> Removed => RemovedImages ?? [];
+
     public int Created => Rows.Count(r => r.Kind == ImportRowKind.Yeni);
     public int Updated => Rows.Count(r => r.Kind == ImportRowKind.Guncelle);
     public int Errors => Rows.Count(r => r.Kind == ImportRowKind.Hata);

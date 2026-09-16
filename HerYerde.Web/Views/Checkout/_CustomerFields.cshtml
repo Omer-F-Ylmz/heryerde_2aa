@@ -1,5 +1,9 @@
 @using HerYerde.Web.Models
 @model CheckoutFormViewModel
+@inject IProvinceDirectory Provinces
+@{
+    var districts = Provinces.DistrictsOf(Model.City);
+}
 
 <fieldset class="fieldset">
     <legend class="fieldset__legend">Teslimat bilgileri</legend>
@@ -30,18 +34,35 @@
         <span class="field__error" asp-validation-for="Address"></span>
     </div>
 
-    <div class="field-row">
+    @* İlçe listesi seçili ile bağlı. JS yoksa "İlçeleri getir" düğmesi sayfayı yeniler (formnovalidate:
+       henüz doldurulmamış alanlar yenilemeyi engellemesin); JS varsa site.js düğmeyi gizleyip il değişince tıklar. *@
+    <div class="field-row" data-address>
         <div class="field">
             <label class="field__label" asp-for="City"></label>
-            <input class="field__input" asp-for="City" autocomplete="address-level1" />
+            <select class="field__input" asp-for="City" autocomplete="address-level1" data-province>
+                <option value="">İl seçin</option>
+                @foreach (var province in Provinces.Names)
+                {
+                    <option value="@province" selected="@(province == Model.City)">@province</option>
+                }
+            </select>
             <span class="field__error" asp-validation-for="City"></span>
         </div>
         <div class="field">
             <label class="field__label" asp-for="District"></label>
-            <input class="field__input" asp-for="District" autocomplete="address-level2" />
+            <select class="field__input" asp-for="District" autocomplete="address-level2" data-district disabled="@(districts.Count == 0)">
+                <option value="">@(districts.Count == 0 ? "Önce il seçin" : "İlçe seçin")</option>
+                @foreach (var district in districts)
+                {
+                    <option value="@district" selected="@(district == Model.District)">@district</option>
+                }
+            </select>
             <span class="field__error" asp-validation-for="District"></span>
         </div>
     </div>
+    <p class="field__hint">
+        <button class="btn btn--ghost btn--sm" type="submit" formaction="/odeme/ilce" formnovalidate data-district-refresh>İlçeleri getir</button>
+    </p>
 
     <div class="field">
         <label class="field__label" asp-for="Note"></label>

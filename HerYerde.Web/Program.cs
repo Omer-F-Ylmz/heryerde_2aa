@@ -12,6 +12,7 @@ using HerYerde.Business.DependencyResolvers.Autofac;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using HerYerde.Web.Infrastructure;
+using HerYerde.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -138,6 +139,9 @@ builder.Services.Configure<CookiePolicyOptions>(options => options.Secure = buil
     ? CookieSecurePolicy.SameAsRequest
     : CookieSecurePolicy.Always);
 builder.Services.AddSingleton(TimeProvider.System);
+// 81 il ve ilçeleri bir kez okunur; ödeme formundaki bağımlı seçim buradan beslenir.
+builder.Services.AddSingleton<IProvinceDirectory>(services =>
+    new ProvinceDirectory(services.GetRequiredService<IWebHostEnvironment>().WebRootPath));
 
 // Yüklenen görseller varsayılan olarak wwwroot altına yazılır; testler Uploads:Root ile başka yere yönlendirir.
 builder.Services.AddSingleton<IProductImageStorage>(services => new ProductImageStorage(

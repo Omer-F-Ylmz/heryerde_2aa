@@ -306,6 +306,10 @@ public sealed class ManualOrderFormViewModel
     [Display(Name = "Müşteriye sipariş postası gönder")]
     public bool NotifyCustomer { get; set; }
 
+    /// <summary>Vitrindeki "1 alana 1 hediye" kampanyası bu siparişe de uygulansın mı; varsayılan açık.</summary>
+    [Display(Name = "Hediye kampanyasını uygula")]
+    public bool ApplyGifts { get; set; } = true;
+
     [Display(Name = "Ön bilgilendirme ve sözleşme iletildi, müşteri teyit etti")]
     public bool ConsentConfirmed { get; set; }
 

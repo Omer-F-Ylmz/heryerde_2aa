@@ -21,7 +21,8 @@ public sealed record OrderDetail(Order Order, IReadOnlyList<OrderItem> Items, Pa
 public sealed record ManualOrderLine(string Code, int Quantity);
 
 /// <summary>WhatsApp/Instagram/telefon/mağaza siparişi. ShippingFeeOverride boşsa kargo kuraldan gelir;
-/// NotifyCustomer ise e-postası olan müşteriye "sipariş alındı" postası gider.</summary>
+/// NotifyCustomer ise e-postası olan müşteriye "sipariş alındı" postası gider. ApplyGifts kapatılmadıkça
+/// vitrindeki "1 alana 1 hediye" kampanyası bu siparişe de uygulanır.</summary>
 public sealed record ManualOrderDraft(
     string FullName,
     string Phone,
@@ -35,7 +36,8 @@ public sealed record ManualOrderDraft(
     IReadOnlyList<ManualOrderLine> Lines,
     decimal? ShippingFeeOverride,
     bool NotifyCustomer,
-    bool ConsentConfirmed = false);
+    bool ConsentConfirmed = false,
+    bool ApplyGifts = true);
 
 /// <summary>Sipariş düzenleme: teslimat bilgisi ve kalem adetleri (kalem kimliği → yeni adet).</summary>
 public sealed record OrderEdit(

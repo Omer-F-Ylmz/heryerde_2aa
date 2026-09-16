@@ -10,5 +10,8 @@ public sealed class IyzicoSettings
     /// <summary>3D doğrulama formunun gidebileceği kökenler; yalnız ödeme sayfalarında CSP form-action ve frame-src'e eklenir.</summary>
     public string[] CspSources { get; set; } = [];
 
+    /// <summary>Taksit tablosu sorulsun mu; kapalıyken ürün ve ödeme sayfasında taksit hiç çizilmez.</summary>
+    public bool Installments { get; set; }
+
     public bool IsConfigured => ApiKey.Length > 0 && SecretKey.Length > 0;
 }

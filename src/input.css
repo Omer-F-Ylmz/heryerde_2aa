@@ -2941,6 +2941,64 @@
     color: var(--c-accent-deep);
   }
 
+  /* Taksit tablosu: ürün sayfasında genel tablo, ödeme adımında kartın bankasına göre */
+  .installments {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: var(--r-card);
+    background: var(--c-neutral-50);
+  }
+
+  .installments__title {
+    margin: 0 0 8px;
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--c-brand-900);
+  }
+
+  .installments__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .installments__table th,
+  .installments__table td {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--c-neutral-200);
+    text-align: right;
+    color: var(--c-neutral-900);
+  }
+
+  .installments__table thead th {
+    color: var(--c-neutral-700);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .installments__table th:first-child,
+  .installments__table tbody th {
+    text-align: left;
+    font-weight: 600;
+  }
+
+  .installments__table tbody tr:last-child th,
+  .installments__table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .installments__note {
+    margin: 8px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--c-neutral-700);
+  }
+
   .threeds {
     max-width: 640px;
   }

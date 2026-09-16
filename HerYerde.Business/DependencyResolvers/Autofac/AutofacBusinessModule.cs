@@ -50,5 +50,8 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<KvkkManager>().As<IKvkkService>().InstancePerLifetimeScope();
         builder.RegisterType<DashboardManager>().As<IDashboardService>().InstancePerLifetimeScope();
         builder.RegisterType<OrderTimelineManager>().As<IOrderTimelineService>().InstancePerLifetimeScope();
+        builder.RegisterType<InstallmentManager>().As<IInstallmentService>().InstancePerLifetimeScope();
+        // Taksit önbelleği istekler arası yaşamalı; yöneticinin kendisi istek kapsamında kalır.
+        builder.RegisterType<InstallmentCache>().AsSelf().SingleInstance();
     }
 }

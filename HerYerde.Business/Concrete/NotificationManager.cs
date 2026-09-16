@@ -121,6 +121,19 @@ public class NotificationManager : INotificationService
         await QueueAsync(OutboxType.ReturnRejected, email, subject, body, cancellationToken);
     }
 
+    public async Task QueueInvoiceReadyAsync(Order order, CancellationToken cancellationToken = default)
+    {
+        if (order.Email is not { Length: > 0 } email)
+        {
+            return;
+        }
+
+        var (subject, body) = NotificationTemplates.InvoiceReady(
+            order,
+            $"{_shop.BaseUrl}/siparis/{order.OrderNo}/fatura?t={order.AccessToken}");
+        await QueueAsync(OutboxType.InvoiceReady, email, subject, body, cancellationToken);
+    }
+
     private string ThankYouUrl(Order order) => $"{_shop.BaseUrl}/siparis/{order.OrderNo}/tesekkur?t={order.AccessToken}";
 
     public Task QueueAdminPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default)

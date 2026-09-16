@@ -108,6 +108,48 @@ document.querySelectorAll(".tabs--scroll [aria-current=page]").forEach(function 
   sync();
 })();
 
+// İl/ilçe: JS varsa "İlçeleri getir" düğmesi gizlenir, il değişince sayfa kendiliğinden tazelenir.
+(function () {
+  var province = document.querySelector("[data-address] [data-province]");
+  var refresh = document.querySelector("[data-district-refresh]");
+  if (!province || !refresh) { return; }
+
+  refresh.hidden = true;
+  // Klavyeyle gezinirken (ok tuşu her seçenekte "change" doğurur) sayfa her adımda yenilenmesin:
+  // seçim durulunca tazelenir.
+  var timer = null;
+  province.addEventListener("change", function () {
+    clearTimeout(timer);
+    timer = setTimeout(function () { refresh.click(); }, 500);
+  });
+})();
+
+// Taksit tablosu: kart numarasının ilk 6 hanesi girilince bankanın tablosu istenir.
+(function () {
+  var slot = document.querySelector("[data-installments]");
+  var number = document.getElementById("card-number");
+  if (!slot || !number) { return; }
+
+  var shown = "";
+  number.addEventListener("input", function () {
+    var bin = number.value.replace(/\D/g, "").slice(0, 6);
+    if (bin.length < 6) {
+      slot.innerHTML = "";
+      shown = "";
+      return;
+    }
+
+    if (bin === shown) { return; }
+    shown = bin;
+    fetch("/odeme/taksit?bin=" + bin, { headers: { "Accept": "text/html" } })
+      .then(function (response) { return response.ok ? response.text() : ""; })
+      .then(function (html) {
+        if (shown === bin) { slot.innerHTML = html; }
+      })
+      .catch(function () {});
+  });
+})();
+
 // 3D Secure: bankaya giden form sayfa açılınca kendiliğinden gönderilir.
 document.querySelectorAll("form[data-autosubmit]").forEach(function (form) {
   form.submit();

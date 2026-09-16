@@ -217,7 +217,8 @@ public sealed record ProductPageVm(
     bool CampaignActive,
     string WhatsAppUrl,
     IReadOnlyList<ProductCardVm> Similar,
-    ReviewSectionVm Reviews)
+    ReviewSectionVm Reviews,
+    InstallmentTableVm? Installments = null)
 {
     public string? PlaceholderIcon => StoreCatalog.PlaceholderIcon(CategorySlug);
 

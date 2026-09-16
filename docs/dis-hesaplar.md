@@ -31,6 +31,7 @@ Prod'da değerler `docker-compose.prod.yml` üzerinden verilir; son sütun orada
 | İyzico gizli anahtarı | [MÜŞTERİ] İyzico üye iş yeri paneli | `Iyzico__SecretKey` (env) | Evet | `HERYERDE_IYZICO_SECRET_KEY` |
 | İyzico API adresi | İyzico | `Iyzico:BaseUrl` (varsayılan `https://sandbox-api.iyzipay.com`; canlı `https://api.iyzipay.com`) | Evet | `HERYERDE_IYZICO_BASE_URL` |
 | 3D doğrulama formunun gideceği köken | İyzico / banka | `Iyzico:CspSources` (CSP `form-action`, `frame-src`; yalnız `/odeme*`) | Evet | `HERYERDE_IYZICO_CSP_SOURCE` (ilk köken) |
+| Taksit tablosu | [MÜŞTERİ] İyzico üye iş yeri sözleşmesinde taksit açık mı | `Iyzico:Installments` (kapalıyken ürün ve ödeme sayfasında taksit hiç çizilmez; sonuç 1 saat önbelleklenir) | Hayır (varsayılan kapalı) | `HERYERDE_IYZICO_INSTALLMENTS` |
 | Hata izleme DSN'i | [Ömer] Sentry projesi (Settings › Client Keys) | `Sentry__Dsn` (env) | Evet | `HERYERDE_SENTRY_DSN` |
 | Fatura/dekont gizli klasörü | [Ömer] sunucu diski | `PrivateFiles:Root` (boşsa içerik kökü altında `private`; konteynerde `/app/private`, `heryerde-private` volume'u) | Hayır | — (compose volume) |
 | Toplu ürün içe aktarmada izinli görsel kökenleri | [Ömer] görsel barındırma | `Shop:ImageOrigins` (yerel `/uploads/…` her zaman izinli; listede olmayan kökenli görsel satırı hatalı sayılır) | Hayır | — (appsettings) |

@@ -34,3 +34,11 @@ public sealed record PaymentRefundRequest(string PaymentId, string ConversationI
 public sealed record PaymentRefundResult(bool Success, string? ErrorMessage, string RawResponse);
 
 public sealed record PaymentAuthResult(bool Success, string? PaymentId, decimal PaidPrice, string? ErrorMessage, string RawResponse);
+
+/// <summary>Tek taksit seçeneği: adet, aylık çekilecek tutar ve vade farkıyla toplam.</summary>
+public sealed record InstallmentOption(int Count, decimal MonthlyPrice, decimal TotalPrice);
+
+/// <summary>Bir tutarın taksit tablosu; BIN verilmişse kartın bankası ve ailesi de dolu.</summary>
+public sealed record InstallmentTable(IReadOnlyList<InstallmentOption> Options, string? BankName = null, string? CardFamily = null);
+
+public sealed record InstallmentResult(bool Success, InstallmentTable? Table, string? ErrorMessage);

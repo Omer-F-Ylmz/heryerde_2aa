@@ -1,4 +1,5 @@
 using HerYerde.Business.Abstract;
+using HerYerde.Business.Concrete;
 using HerYerde.Business.Dtos;
 using HerYerde.DataAccess.Abstract;
 using HerYerde.Entities.Concrete;
@@ -13,6 +14,7 @@ public class StoreController(
     IProductService productService,
     ICategoryService categoryService,
     IReviewService reviewService,
+    IInstallmentService installments,
     IConfiguration configuration) : Controller
 {
     private const string ReviewNoticeKey = "YorumBildirimi";
@@ -316,6 +318,16 @@ public class StoreController(
 
         var (_, reviews) = await reviewService.GetApprovedAsync(product.Id, cancellationToken);
 
+        // Genel taksit tablosu (BIN yok): ürünün etkin fiyatı üzerinden, yalnız öne çıkan taksitler.
+        var price = StoreCatalog.EffectivePrice(product, now);
+        var table = await installments.GetAsync(price, cancellationToken: cancellationToken);
+        var highlighted = table is null
+            ? null
+            : new InstallmentTableVm(
+                table.Options.Where(o => InstallmentManager.Highlighted.Contains(o.Count)).ToList(),
+                null,
+                "Kartınızın bankasına göre değişebilir; kesin tablo ödeme adımında görünür.");
+
         return View("Product", new ProductPageVm(
             product,
             rootName,
@@ -330,7 +342,8 @@ public class StoreController(
             StoreCatalog.IsCampaignActive(product, now),
             StoreCatalog.WhatsAppUrl(WhatsAppBase, product.Name),
             Cards(similar.Data!.Items, images.Data!, now),
-            new ReviewSectionVm(product.Slug, reviews.Data!, RatingSummary.From(reviews.Data!), reviewForm, reviewNotice)));
+            new ReviewSectionVm(product.Slug, reviews.Data!, RatingSummary.From(reviews.Data!), reviewForm, reviewNotice),
+            highlighted));
     }
 
     private static int TotalPages(int total)

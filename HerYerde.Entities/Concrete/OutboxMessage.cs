@@ -40,4 +40,5 @@ public static class OutboxType
     public const string PaymentApproved = "havale-onaylandi";
     public const string ReturnApproved = "iade-onaylandi";
     public const string ReturnRejected = "iade-reddedildi";
+    public const string InvoiceReady = "fatura-hazir";
 }

@@ -116,7 +116,8 @@ public class OrdersController : Controller
             form.Lines.Select(l => new ManualOrderLine(l.Code ?? string.Empty, l.Quantity)).ToList(),
             form.ShippingFeeOverride,
             form.NotifyCustomer,
-            form.ConsentConfirmed), cancellationToken);
+            form.ConsentConfirmed,
+            form.ApplyGifts), cancellationToken);
 
         if (status != HttpStatusCode.Created)
         {

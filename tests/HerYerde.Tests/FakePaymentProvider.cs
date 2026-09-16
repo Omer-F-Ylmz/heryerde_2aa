@@ -27,6 +27,39 @@ public sealed class FakePaymentProvider : IPaymentProvider
 
     public List<PaymentRefundRequest> Refunds { get; } = [];
 
+    public int InstallmentCalls { get; private set; }
+
+    public bool InstallmentFails { get; set; }
+
+    public List<string?> InstallmentBins { get; } = [];
+
+    public List<decimal> InstallmentPrices { get; } = [];
+
+    /// <summary>Sahte taksit tablosu: her ek taksit tutarı %2 büyütür (3'te %4, 6'da %10).</summary>
+    public Task<InstallmentResult> GetInstallmentsAsync(decimal price, string? bin, CancellationToken cancellationToken = default)
+    {
+        InstallmentCalls++;
+        InstallmentBins.Add(bin);
+        InstallmentPrices.Add(price);
+        if (InstallmentFails)
+        {
+            return Task.FromResult(new InstallmentResult(false, null, "Taksit bilgisi alınamadı."));
+        }
+
+        var options = new[] { 1, 2, 3, 6, 9, 12 }
+            .Select(count =>
+            {
+                var total = Math.Round(price * (1m + 0.02m * (count - 1)), 2);
+                return new InstallmentOption(count, Math.Round(total / count, 2), total);
+            })
+            .ToList();
+
+        return Task.FromResult(new InstallmentResult(
+            true,
+            new InstallmentTable(options, bin is null ? null : "Test Bankası", bin is null ? null : "Bonus"),
+            null));
+    }
+
     public Task<PaymentRefundResult> RefundAsync(PaymentRefundRequest request, CancellationToken cancellationToken = default)
     {
         if (RefundFails)

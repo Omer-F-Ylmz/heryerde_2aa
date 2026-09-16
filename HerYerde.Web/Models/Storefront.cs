@@ -25,6 +25,12 @@ public sealed record PriceBlockVm(decimal Price, decimal? CampaignPrice, bool La
     public bool HasCampaign => CampaignPrice is { } campaign && campaign < Price;
 }
 
+/// <summary>FRONT kiti: taksit tablosu. BankName doluysa tablo girilen kartın bankasına aittir.</summary>
+public sealed record InstallmentTableVm(
+    IReadOnlyList<HerYerde.Business.Dtos.InstallmentOption> Options,
+    string? BankName = null,
+    string? Note = null);
+
 public sealed class ProductCardVm
 {
     public string Name { get; init; } = string.Empty;

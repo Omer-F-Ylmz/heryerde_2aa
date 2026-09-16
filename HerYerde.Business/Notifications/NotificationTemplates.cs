@@ -103,6 +103,19 @@ public static class NotificationTemplates
         return ($"{kind} talebiniz reddedildi · {order.OrderNo}", Page(body.ToString()));
     }
 
+    /// <summary>Faturanın indirme bağlantısı siparişin erişim anahtarını taşır; başka siparişin anahtarıyla açılmaz.</summary>
+    public static (string Subject, string Body) InvoiceReady(Order order, string invoiceUrl)
+    {
+        var body = new StringBuilder();
+        body.Append(Heading("Faturanız hazır", $"{Encode(order.OrderNo)} numaralı siparişinizin faturasını kestik."));
+        body.Append(Row("Fatura no", Encode(order.InvoiceNo ?? "—")));
+        body.Append(Row("Fatura tarihi", order.InvoiceDate?.ToString("d MMMM yyyy", Turkish) ?? "—"));
+        body.Append(Row("Tutar", Tl(order.Total)));
+        body.Append(Paragraph("Faturanızı aşağıdaki bağlantıdan PDF olarak indirebilirsiniz. Bağlantı siparişinize özeldir, paylaşmayın."));
+        body.Append(Button(invoiceUrl, "Faturamı indir"));
+        return ($"Faturanız hazır · {order.OrderNo}", Page(body.ToString()));
+    }
+
     /// <summary>Bağlantı 30 dakika geçerli ve tek kullanımlık; istenmediyse posta yok sayılabilir.</summary>
     public static (string Subject, string Body) AdminPasswordReset(string resetUrl)
     {

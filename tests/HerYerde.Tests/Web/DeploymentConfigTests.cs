@@ -26,7 +26,8 @@ public sealed class DeploymentConfigTests
         Assert.Contains("test: [\"CMD\", \"dotnet\", \"HerYerde.Web.dll\", \"--healthcheck\"]", compose);
     }
 
-    private static readonly string[] OptionalComposeVariables = ["HERYERDE_SMTP_PORT", "HERYERDE_ETBIS_NO"];
+    private static readonly string[] OptionalComposeVariables =
+        ["HERYERDE_SMTP_PORT", "HERYERDE_ETBIS_NO", "HERYERDE_IYZICO_INSTALLMENTS"];
 
     /// <summary>YAYIN-HAZIRLIK: dış hesap değerlerinden biri eksikse "docker compose up" yorumlama aşamasında durur.</summary>
     [Fact]

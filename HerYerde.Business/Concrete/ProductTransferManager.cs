@@ -100,6 +100,7 @@ public class ProductTransferManager : IProductTransferService
         }
 
         var now = _clock.GetUtcNow().UtcDateTime;
+        var removedImages = new List<string>();
         await _unitOfWork.InTransactionAsync(async () =>
         {
             var bySlug = new Dictionary<string, Product>(StringComparer.Ordinal);
@@ -141,7 +142,7 @@ public class ProductTransferManager : IProductTransferService
 
                 if (step.Images is { } urls)
                 {
-                    await ReplaceImagesAsync(product, urls, cancellationToken);
+                    removedImages.AddRange(await ReplaceImagesAsync(product, urls, cancellationToken));
                 }
             }
 
@@ -169,7 +170,9 @@ public class ProductTransferManager : IProductTransferService
             return await _unitOfWork.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
 
-        return (HttpStatusCode.OK, new SuccessDataResult<ImportPreview>(preview, $"{preview.Created} yeni, {preview.Updated} güncellendi."));
+        return (HttpStatusCode.OK, new SuccessDataResult<ImportPreview>(
+            preview with { RemovedImages = removedImages },
+            $"{preview.Created} yeni, {preview.Updated} güncellendi."));
     }
 
     /// <summary>Her satırın doğrulaması ve yazım planı. Veritabanı yalnız okunur.</summary>
@@ -331,13 +334,15 @@ public class ProductTransferManager : IProductTransferService
         return plan.OrderBy(p => p.Row.RowNumber).ToList();
     }
 
-    private async Task ReplaceImagesAsync(Product product, IReadOnlyList<string> urls, CancellationToken cancellationToken)
+    /// <summary>Listeden çıkan görsellerin adreslerini döner; dosyalarını silmek çağıranın işi (depo Web katmanında).</summary>
+    private async Task<List<string>> ReplaceImagesAsync(Product product, IReadOnlyList<string> urls, CancellationToken cancellationToken)
     {
-        // Yalnız kayıtlar değişir: listeden çıkan yüklenmiş görselin dosyası diskte kalır (yeniden eklenebilir).
         var current = await _imageDal.GetListAsync(i => i.ProductId == product.Id, cancellationToken);
+        var removed = new List<string>();
         foreach (var stale in current.Where(i => !urls.Contains(i.Url)))
         {
             _imageDal.Delete((await _imageDal.GetTrackedAsync(i => i.Id == stale.Id, cancellationToken))!);
+            removed.Add(stale.Url);
         }
 
         for (var index = 0; index < urls.Count; index++)
@@ -353,6 +358,8 @@ public class ProductTransferManager : IProductTransferService
                 await _imageDal.AddAsync(image, cancellationToken);
             }
         }
+
+        return removed;
     }
 
     private bool ImageAllowed(string url)

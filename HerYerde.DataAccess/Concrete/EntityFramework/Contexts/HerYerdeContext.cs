@@ -177,6 +177,8 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.PaymentMethod).HasColumnName("payment_method").HasConversion<int>();
             e.Property(o => o.Subtotal).HasColumnName("subtotal").HasPrecision(18, 2);
             e.Property(o => o.ShippingFee).HasColumnName("shipping_fee").HasPrecision(18, 2);
+            // Eski siparişlerde kargo kuraldan gelmişti: geçiş 0 (false) yazar.
+            e.Property(o => o.ShippingOverridden).HasColumnName("shipping_overridden");
             e.Property(o => o.Total).HasColumnName("total").HasPrecision(18, 2);
             e.Property(o => o.FullName).HasColumnName("full_name").HasMaxLength(120).IsRequired();
             e.Property(o => o.Phone).HasColumnName("phone").HasMaxLength(11).IsRequired();

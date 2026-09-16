@@ -20,6 +20,7 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
     private const string AuthPath = "/payment/3dsecure/auth";
     private const string CancelPath = "/payment/cancel";
     private const string RefundPath = "/v2/payment/refund";
+    private const string InstallmentPath = "/payment/iyzipos/installment";
 
     private IyzicoSettings Settings => options.Value;
 
@@ -178,6 +179,59 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
             ? new PaymentRefundResult(true, null, refundRaw)
             : new PaymentRefundResult(false, ErrorMessage(refund), refundRaw);
     }
+
+    /// <summary>Taksit tablosu. Kart bilgisi taşımaz: yalnız tutar ve isteğe bağlı BIN gider, yanıt saklanmaz.</summary>
+    public async Task<InstallmentResult> GetInstallmentsAsync(decimal price, string? bin, CancellationToken cancellationToken = default)
+    {
+        var body = new JsonObject
+        {
+            ["locale"] = "tr",
+            ["conversationId"] = Guid.NewGuid().ToString("N"),
+            ["price"] = Price(price)
+        };
+
+        if (bin is { Length: 6 })
+        {
+            body["binNumber"] = bin;
+        }
+
+        var (json, _) = await PostAsync(InstallmentPath, body, cancellationToken);
+        if (json is null || Text(json, "status") != "success")
+        {
+            return new InstallmentResult(false, null, ErrorMessage(json));
+        }
+
+        // BIN verilmediğinde sağlayıcı her banka için ayrı satır döner; genel tabloda ilki yeter.
+        if ((json["installmentDetails"] as JsonArray)?.OfType<JsonObject>().FirstOrDefault() is not { } detail)
+        {
+            return new InstallmentResult(false, null, "Taksit bilgisi bulunamadı.");
+        }
+
+        var options = new List<InstallmentOption>();
+        foreach (var row in (detail["installmentPrices"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            if (Number(row, "installmentNumber") is { } count
+                && Number(row, "installmentPrice") is { } monthly
+                && Number(row, "totalPrice") is { } total)
+            {
+                options.Add(new InstallmentOption((int)count, monthly, total));
+            }
+        }
+
+        return options.Count == 0
+            ? new InstallmentResult(false, null, "Taksit bilgisi bulunamadı.")
+            : new InstallmentResult(
+                true,
+                new InstallmentTable(
+                    options.OrderBy(o => o.Count).ToList(),
+                    Text(detail, "bankName"),
+                    Text(detail, "cardFamilyName")),
+                null);
+    }
+
+    /// <summary>İyzico sayıları kimi alanda dizge kimi alanda sayı yollar; ikisi de aynı yoldan okunur.</summary>
+    private static decimal? Number(JsonObject json, string key)
+        => decimal.TryParse(Text(json, key), NumberStyles.Number, CultureInfo.InvariantCulture, out var value) ? value : null;
 
     /// <summary>İyzico'nun döndürdüğü otomatik gönderilen form: action ve gizli alanlar. Satır içi script CSP'ye
     /// takılacağı için form bizim sayfamızda yeniden kurulur, gönderimi site.js yapar.</summary>

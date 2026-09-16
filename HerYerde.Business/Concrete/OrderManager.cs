@@ -291,6 +291,15 @@ public class OrderManager : IOrderService
             resolved.Add((line with { Code = code }, product, variant));
         }
 
+        // Hediye kampanyası vitrindekiyle aynı kuraldan; yönetici kutuyu kapatırsa hiç uygulanmaz.
+        var products = resolved.ToDictionary(r => r.Product.Id, r => r.Product);
+        var giftLines = draft.ApplyGifts
+            ? resolved.Select(r => new CartItem { ProductId = r.Product.Id, Quantity = r.Line.Quantity }).ToList()
+            : [];
+        var gifts = giftLines.Count == 0
+            ? []
+            : GiftRules.Plan(giftLines, await WithGiftProductsAsync(products, now, cancellationToken), now);
+
         var subtotal = resolved.Sum(r => CurrentPrice(r.Product, now) * r.Line.Quantity);
         var shippingFee = draft.ShippingFeeOverride ?? ShippingRules.Fee(subtotal, _shop.ShippingFee, _shop.FreeShippingOver);
         var order = new Order
@@ -302,6 +311,7 @@ public class OrderManager : IOrderService
             Source = draft.Source,
             Subtotal = subtotal,
             ShippingFee = shippingFee,
+            ShippingOverridden = draft.ShippingFeeOverride is not null,
             Total = subtotal + shippingFee,
             FullName = draft.FullName.Trim(),
             Phone = phone,
@@ -316,6 +326,7 @@ public class OrderManager : IOrderService
             CreatedAt = now
         };
 
+        var granted = new List<GiftPlan>();
         try
         {
             await _unitOfWork.InTransactionAsync(async () =>
@@ -339,6 +350,16 @@ public class OrderManager : IOrderService
                     throw new StockShortageException(shortages.Distinct().ToList());
                 }
 
+                // Hediye stoğu da düşer; bu sırada tükendiyse hediye satırı hiç açılmaz.
+                foreach (var gift in gifts.Where(g => g.Available))
+                {
+                    if (await _productDal.TryDecrementStockAsync(gift.ProductId, gift.Quantity, cancellationToken) > 0
+                        || products.GetValueOrDefault(gift.ProductId)?.Stock is null)
+                    {
+                        granted.Add(gift);
+                    }
+                }
+
                 await _orderDal.AddAsync(order, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -357,6 +378,21 @@ public class OrderManager : IOrderService
                     await _orderItemDal.AddAsync(item, cancellationToken);
                 }
 
+                foreach (var gift in granted)
+                {
+                    var giftItem = new OrderItem
+                    {
+                        OrderId = order.Id,
+                        ProductName = gift.ProductName,
+                        Sku = gift.Sku,
+                        Quantity = gift.Quantity,
+                        UnitPrice = 0m,
+                        IsGift = true
+                    };
+                    items.Add(giftItem);
+                    await _orderItemDal.AddAsync(giftItem, cancellationToken);
+                }
+
                 // Mağaza postası yok: siparişi yönetici kendisi girdi.
                 await _notifications.QueueOrderPlacedAsync(order, items, customer: draft.NotifyCustomer, store: false, cancellationToken: cancellationToken);
                 return await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -368,7 +404,11 @@ public class OrderManager : IOrderService
                 $"Stok yetersiz: {string.Join(", ", shortage.ProductNames)}."));
         }
 
-        return (HttpStatusCode.Created, new SuccessDataResult<Order>(order, "Sipariş açıldı."));
+        // Not, planlanana değil gerçekten yazılan hediyelere bakar: son anda tükenen de mesaja girer.
+        var giftNote = GiftRules.Note(gifts.Select(g => g with { Available = granted.Any(x => x.ProductId == g.ProductId) }));
+        return (HttpStatusCode.Created, new SuccessDataResult<Order>(
+            order,
+            giftNote.Length == 0 ? "Sipariş açıldı." : "Sipariş açıldı. " + giftNote));
     }
 
     public async Task<(HttpStatusCode, IDataResult<string>)> EditAsync(int orderId, OrderEdit edit, CancellationToken cancellationToken = default)
@@ -466,8 +506,15 @@ public class OrderManager : IOrderService
                 order.District = edit.District.Trim();
                 order.Phone = phone;
                 order.Note = note;
-                // Kargo ücreti olduğu gibi kalır (yönetici üstüne yazmış olabilir); ara toplam ve toplam yenilenir.
                 order.Subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
+                // Kargo ücreti yeni ara toplama göre yeniden hesaplanır; yönetici elle yazdıysa ona dokunulmaz.
+                if (!order.ShippingOverridden)
+                {
+                    var recalculated = ShippingRules.Fee(order.Subtotal, _shop.ShippingFee, _shop.FreeShippingOver);
+                    Track("kargo", order.ShippingFee.ToString("0.00"), recalculated.ToString("0.00"));
+                    order.ShippingFee = recalculated;
+                }
+
                 order.Total = order.Subtotal + order.ShippingFee;
                 return await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
@@ -502,6 +549,8 @@ public class OrderManager : IOrderService
         order.InvoiceNo = invoiceNo.Trim();
         order.InvoiceDate = invoiceDate.Date;
         order.InvoiceFile = file;
+        // Posta faturayla aynı kaydetmede kuyruğa girer: fatura yazıldıysa haberi de kesin kuyruktadır.
+        await _notifications.QueueInvoiceReadyAsync(order, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessDataResult<string?>(previous, "Fatura kaydedildi."));
     }

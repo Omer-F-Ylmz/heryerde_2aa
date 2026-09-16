@@ -26,6 +26,9 @@ public interface INotificationService
     /// <summary>İade/değişim talebi reddedildi: müşteriye (e-postası varsa) gerekçe. Kaydetmez.</summary>
     Task QueueReturnRejectedAsync(Order order, ReturnRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>Fatura yüklendi: müşteriye (e-postası varsa) token'lı indirme bağlantısı. Kaydetmez.</summary>
+    Task QueueInvoiceReadyAsync(Order order, CancellationToken cancellationToken = default);
+
     /// <summary>Yönetici parola sıfırlama bağlantısı; anahtar yalnız postada açık, veritabanında özeti durur. Kaydetmez.</summary>
     Task QueueAdminPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default);
 

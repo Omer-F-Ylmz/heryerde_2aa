@@ -251,6 +251,46 @@ public sealed class ProductTransferTests : IAsyncLifetime
         Assert.Contains("açılmış boyutu", await response.Content.ReadAsStringAsync());
     }
 
+    /// <summary>D14 A4: listeden çıkan yüklenmiş görselin dosyası da diskten silinir.</summary>
+    [Fact]
+    public async Task Ice_aktarmada_listeden_cikan_gorselin_dosyasi_diskten_silinir()
+    {
+        int productId;
+        await using (var context = TestDb.NewContext())
+        {
+            productId = await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere", stock: 5);
+        }
+
+        var admin = await _factory.CreateSignedInClientAsync();
+        Assert.Equal(HttpStatusCode.Found, (await UploadForm.PostAsync(admin, productId, ("tencere.png", TestImage.Png(900, 900)))).StatusCode);
+
+        string uploaded;
+        await using (var context = TestDb.NewContext())
+        {
+            uploaded = (await new EfProductImageDal(context).GetListAsync(i => i.ProductId == productId)).Single().Url;
+        }
+
+        var files = Directory.GetFiles(Path.Combine(_factory.Root, "uploads", "products", productId.ToString()));
+        Assert.NotEmpty(files);
+
+        // Aynı ürün, görsel sütunu başka bir adresle: yüklenen dosya listeden düşer.
+        var preview = await (await UploadAsync(admin, Book(Row(
+            slug: "celik-tencere",
+            name: "Çelik Tencere",
+            category: "ev",
+            price: "450",
+            stock: "5",
+            images: "/uploads/products/999/baska.webp")))).Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.Found, (await ConfirmAsync(admin, preview)).StatusCode);
+
+        await using (var check = TestDb.NewContext())
+        {
+            Assert.DoesNotContain(await new EfProductImageDal(check).GetListAsync(i => i.ProductId == productId), i => i.Url == uploaded);
+        }
+
+        Assert.Empty(Directory.GetFiles(Path.Combine(_factory.Root, "uploads", "products", productId.ToString())));
+    }
+
     [Fact]
     public async Task Girissiz_disa_aktarma_girise_yonlenir()
     {

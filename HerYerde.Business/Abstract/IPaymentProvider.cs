@@ -18,4 +18,8 @@ public interface IPaymentProvider
 
     /// <summary>Çekilmiş ödemenin tamamını geri verir.</summary>
     Task<PaymentRefundResult> RefundAsync(PaymentRefundRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Tutarın taksit tablosu. BIN (kart numarasının ilk 6 hanesi) verilirse o kartın bankasına göre,
+    /// verilmezse sağlayıcının genel tablosu.</summary>
+    Task<InstallmentResult> GetInstallmentsAsync(decimal price, string? bin, CancellationToken cancellationToken = default);
 }

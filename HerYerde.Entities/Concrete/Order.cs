@@ -19,6 +19,10 @@ public class Order : IEntity
     public OrderSource Source { get; set; } = OrderSource.Site;
     public decimal Subtotal { get; set; }
     public decimal ShippingFee { get; set; }
+
+    /// <summary>Kargo ücretini yönetici elle yazdı; düzenlemede kural yeniden hesaplayıp üstüne yazmaz.</summary>
+    public bool ShippingOverridden { get; set; }
+
     public decimal Total { get; set; }
 
     public string FullName { get; set; } = string.Empty;

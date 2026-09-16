@@ -28,6 +28,7 @@ services:
       Iyzico__SecretKey: ${HERYERDE_IYZICO_SECRET_KEY:?HERYERDE_IYZICO_SECRET_KEY gerekli}
       Iyzico__BaseUrl: ${HERYERDE_IYZICO_BASE_URL:?HERYERDE_IYZICO_BASE_URL gerekli}
       Iyzico__CspSources__0: ${HERYERDE_IYZICO_CSP_SOURCE:?HERYERDE_IYZICO_CSP_SOURCE gerekli}
+      Iyzico__Installments: ${HERYERDE_IYZICO_INSTALLMENTS:-false}
       Sentry__Dsn: ${HERYERDE_SENTRY_DSN:?HERYERDE_SENTRY_DSN gerekli}
       Legal__EtbisNo: ${HERYERDE_ETBIS_NO:-}
     volumes:

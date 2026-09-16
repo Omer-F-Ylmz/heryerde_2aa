@@ -1,0 +1,33 @@
+@using HerYerde.Web.Models
+@model InstallmentTableVm
+
+@if (Model.Options.Count > 0)
+{
+    <div class="installments">
+        <h3 class="installments__title">@(Model.BankName is { Length: > 0 } bank ? bank + " taksitleri" : "Taksit seçenekleri")</h3>
+        <table class="installments__table">
+            <caption class="visually-hidden">Taksit sayısına göre aylık ödeme ve toplam tutar</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Taksit</th>
+                    <th scope="col">Aylık</th>
+                    <th scope="col">Toplam</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var option in Model.Options)
+                {
+                    <tr>
+                        <th scope="row">@(option.Count == 1 ? "Tek çekim" : option.Count + " taksit")</th>
+                        <td>@Money.Tl(option.MonthlyPrice)</td>
+                        <td>@Money.Tl(option.TotalPrice)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (Model.Note is { Length: > 0 } note)
+        {
+            <p class="installments__note">@note</p>
+        }
+    </div>
+}

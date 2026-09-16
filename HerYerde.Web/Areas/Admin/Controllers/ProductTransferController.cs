@@ -15,6 +15,7 @@ public partial class ProductTransferController(
     IProductTransferService transferService,
     IAdminAuditService auditService,
     IPrivateFileStorage files,
+    IProductImageStorage imageStorage,
     TimeProvider clock) : Controller
 {
     private const string Folder = "aktarimlar";
@@ -85,6 +86,12 @@ public partial class ProductTransferController(
         {
             Response.StatusCode = (int)status;
             return View(nameof(Import), new ProductImportViewModel { Preview = result.Data, Token = token, ErrorMessage = result.Message });
+        }
+
+        // Listeden çıkan yüklenmiş görselin dosyası da diskten silinir; dış adres ya da elle yazılmış yol Delete'te eşleşmez.
+        foreach (var url in result.Data!.Removed)
+        {
+            imageStorage.Delete(url);
         }
 
         files.Delete(relative);

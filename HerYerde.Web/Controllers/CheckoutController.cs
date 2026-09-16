@@ -26,6 +26,8 @@ public partial class CheckoutController(
     ILegalPdfArchive legalPdfs,
     IReturnService returnService,
     IAdminAuditService auditService,
+    IInstallmentService installments,
+    IProvinceDirectory provinces,
     TimeProvider clock) : Controller
 {
     private ShopSettings Shop => shop.Value;
@@ -58,7 +60,55 @@ public partial class CheckoutController(
             Shop.Iban,
             TempData[CartController.ErrorKey] as string,
             revalued > 0 ? PriceChangedMessage : null,
-            CardEnabled));
+            CardEnabled,
+            CardEnabled && installments.Enabled));
+    }
+
+    /// <summary>İl seçilince ilçe listesini tazeler. JS'siz de çalışsın diye POST: kart alanları sorgu dizesine düşmez,
+    /// sayfaya da geri yazılmaz. Sipariş açılmaz, yalnız form yeniden çizilir.</summary>
+    [HttpPost("odeme/ilce")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Districts(CheckoutFormViewModel form, CancellationToken cancellationToken)
+    {
+        var cart = await CurrentCartAsync(cancellationToken);
+        if (cart is null || cart.IsEmpty)
+        {
+            return Redirect("/sepet");
+        }
+
+        // İl değişince eski ilçe listede kalmasın.
+        if (!provinces.DistrictsOf(form.City).Contains(form.District))
+        {
+            form.District = string.Empty;
+        }
+
+        ModelState.Clear();
+        return View("Index", new CheckoutPageViewModel(
+            form,
+            cart,
+            Shop.Iban,
+            null,
+            CardEnabled: CardEnabled,
+            InstallmentsEnabled: CardEnabled && installments.Enabled));
+    }
+
+    /// <summary>Kart numarasının ilk 6 hanesine göre taksit tablosu; sepet toplamı üzerinden. Tablo kapalıysa boş döner.</summary>
+    [HttpGet("odeme/taksit")]
+    public async Task<IActionResult> Installments(string? bin, CancellationToken cancellationToken)
+    {
+        var cart = await CurrentCartAsync(cancellationToken);
+        if (!CardEnabled || cart is null || cart.IsEmpty)
+        {
+            return PartialView("Components/_Installments", new InstallmentTableVm([]));
+        }
+
+        var table = await installments.GetAsync(cart.Total, bin, cancellationToken);
+        return PartialView("Components/_Installments", table is null
+            ? new InstallmentTableVm([])
+            : new InstallmentTableVm(
+                table.Options,
+                table.BankName,
+                "Taksit tutarları bankanız tarafından belirlenir; çekim onayladığınız taksitle yapılır."));
     }
 
     [HttpPost("odeme")]
@@ -382,7 +432,13 @@ public partial class CheckoutController(
             Response.StatusCode = StatusCodes.Status400BadRequest;
         }
 
-        return View("Index", new CheckoutPageViewModel(form, cart, Shop.Iban, message, CardEnabled: CardEnabled));
+        return View("Index", new CheckoutPageViewModel(
+            form,
+            cart,
+            Shop.Iban,
+            message,
+            CardEnabled: CardEnabled,
+            InstallmentsEnabled: CardEnabled && installments.Enabled));
     }
 
     private IActionResult SeeOther(string location)

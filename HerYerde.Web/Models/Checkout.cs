@@ -61,14 +61,16 @@ public sealed class CheckoutFormViewModel
     public bool LegalConsent { get; set; }
 }
 
-/// <summary>Notice: hata değil, kullanıcıya söylenmesi gereken değişiklik (ör. fiyat güncellendi).</summary>
+/// <summary>Notice: hata değil, kullanıcıya söylenmesi gereken değişiklik (ör. fiyat güncellendi).
+/// InstallmentsEnabled ise kart alanına BIN girildikçe taksit tablosu istenir.</summary>
 public sealed record CheckoutPageViewModel(
     CheckoutFormViewModel Form,
     CartView Cart,
     string Iban,
     string? ErrorMessage,
     string? Notice = null,
-    bool CardEnabled = false);
+    bool CardEnabled = false,
+    bool InstallmentsEnabled = false);
 
 /// <summary>Bankanın 3D doğrulama sayfasına otomatik gönderilen form.</summary>
 public sealed record ThreeDsViewModel(ThreeDsForm Form);

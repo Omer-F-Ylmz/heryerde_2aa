@@ -76,6 +76,10 @@
             {
                 <partial name="Components/_Countdown" model="endsAt" />
             }
+            @if (Model.Installments is { } installments)
+            {
+                <partial name="Components/_Installments" model="installments" />
+            }
             @if (Model.Picker.HasOptions)
             {
                 <partial name="Components/_VariantPicker" model="Model.Picker" />
