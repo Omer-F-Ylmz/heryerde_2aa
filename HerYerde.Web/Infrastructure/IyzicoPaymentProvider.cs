@@ -38,15 +38,20 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
             ["address"] = $"{order.Address} {order.District}/{order.City}"
         };
 
-        var basket = new JsonArray();
-        foreach (var item in request.Items.Where(i => i.UnitPrice * i.Quantity > 0m))
-        {
-            basket.Add(BasketItem(item.Id.ToString(CultureInfo.InvariantCulture), item.ProductName, item.UnitPrice * item.Quantity));
-        }
+        var lines = request.Items
+            .Where(i => i.UnitPrice * i.Quantity > 0m)
+            .Select(i => (Id: i.Id.ToString(CultureInfo.InvariantCulture), i.ProductName, Price: i.UnitPrice * i.Quantity))
+            .ToList();
 
         if (order.ShippingFee > 0m)
         {
-            basket.Add(BasketItem("kargo", "Kargo", order.ShippingFee));
+            lines.Add(("kargo", "Kargo", order.ShippingFee));
+        }
+
+        var basket = new JsonArray();
+        foreach (var (id, name, price) in Discounted(lines, order.Discount))
+        {
+            basket.Add(BasketItem(id, name, price));
         }
 
         var body = new JsonObject
@@ -297,6 +302,34 @@ public sealed partial class IyzicoPaymentProvider(HttpClient http, IOptions<Iyzi
         return CryptographicOperations.FixedTimeEquals(
             Encoding.ASCII.GetBytes(expected),
             Encoding.ASCII.GetBytes(signature.ToLowerInvariant()));
+    }
+
+    /// <summary>İyzico sepet satırlarının toplamının price'a eşit olmasını ister; eksi satır kabul etmez. Kupon indirimi
+    /// satırlara tutarları oranında dağıtılır, yuvarlama artığı en büyük satıra yazılır (orada yer vardır).</summary>
+    private static List<(string Id, string ProductName, decimal Price)> Discounted(
+        List<(string Id, string ProductName, decimal Price)> lines,
+        decimal discount)
+    {
+        var total = lines.Sum(l => l.Price);
+        if (discount <= 0m || total <= 0m || lines.Count == 0)
+        {
+            return lines;
+        }
+
+        var biggest = lines.IndexOf(lines.MaxBy(l => l.Price));
+        var adjusted = new List<(string Id, string ProductName, decimal Price)>(lines.Count);
+        var shared = 0m;
+        for (var index = 0; index < lines.Count; index++)
+        {
+            var line = lines[index];
+            var share = index == biggest ? 0m : Math.Round(discount * line.Price / total, 2, MidpointRounding.AwayFromZero);
+            shared += share;
+            adjusted.Add((line.Id, line.ProductName, line.Price - share));
+        }
+
+        var rest = adjusted[biggest];
+        adjusted[biggest] = (rest.Id, rest.ProductName, rest.Price - (discount - shared));
+        return adjusted;
     }
 
     private static JsonObject BasketItem(string id, string name, decimal price) => new()
