@@ -6,6 +6,9 @@ namespace HerYerde.DataAccess.Abstract;
 /// <summary>Vitrin satırı: ürün, kendi kategorisinin slug'ı ve stok bitti mi.</summary>
 public readonly record struct ProductRow(Product Product, string CategorySlug, bool SoldOut);
 
+/// <summary>Sipariş satırının stok kodundan yayındaki ürüne köprü: kod varyant SKU'su ya da ürünün slug'ı olabilir.</summary>
+public readonly record struct ProductSkuRow(string Sku, string Slug, string Name);
+
 public interface IProductDal : IEntityRepository<Product>
 {
     /// <summary>Yayındaki ürünler, kendi kategorilerinin slug'ıyla; süzme/sıralama/sayfalama ve
@@ -13,6 +16,9 @@ public interface IProductDal : IEntityRepository<Product>
     Task<(List<ProductRow> Items, int Total)> GetActiveAsync(
         ProductQuery query,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Sipariş satırlarının stok kodlarını yayındaki ürünün slug'ı ve adıyla eşler; yayından kalkan ürün gelmez.</summary>
+    Task<List<ProductSkuRow>> ProductsBySkuAsync(IReadOnlyCollection<string> skus, CancellationToken cancellationToken = default);
 
     /// <summary>Ana sayfa hero'su: kampanyası süren, en yakın biten ürün.</summary>
     Task<(Product Product, string CategorySlug)?> GetCampaignHeroAsync(DateTime now, CancellationToken cancellationToken = default);

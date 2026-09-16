@@ -77,7 +77,7 @@ public class OrdersController : Controller
             cargo
                 ? new[] { "Ad Soyad", "Telefon", "Adres", "İl", "İlçe", "Tutar", "Ödeme", "Sipariş No", "Kalemler" }
                 : new[] { "Sipariş No", "Tarih", "Durum", "Kanal", "Ödeme", "Ad Soyad", "Telefon", "E-posta", "Adres", "İl", "İlçe",
-                          "Ara Toplam", "Kargo", "Toplam", "Kargo Firması", "Takip No", "Fatura No", "Kalemler", "Not" }
+                          "Ara Toplam", "Kargo", "Kupon", "İndirim", "Toplam", "Kargo Firması", "Takip No", "Fatura No", "Kalemler", "Not" }
         };
         foreach (var (order, items, _, _) in orders)
         {
@@ -87,7 +87,8 @@ public class OrdersController : Controller
                    PaymentLabels.Method(order.PaymentMethod), order.OrderNo, lines }
                 : new[] { order.OrderNo, IstanbulTime.Format(order.CreatedAt), OrderLabels.For(order.Status), PaymentLabels.Source(order.Source),
                    PaymentLabels.Method(order.PaymentMethod), order.FullName, order.Phone, order.Email ?? "", order.Address, order.City,
-                   order.District, CsvFile.Money(order.Subtotal), CsvFile.Money(order.ShippingFee), CsvFile.Money(order.Total),
+                   order.District, CsvFile.Money(order.Subtotal), CsvFile.Money(order.ShippingFee), order.CouponCode ?? "",
+                   CsvFile.Money(order.Discount), CsvFile.Money(order.Total),
                    order.Carrier ?? "", order.TrackingNo ?? "", order.InvoiceNo ?? "", lines, order.Note ?? "" });
         }
 

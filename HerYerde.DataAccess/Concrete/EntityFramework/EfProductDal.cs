@@ -12,6 +12,27 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
     {
     }
 
+    public async Task<List<ProductSkuRow>> ProductsBySkuAsync(IReadOnlyCollection<string> skus, CancellationToken cancellationToken = default)
+    {
+        if (skus.Count == 0)
+        {
+            return [];
+        }
+
+        // Varyantsız üründe satırın kodu ürünün slug'ı, varyantlıda varyantın stok kodudur.
+        var direct = await Context.Products.AsNoTracking()
+            .Where(p => p.IsActive && skus.Contains(p.Slug))
+            .Select(p => new ProductSkuRow(p.Slug, p.Slug, p.Name))
+            .ToListAsync(cancellationToken);
+
+        var byVariant = await Context.ProductVariants.AsNoTracking()
+            .Where(v => skus.Contains(v.Sku))
+            .Join(Context.Products.Where(p => p.IsActive), v => v.ProductId, p => p.Id, (v, p) => new ProductSkuRow(v.Sku, p.Slug, p.Name))
+            .ToListAsync(cancellationToken);
+
+        return [.. direct, .. byVariant];
+    }
+
     public async Task<(List<ProductRow> Items, int Total)> GetActiveAsync(
         ProductQuery query,
         CancellationToken cancellationToken = default)
@@ -42,6 +63,11 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
             source = source.Where(r => r.Product.Id != excluded);
         }
 
+        if (query.FeaturedOnly)
+        {
+            source = source.Where(r => r.Product.IsFeatured);
+        }
+
         if (LikePattern(query.Term) is { } pattern)
         {
             source = source.Where(r => EF.Functions.Like(r.Product.Name, pattern, LikeEscape)
@@ -59,13 +85,19 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
             source = source.Where(r => r.Effective <= max);
         }
 
-        var ordered = query.Order == ProductOrder.Price
-            ? source
+        var ordered = query.Order switch
+        {
+            ProductOrder.Price => source
                 .OrderBy(r => r.Effective)
-                .ThenBy(r => r.Product.Id)
-            : source
+                .ThenBy(r => r.Product.Id),
+            ProductOrder.Featured => source
+                .OrderBy(r => r.Product.FeaturedOrder)
+                .ThenByDescending(r => r.Product.CreatedAt)
+                .ThenByDescending(r => r.Product.Id),
+            _ => source
                 .OrderByDescending(r => r.Product.CreatedAt)
-                .ThenByDescending(r => r.Product.Id);
+                .ThenByDescending(r => r.Product.Id)
+        };
 
         // Toplam sayı, sayfa satırlarının yanında alt sorgu olarak gelir: sayfalama tek gidiş-dönüş.
         var rows = await ordered

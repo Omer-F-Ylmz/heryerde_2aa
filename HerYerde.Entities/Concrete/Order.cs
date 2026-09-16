@@ -23,6 +23,13 @@ public class Order : IEntity
     /// <summary>Kargo ücretini yönetici elle yazdı; düzenlemede kural yeniden hesaplayıp üstüne yazmaz.</summary>
     public bool ShippingOverridden { get; set; }
 
+    /// <summary>Kullanılan kupon kodu; kullanım limitleri bu alandan sayılır.</summary>
+    public string? CouponCode { get; set; }
+
+    /// <summary>Kuponun para cinsinden indirimi; kargo bedava kuponunda 0'dır (kargo zaten sıfırlanır).</summary>
+    public decimal Discount { get; set; }
+
+    /// <summary>Ara toplam + kargo - indirim.</summary>
     public decimal Total { get; set; }
 
     public string FullName { get; set; } = string.Empty;
@@ -60,6 +67,10 @@ public class Order : IEntity
 
     /// <summary>Teslim edildi olarak işaretlendiği an; 14 günlük cayma/iade talebi süresi buradan sayılır.</summary>
     public DateTime? DeliveredAt { get; set; }
+
+    /// <summary>Değerlendirme davetinin ele alındığı an; doluysa sipariş bir daha taranmaz (e-postasız
+    /// siparişte posta çıkmadan da işaretlenir).</summary>
+    public DateTime? ReviewMailAt { get; set; }
 
     /// <summary>Müşterinin iptal ettiği onaylı havale siparişinde elle geri ödenecek tutar; boşsa geri ödeme yok.</summary>
     public decimal? RefundDue { get; set; }

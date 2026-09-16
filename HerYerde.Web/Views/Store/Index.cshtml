@@ -87,11 +87,11 @@
 
 <section class="container section" id="yeni" aria-labelledby="yeni-title">
     <div class="section__head">
-        <h2 id="yeni-title" class="display-2 h-mark">Yeni gelenler</h2>
+        <h2 id="yeni-title" class="display-2 h-mark">@Model.ShelfTitle</h2>
         <a class="btn btn--outline" href="/ev">Tümünü gör</a>
     </div>
     <div class="grid">
-        @foreach (var card in Model.NewArrivals)
+        @foreach (var card in Model.Shelf)
         {
             <partial name="Components/_ProductCard" model="card" />
         }

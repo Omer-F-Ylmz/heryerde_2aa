@@ -1,0 +1,88 @@
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Areas.Admin.Models
+@model CouponFormViewModel
+@{
+    var isNew = Model.Id == 0;
+    ViewData["Title"] = isNew ? "Yeni kupon" : "Kuponu düzenle";
+}
+
+<div class="admin-head">
+    <h1 class="display-2 h-mark">@ViewData["Title"]</h1>
+    <a class="btn btn--ghost" href="/admin/kuponlar">Listeye dön</a>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+<form class="form-card" method="post" action="@(isNew ? "/admin/kuponlar/yeni" : $"/admin/kuponlar/{Model.Id}")">
+    @Html.AntiForgeryToken()
+
+    <div class="field">
+        <label class="field__label" asp-for="Code"></label>
+        <input class="field__input" asp-for="Code" maxlength="20" autocomplete="off" />
+        <span class="field__hint">Boşluksuz; büyük harfe çevrilir. Müşteri sepette bu kodu yazar.</span>
+        <span class="field__error" asp-validation-for="Code"></span>
+    </div>
+
+    <div class="field-row">
+        <div class="field">
+            <label class="field__label" asp-for="Kind"></label>
+            <select class="field__input" asp-for="Kind">
+                <option value="@((int)CouponKind.Yuzde)">Yüzde indirim</option>
+                <option value="@((int)CouponKind.Tutar)">Tutar indirimi</option>
+                <option value="@((int)CouponKind.KargoBedava)">Kargo bedava</option>
+            </select>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="Value"></label>
+            <input class="field__input" asp-for="Value" type="text" inputmode="decimal" />
+            <span class="field__hint">Yüzdede oran (10 = %10), tutarda TL. Kargo bedavada boş bırakın.</span>
+            <span class="field__error" asp-validation-for="Value"></span>
+        </div>
+    </div>
+
+    <div class="field">
+        <label class="field__label" asp-for="MinSubtotal"></label>
+        <input class="field__input" asp-for="MinSubtotal" type="text" inputmode="decimal" />
+        <span class="field__hint">0 ise alt sınır yok.</span>
+        <span class="field__error" asp-validation-for="MinSubtotal"></span>
+    </div>
+
+    <div class="field-row">
+        <div class="field">
+            <label class="field__label" asp-for="StartsAt"></label>
+            <input class="field__input" asp-for="StartsAt" type="date" />
+            <span class="field__error" asp-validation-for="StartsAt"></span>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="EndsAt"></label>
+            <input class="field__input" asp-for="EndsAt" type="date" />
+            <span class="field__error" asp-validation-for="EndsAt"></span>
+        </div>
+    </div>
+
+    <div class="field-row">
+        <div class="field">
+            <label class="field__label" asp-for="TotalLimit"></label>
+            <input class="field__input" asp-for="TotalLimit" type="number" min="1" step="1" />
+            <span class="field__error" asp-validation-for="TotalLimit"></span>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="PerPersonLimit"></label>
+            <input class="field__input" asp-for="PerPersonLimit" type="number" min="1" step="1" />
+            <span class="field__hint">Aynı telefon ya da e-posta kaç kez kullanabilir.</span>
+            <span class="field__error" asp-validation-for="PerPersonLimit"></span>
+        </div>
+    </div>
+
+    <label class="switch">
+        <input asp-for="IsActive" type="checkbox" />
+        <span>Yayında</span>
+    </label>
+
+    <div class="form-card__foot">
+        <button class="btn btn--primary btn--block" type="submit">Kaydet</button>
+    </div>
+</form>

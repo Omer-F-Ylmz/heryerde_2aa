@@ -52,4 +52,23 @@ public class EfOrderDal : EfEntityRepositoryBase<Order, HerYerdeContext>, IOrder
 
     public Task<int> UnseenCountAsync(CancellationToken cancellationToken = default)
         => Context.Orders.CountAsync(o => o.SeenAt == null, cancellationToken);
+
+    public Task<List<Order>> DueForReviewInviteAsync(DateTime moment, int take, CancellationToken cancellationToken = default)
+        => Context.Orders
+            .Where(o => o.ReviewMailAt == null
+                        && o.DeliveredAt != null
+                        && o.DeliveredAt <= moment
+                        && o.Status == OrderStatus.TeslimEdildi)
+            .OrderBy(o => o.DeliveredAt)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+    public Task<int> CouponUsageAsync(string code, string? phone, string? email, CancellationToken cancellationToken = default)
+    {
+        var used = Context.Orders.Where(o => o.CouponCode == code && o.Status != OrderStatus.IptalEdildi);
+        // Kişi başı sayımda telefon ya da e-posta eşleşmesi yeter: aynı kişi ikisini de değiştirmedikçe yakalanır.
+        return phone is null
+            ? used.CountAsync(cancellationToken)
+            : used.CountAsync(o => o.Phone == phone || (email != null && o.Email == email), cancellationToken);
+    }
 }

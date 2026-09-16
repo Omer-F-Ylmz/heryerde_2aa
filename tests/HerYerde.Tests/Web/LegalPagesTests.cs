@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using HerYerde.Business;
 
 namespace HerYerde.Tests.Web;
 
@@ -40,7 +42,8 @@ public sealed class LegalPagesTests : IAsyncLifetime
         var html = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("noindex", html);
         Assert.Single(Regex.Matches(html, "<h1[ >]"));
-        Assert.Contains("Son güncelleme: 15 Eylül 2026", html);
+        // Tarih LegalDocs'tan gelir: metin her güncellendiğinde testi elle düzeltmek gerekmesin.
+        Assert.Contains("Son güncelleme: " + LegalDocs.UpdatedAt.ToString("d MMMM yyyy", CultureInfo.GetCultureInfo("tr-TR")), html);
         Assert.Contains($"<link rel=\"canonical\" href=\"{AdminWebFactory.BaseUrl}/yasal/{slug}\"", html);
 
         var toc = Regex.Matches(html, "<a class=\"legal__toc-link\" href=\"#(?<id>[a-z0-9-]+)\"")

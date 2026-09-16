@@ -1,0 +1,34 @@
+@using HerYerde.Web.Models
+@model CouponBoxViewModel
+
+<div class="coupon">
+    @if (Model.AppliedCode is { Length: > 0 } applied)
+    {
+        <p class="coupon__applied">
+            <span class="tag tag--gift">@applied</span>
+            <span>kuponu uygulandı.</span>
+        </p>
+        <form method="post" action="/sepet/kupon/sil">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="donus" value="@Model.ReturnUrl" />
+            <button class="btn btn--ghost btn--sm" type="submit">Kuponu kaldır</button>
+        </form>
+    }
+    else
+    {
+        <form class="coupon__form" method="post" action="/sepet/kupon">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="donus" value="@Model.ReturnUrl" />
+            <div class="field">
+                <label class="field__label" for="coupon-code">İndirim kuponu</label>
+                <input class="field__input" id="coupon-code" name="code" maxlength="20" autocomplete="off"
+                       placeholder="Kupon kodu" aria-describedby="coupon-message" />
+            </div>
+            <button class="btn btn--outline" type="submit">Uygula</button>
+        </form>
+    }
+    @if (Model.Message is { Length: > 0 } message)
+    {
+        <p class="coupon__message" id="coupon-message" role="status">@message</p>
+    }
+</div>

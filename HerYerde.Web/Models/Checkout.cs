@@ -121,6 +121,10 @@ public sealed class ReturnLineForm
 
 public sealed record CartPageViewModel(CartView Cart, string? ErrorMessage);
 
+/// <summary>FRONT kiti: kupon kutusu. Uygulanmış kupon varsa kaldırma düğmesi, yoksa kod alanı çizilir;
+/// ReturnUrl işlemden sonra dönülecek site içi yol.</summary>
+public sealed record CouponBoxViewModel(string? AppliedCode, string ReturnUrl, string? Message = null);
+
 /// <summary>FRONT kiti: sepet satırı; düzenlenebilir halinde adet ve silme formlarını da çizer.</summary>
 public sealed record CartLineViewModel(CartLine Line, bool Editable);
 
@@ -130,7 +134,9 @@ public sealed record OrderSummaryViewModel(
     decimal ShippingFee,
     decimal Total,
     string? Note = null,
-    decimal FreeShippingOver = 0m)
+    decimal FreeShippingOver = 0m,
+    string? CouponCode = null,
+    decimal Discount = 0m)
 {
     public bool FreeShipping => ShippingRules.IsFree(Subtotal, FreeShippingOver);
 

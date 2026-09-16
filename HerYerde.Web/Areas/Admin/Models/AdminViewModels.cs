@@ -204,6 +204,13 @@ public sealed class ProductFormViewModel
     [Display(Name = "Yayında")]
     public bool IsActive { get; set; }
 
+    [Display(Name = "Ana sayfada öne çıkar")]
+    public bool IsFeatured { get; set; }
+
+    [Range(0, 999, ErrorMessage = "Sıra 0 ile 999 arasında olmalı.")]
+    [Display(Name = "Öne çıkanlar sırası")]
+    public int FeaturedOrder { get; set; }
+
     public string Slug { get; set; } = string.Empty;
 
     /// <summary>Giyim alanındaki ürün varyantsız yayına alınamaz; Ev alanında varyant isteğe bağlıdır.</summary>
@@ -345,6 +352,105 @@ public sealed class OrderEditItemForm
 {
     public int Id { get; set; }
     public int Quantity { get; set; }
+}
+
+/// <summary>Kupon formu. EndsAt kullanıcı için son geçerli gün; kayıtta ertesi günün başına çevrilir.</summary>
+public sealed class CouponFormViewModel
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Kod gerekli.")]
+    [StringLength(20)]
+    [Display(Name = "Kod")]
+    public string Code { get; set; } = string.Empty;
+
+    [Display(Name = "Tür")]
+    public CouponKind Kind { get; set; } = CouponKind.Yuzde;
+
+    [Range(0, 999999)]
+    [Display(Name = "Değer (yüzde ya da tutar)")]
+    public decimal Value { get; set; }
+
+    [Range(0, 999999)]
+    [Display(Name = "En az sepet tutarı")]
+    public decimal MinSubtotal { get; set; }
+
+    [DataType(DataType.Date)]
+    [Display(Name = "Başlangıç")]
+    public DateTime StartsAt { get; set; }
+
+    [DataType(DataType.Date)]
+    [Display(Name = "Bitiş (bu gün dahil)")]
+    public DateTime EndsAt { get; set; }
+
+    [Range(1, 100000, ErrorMessage = "Toplam limit en az 1 olmalı.")]
+    [Display(Name = "Toplam kullanım limiti (boş = sınırsız)")]
+    public int? TotalLimit { get; set; }
+
+    [Range(1, 1000, ErrorMessage = "Kişi başı limit en az 1 olmalı.")]
+    [Display(Name = "Kişi başı limit (boş = sınırsız)")]
+    public int? PerPersonLimit { get; set; }
+
+    [Display(Name = "Yayında")]
+    public bool IsActive { get; set; } = true;
+
+    public string? ErrorMessage { get; set; }
+
+    public static CouponFormViewModel From(Coupon coupon) => new()
+    {
+        Id = coupon.Id,
+        Code = coupon.Code,
+        Kind = coupon.Kind,
+        Value = coupon.Value,
+        MinSubtotal = coupon.MinSubtotal,
+        StartsAt = coupon.StartsAt,
+        EndsAt = coupon.EndsAt.AddDays(-1).Date,
+        TotalLimit = coupon.TotalLimit,
+        PerPersonLimit = coupon.PerPersonLimit,
+        IsActive = coupon.IsActive
+    };
+}
+
+/// <summary>Duyuru şeridi formu. EndsAt kullanıcı için son görünür gün; kayıtta ertesi günün başına çevrilir.</summary>
+public sealed class AnnouncementFormViewModel
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Duyuru metni gerekli.")]
+    [StringLength(200)]
+    [Display(Name = "Metin")]
+    public string Text { get; set; } = string.Empty;
+
+    [StringLength(200)]
+    [Display(Name = "Bağlantı (isteğe bağlı, site içi yol)")]
+    public string? Url { get; set; }
+
+    [DataType(DataType.Date)]
+    [Display(Name = "Başlangıç")]
+    public DateTime StartsAt { get; set; }
+
+    [DataType(DataType.Date)]
+    [Display(Name = "Bitiş (bu gün dahil)")]
+    public DateTime EndsAt { get; set; }
+
+    [Display(Name = "Renk")]
+    public AnnouncementColor Color { get; set; } = AnnouncementColor.Kiremit;
+
+    [Display(Name = "Yayında")]
+    public bool IsActive { get; set; } = true;
+
+    public string? ErrorMessage { get; set; }
+
+    public static AnnouncementFormViewModel From(Announcement announcement) => new()
+    {
+        Id = announcement.Id,
+        Text = announcement.Text,
+        Url = announcement.Url,
+        StartsAt = announcement.StartsAt,
+        EndsAt = announcement.EndsAt.AddDays(-1).Date,
+        Color = announcement.Color,
+        IsActive = announcement.IsActive
+    };
 }
 
 public sealed class OrderListViewModel

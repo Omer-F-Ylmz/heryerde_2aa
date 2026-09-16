@@ -23,22 +23,24 @@ public sealed class PerfQueryTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    /// <summary>Kampanya, yeni gelenler, görseller ve (D9) onaylı yorum alıntıları, (D10) kapı kartı görselleri için kategoriler: beş sorgu.</summary>
+    /// <summary>Kampanya, yeni gelenler, görseller ve (D9) onaylı yorum alıntıları, (D10) kapı kartı görselleri için kategoriler: beş sorgu.
+    /// (D14) öne çıkanlar rafı ve her sayfanın üstündeki duyuru şeridi ikisini ekler.</summary>
     [Fact]
-    public async Task Ana_sayfa_en_cok_bes_sorgu_atar()
-        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/"), 1, 5);
+    public async Task Ana_sayfa_en_cok_yedi_sorgu_atar()
+        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/"), 1, 7);
+
+    /// <summary>(D14) Duyuru şeridi her vitrin sayfasına bir sorgu ekler.</summary>
+    [Fact]
+    public async Task Ev_listesi_en_cok_dort_sorgu_atar()
+        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/ev"), 1, 4);
 
     [Fact]
-    public async Task Ev_listesi_en_cok_uc_sorgu_atar()
-        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/ev"), 1, 3);
+    public async Task Alt_kategori_en_cok_dort_sorgu_atar()
+        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/ev/tencere-tava"), 1, 4);
 
     [Fact]
-    public async Task Alt_kategori_en_cok_uc_sorgu_atar()
-        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/ev/tencere-tava"), 1, 3);
-
-    [Fact]
-    public async Task Urun_sayfasi_en_cok_bes_sorgu_atar()
-        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/urun/granit-dokum-tencere-seti"), 1, 5);
+    public async Task Urun_sayfasi_en_cok_alti_sorgu_atar()
+        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/urun/granit-dokum-tencere-seti"), 1, 6);
 
     /// <summary>Üç liste sorgusu + G12 parola damgası kontrolü + D6 okunmamış sipariş sayacı + D10 düşük stok sayacı (tek SQL).</summary>
     [Fact]
@@ -57,14 +59,15 @@ public sealed class PerfQueryTests : IAsyncLifetime
         Assert.Contains(_factory.Counter.Commands, c => c.Contains("GROUP BY", StringComparison.Ordinal));
     }
 
+    /// <summary>(D14) Duyuru şeridi ve sepetin kupon kodunu okuyan satırı ikişer değil birer sorgu ekler.</summary>
     [Fact]
-    public async Task Sepet_sayfasi_en_cok_dort_sorgu_atar()
+    public async Task Sepet_sayfasi_en_cok_alti_sorgu_atar()
     {
         var client = _factory.CreateNonRedirectingClient();
         await AddHomeProductToCartAsync(client, "granit-dokum-tencere-seti");
         await AddHomeProductToCartAsync(client, "dokum-tava-28-cm");
 
-        Assert.InRange(await _factory.QueryCountAsync(client, "/sepet"), 1, 4);
+        Assert.InRange(await _factory.QueryCountAsync(client, "/sepet"), 1, 6);
     }
 
     [Fact]

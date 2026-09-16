@@ -10,6 +10,13 @@
         <span>Kargo</span>
         <span class="summary__value">@(Model.FreeShipping ? "Kargo bedava" : Money.Tl(Model.ShippingFee))</span>
     </p>
+    @if (Model.Discount > 0m)
+    {
+        <p class="summary__row summary__row--discount">
+            <span>İndirim<span class="tag tag--gift">@Model.CouponCode</span></span>
+            <span class="summary__value">−@Money.Tl(Model.Discount)</span>
+        </p>
+    }
     <partial name="Components/_FreeShipping" model="Model" />
     <p class="summary__row summary__row--total">
         <span>Toplam</span>

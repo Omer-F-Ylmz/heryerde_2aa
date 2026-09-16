@@ -20,7 +20,7 @@ public class SeoController(
     TimeProvider clock) : Controller
 {
     /// <summary>Kişiye özel ya da içeriği ince sayfalar taranmaz.</summary>
-    private static readonly string[] Closed = ["/admin", "/sepet", "/odeme", "/siparis/", "/ara"];
+    private static readonly string[] Closed = ["/admin", "/sepet", "/odeme", "/siparis/", "/ara", "/link"];
 
     private static readonly XNamespace Ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
@@ -68,6 +68,8 @@ public class SeoController(
     {
         var lines = new List<string> { "User-agent: *" };
         lines.AddRange(Closed.Select(path => "Disallow: " + path));
+        // Ürün akışları taranabilir: Meta ve Merchant botları buradan bulur.
+        lines.Add("Allow: /feeds/");
         lines.Add("Sitemap: " + Seo.Absolute(shop.Value.BaseUrl, "/sitemap.xml"));
         return Content(string.Join('\n', lines) + "\n", "text/plain", Encoding.UTF8);
     }

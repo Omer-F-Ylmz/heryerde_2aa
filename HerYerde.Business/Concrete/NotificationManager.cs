@@ -15,7 +15,13 @@ public class NotificationManager : INotificationService
 
     private const int BatchSize = 50;
 
+    /// <summary>Teslimden bu kadar sonra değerlendirme daveti gider.</summary>
+    public static readonly TimeSpan ReviewInviteAfter = TimeSpan.FromDays(7);
+
     private readonly IOutboxMessageDal _outboxDal;
+    private readonly IOrderDal _orderDal;
+    private readonly IOrderItemDal _orderItemDal;
+    private readonly IProductDal _productDal;
     private readonly INotificationSender _sender;
     private readonly IUnitOfWork _unitOfWork;
     private readonly NotificationSettings _notifications;
@@ -25,6 +31,9 @@ public class NotificationManager : INotificationService
 
     public NotificationManager(
         IOutboxMessageDal outboxDal,
+        IOrderDal orderDal,
+        IOrderItemDal orderItemDal,
+        IProductDal productDal,
         INotificationSender sender,
         IUnitOfWork unitOfWork,
         IOptions<NotificationSettings> notifications,
@@ -33,6 +42,9 @@ public class NotificationManager : INotificationService
         TimeProvider clock)
     {
         _outboxDal = outboxDal;
+        _orderDal = orderDal;
+        _orderItemDal = orderItemDal;
+        _productDal = productDal;
         _sender = sender;
         _unitOfWork = unitOfWork;
         _notifications = notifications.Value;
@@ -132,6 +144,55 @@ public class NotificationManager : INotificationService
             order,
             $"{_shop.BaseUrl}/siparis/{order.OrderNo}/fatura?t={order.AccessToken}");
         await QueueAsync(OutboxType.InvoiceReady, email, subject, body, cancellationToken);
+    }
+
+    public async Task<int> QueueDueReviewInvitesAsync(CancellationToken cancellationToken = default)
+    {
+        var now = _clock.GetUtcNow().UtcDateTime;
+        var due = await _orderDal.DueForReviewInviteAsync(now - ReviewInviteAfter, BatchSize, cancellationToken);
+        if (due.Count == 0)
+        {
+            return 0;
+        }
+
+        var orderIds = due.Select(o => o.Id).ToList();
+        var items = await _orderItemDal.GetListAsync(i => orderIds.Contains(i.OrderId) && !i.IsGift, cancellationToken);
+        var products = (await _productDal.ProductsBySkuAsync(items.Select(i => i.Sku).Distinct().ToList(), cancellationToken))
+            .GroupBy(r => r.Sku, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+
+        var queued = 0;
+        foreach (var order in due)
+        {
+            // İşaret e-postasız siparişte de konur: her gece yeniden taranmasın.
+            order.ReviewMailAt = now;
+            if (order.Email is not { Length: > 0 } email)
+            {
+                continue;
+            }
+
+            var links = new List<(string ProductName, string Url)>();
+            foreach (var item in items.Where(i => i.OrderId == order.Id))
+            {
+                if (products.TryGetValue(item.Sku, out var product) && !links.Any(l => l.ProductName == product.Name))
+                {
+                    links.Add((product.Name, $"{_shop.BaseUrl}/urun/{product.Slug}?siparis={order.OrderNo}"));
+                }
+            }
+
+            // Ürünlerin hepsi yayından kalkmışsa davet gönderilecek bir sayfa kalmaz.
+            if (links.Count == 0)
+            {
+                continue;
+            }
+
+            var (subject, body) = NotificationTemplates.ReviewInvite(order, links);
+            await QueueAsync(OutboxType.ReviewInvite, email, subject, body, cancellationToken);
+            queued++;
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return queued;
     }
 
     private string ThankYouUrl(Order order) => $"{_shop.BaseUrl}/siparis/{order.OrderNo}/tesekkur?t={order.AccessToken}";

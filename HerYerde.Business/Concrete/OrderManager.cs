@@ -16,6 +16,7 @@ public class OrderManager : IOrderService
     private readonly IOrderDal _orderDal;
     private readonly IOrderItemDal _orderItemDal;
     private readonly ICartItemDal _cartItemDal;
+    private readonly ICartDal _cartDal;
     private readonly IProductDal _productDal;
     private readonly IProductVariantDal _variantDal;
     private readonly IUnitOfWork _unitOfWork;
@@ -24,6 +25,7 @@ public class OrderManager : IOrderService
     private readonly IPaymentNoticeDal _noticeDal;
     private readonly IReturnRequestDal _returnDal;
     private readonly IOrderNoteDal _noteDal;
+    private readonly ICouponService _coupons;
     private readonly ShopSettings _shop;
     private readonly ShippingSettings _shipping;
     private readonly TimeProvider _clock;
@@ -32,6 +34,7 @@ public class OrderManager : IOrderService
         IOrderDal orderDal,
         IOrderItemDal orderItemDal,
         ICartItemDal cartItemDal,
+        ICartDal cartDal,
         IProductDal productDal,
         IProductVariantDal variantDal,
         IUnitOfWork unitOfWork,
@@ -40,6 +43,7 @@ public class OrderManager : IOrderService
         IPaymentNoticeDal noticeDal,
         IReturnRequestDal returnDal,
         IOrderNoteDal noteDal,
+        ICouponService coupons,
         IOptions<ShopSettings> shop,
         IOptions<ShippingSettings> shipping,
         TimeProvider clock)
@@ -47,6 +51,7 @@ public class OrderManager : IOrderService
         _orderDal = orderDal;
         _orderItemDal = orderItemDal;
         _cartItemDal = cartItemDal;
+        _cartDal = cartDal;
         _productDal = productDal;
         _variantDal = variantDal;
         _unitOfWork = unitOfWork;
@@ -55,6 +60,7 @@ public class OrderManager : IOrderService
         _noticeDal = noticeDal;
         _returnDal = returnDal;
         _noteDal = noteDal;
+        _coupons = coupons;
         _shop = shop.Value;
         _shipping = shipping.Value;
         _clock = clock;
@@ -88,6 +94,20 @@ public class OrderManager : IOrderService
         var gifts = GiftRules.Plan(items, await WithGiftProductsAsync(products, now, cancellationToken), now);
         var subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
         var shippingFee = ShippingRules.Fee(subtotal, _shop.ShippingFee, _shop.FreeShippingOver);
+
+        // Kupon sipariş anında yeniden doğrulanır: kişi başı limit ancak burada (telefon/e-posta belliyken) bilinir.
+        var cart = await _cartDal.GetAsync(c => c.Id == cartId, cancellationToken);
+        var coupon = await _coupons.EvaluateAsync(cart?.CouponCode, subtotal, phone, draft.Email?.Trim(), cancellationToken);
+        if (cart?.CouponCode is { Length: > 0 } && !coupon.Valid)
+        {
+            return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>(coupon.Problem ?? "Kupon kodu geçersiz."));
+        }
+
+        if (coupon.FreeShipping)
+        {
+            shippingFee = 0m;
+        }
+
         var order = new Order
         {
             OrderNo = await NextOrderNoAsync(now, cancellationToken),
@@ -96,7 +116,9 @@ public class OrderManager : IOrderService
             PaymentMethod = draft.PaymentMethod,
             Subtotal = subtotal,
             ShippingFee = shippingFee,
-            Total = subtotal + shippingFee,
+            CouponCode = coupon.Code,
+            Discount = coupon.Discount,
+            Total = subtotal + shippingFee - coupon.Discount,
             FullName = draft.FullName.Trim(),
             Phone = phone,
             Email = string.IsNullOrWhiteSpace(draft.Email) ? null : draft.Email.Trim(),

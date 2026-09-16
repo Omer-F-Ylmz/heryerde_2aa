@@ -75,6 +75,9 @@ public static class TestData
         INotificationSender? sender = null,
         TimeProvider? clock = null) => new(
         new EfOutboxMessageDal(context),
+        new EfOrderDal(context),
+        new EfOrderItemDal(context),
+        new EfProductDal(context),
         sender ?? new FakeNotificationSender(),
         new EfUnitOfWork(context),
         Options.Create(NewNotificationSettings()),
@@ -88,6 +91,13 @@ public static class TestData
         new EfUnitOfWork(context),
         TestClock.Fixed);
 
+    public static CouponManager NewCouponManager(HerYerdeContext context, TimeProvider? clock = null) => new(
+        new EfCouponDal(context),
+        new EfCartDal(context),
+        new EfOrderDal(context),
+        new EfUnitOfWork(context),
+        clock ?? TestClock.Fixed);
+
     public static CartManager NewCartManager(
         HerYerdeContext context,
         TimeProvider? clock = null,
@@ -98,6 +108,7 @@ public static class TestData
         new EfProductVariantDal(context),
         new EfProductImageDal(context),
         new EfUnitOfWork(context),
+        NewCouponManager(context, clock),
         Options.Create(NewShopSettings(freeShippingOver)),
         clock ?? TestClock.Fixed);
 
@@ -122,6 +133,7 @@ public static class TestData
         new EfOrderDal(context),
         new EfOrderItemDal(context),
         new EfCartItemDal(context),
+        new EfCartDal(context),
         new EfProductDal(context),
         new EfProductVariantDal(context),
         new EfUnitOfWork(context),
@@ -130,6 +142,7 @@ public static class TestData
         new EfPaymentNoticeDal(context),
         new EfReturnRequestDal(context),
         new EfOrderNoteDal(context),
+        NewCouponManager(context, clock),
         Options.Create(NewShopSettings(freeShippingOver)),
         Options.Create(NewShippingSettings()),
         clock ?? TestClock.Fixed);

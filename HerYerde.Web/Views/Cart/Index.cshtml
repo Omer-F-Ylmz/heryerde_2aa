@@ -8,7 +8,12 @@
         cart.ShippingFee,
         cart.Total,
         cart.FreeShipping ? null : "Kargo ücreti alıcıya aittir.",
-        cart.FreeShippingOver);
+        cart.FreeShippingOver,
+        cart.CouponCode,
+        cart.Discount);
+    // Kupon sonucu (uygulandı / neden geçmedi) bir kez gösterilir; sepette kupon kendiliğinden düştüyse sebebi yazar.
+    var couponMessage = TempData[HerYerde.Web.Controllers.CartController.CouponKey] as string ?? cart.CouponProblem;
+    var couponBox = new CouponBoxViewModel(cart.CouponCode, "/sepet", couponMessage);
 }
 
 <div class="container section">
@@ -37,6 +42,7 @@
             </ul>
             <aside class="cart__aside" aria-label="Sepet özeti">
                 <partial name="Components/_OrderSummary" model="summary" />
+                <partial name="Components/_CouponBox" model="couponBox" />
                 <div class="summary__actions">
                     <a class="btn btn--cta btn--lg" href="/odeme">Ödemeye geç</a>
                     <a class="btn btn--outline" href="/ev">Alışverişe devam et</a>

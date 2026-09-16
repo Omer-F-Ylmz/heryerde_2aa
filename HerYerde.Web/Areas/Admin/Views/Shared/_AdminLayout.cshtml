@@ -87,6 +87,18 @@
                         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
                         <span>Kategoriler</span>
                     </a>
+                    <a class="admin-nav__link @(section == "Coupons" ? "is-current" : null)"
+                       href="/admin/kuponlar"
+                       aria-current="@(section == "Coupons" ? "page" : null)">
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M9 9v6"/></svg>
+                        <span>Kuponlar</span>
+                    </a>
+                    <a class="admin-nav__link @(section == "Announcements" ? "is-current" : null)"
+                       href="/admin/duyurular"
+                       aria-current="@(section == "Announcements" ? "page" : null)">
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3Z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+                        <span>Duyurular</span>
+                    </a>
                     <a class="admin-nav__link @(section == "Messages" ? "is-current" : null)"
                        href="/admin/mesajlar"
                        aria-current="@(section == "Messages" ? "page" : null)">

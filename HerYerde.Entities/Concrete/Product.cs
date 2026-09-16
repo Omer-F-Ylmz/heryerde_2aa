@@ -40,6 +40,12 @@ public class Product : IEntity
 
     public bool IsActive { get; set; }
 
+    /// <summary>Ana sayfadaki "Öne çıkanlar" rafında; işaretli ürün yoksa raf yeni gelenlere düşer.</summary>
+    public bool IsFeatured { get; set; }
+
+    /// <summary>Öne çıkanlar rafındaki sıra; küçük olan önce, eşitlikte en yeni önce.</summary>
+    public int FeaturedOrder { get; set; }
+
     /// <summary>Soft delete: dolu olan kayıtlar sorgulardan global filtreyle düşer.</summary>
     public DateTime? DeletedAt { get; set; }
 

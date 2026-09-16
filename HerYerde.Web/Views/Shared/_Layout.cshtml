@@ -1,10 +1,12 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
 @inject HerYerde.Business.Abstract.ICartService CartService
 @inject Microsoft.Extensions.Options.IOptions<HerYerde.Business.ShopSettings> Shop
+@inject HerYerde.Business.Abstract.IAnnouncementService Announcements
 @using HerYerde.Web.Models
 @{
-    // Hata sayfası veritabanı düşmüşken de çizilebilsin diye sepet rozetini sormaz.
+    // Hata sayfası veritabanı düşmüşken de çizilebilsin diye sepet rozetini ve duyuruyu sormaz.
     var cartCount = ViewData["SkipCart"] is true ? 0 : await HerYerde.Web.Infrastructure.CartBadge.CountAsync(Context, CartService);
+    var announcement = ViewData["SkipCart"] is true ? null : await Announcements.CurrentAsync(Context.RequestAborted);
     var title = ViewData["Title"] as string;
     var description = ViewData["Description"] as string ?? "HerYerde — çeyizden mutfağa ev ürünleri; kapıda ödeme, WhatsApp'tan sipariş.";
     var canonical = ViewData["Canonical"] is string path ? Seo.Absolute(Shop.Value.BaseUrl, path) : null;
@@ -62,6 +64,24 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="surface-base">
+    @if (announcement is not null)
+    {
+        @* Çerezsiz kapatma: site.js şeridi yalnız oturum boyunca (sessionStorage) gizler. *@
+        <aside class="announcement announcement--@(announcement.Color == HerYerde.Entities.Enums.AnnouncementColor.Yesil ? "yesil" : "kiremit")"
+               data-announcement="@announcement.Id" aria-label="Duyuru">
+            @if (announcement.Url is { Length: > 0 } announcementUrl)
+            {
+                <a class="announcement__text" href="@announcementUrl">@announcement.Text</a>
+            }
+            else
+            {
+                <span class="announcement__text">@announcement.Text</span>
+            }
+            <button class="announcement__close" type="button" data-announcement-close hidden aria-label="Duyuruyu kapat">
+                <svg class="icon icon--sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </aside>
+    }
     <header class="store-header">
         <a class="wordmark" href="/" aria-label="HerYerde ana sayfa">HerYerde</a>
         <nav class="store-nav" aria-label="Alanlar">

@@ -17,6 +17,7 @@ public sealed record SalesReport(
     int PaidOrderCount,
     decimal AverageBasket,
     decimal CancelRate,
+    decimal Discount,
     IReadOnlyList<ReportPeriodRow> Periods,
     IReadOnlyList<TopProductRow> TopProducts,
     IReadOnlyList<SourceRow> Sources,

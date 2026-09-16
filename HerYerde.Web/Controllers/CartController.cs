@@ -1,3 +1,4 @@
+using System.Net;
 using HerYerde.Business.Abstract;
 using HerYerde.Business.Dtos;
 using HerYerde.Web.Infrastructure;
@@ -7,9 +8,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace HerYerde.Web.Controllers;
 
 /// <summary>Anonim sepet: kimlik "heryerde.cart" çerezinde, satır işlemleri POST + yönlendirme.</summary>
-public class CartController(ICartService cartService) : Controller
+public class CartController(ICartService cartService, ICouponService coupons) : Controller
 {
     public const string ErrorKey = "SepetHatasi";
+
+    /// <summary>Kupon işleminin sonucu; sepet ve ödeme sayfasında bir kez gösterilir.</summary>
+    public const string CouponKey = "SepetKupon";
 
     [HttpGet("sepet")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
@@ -62,6 +66,43 @@ public class CartController(ICartService cartService) : Controller
     [ValidateAntiForgeryToken]
     public Task<IActionResult> Remove(int itemId, CancellationToken cancellationToken)
         => SetQuantity(itemId, 0, cancellationToken);
+
+    /// <summary>Kupon kodunu sepete uygular. Geçersiz kodda durum kodu korunur ve sebep sayfada yazar.
+    /// donus ile ödeme adımından da çağrılabilir.</summary>
+    [HttpPost("sepet/kupon")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApplyCoupon(string? code, string? donus, CancellationToken cancellationToken)
+    {
+        if (CartCookie.Read(HttpContext) is not { } cartId)
+        {
+            return Redirect("/sepet");
+        }
+
+        var (_, view) = await cartService.GetAsync(cartId, cancellationToken);
+        var (status, result) = await coupons.ApplyAsync(cartId, code, view.Data!.Subtotal, cancellationToken);
+        TempData[CouponKey] = result.Message;
+        if (status == HttpStatusCode.OK)
+        {
+            return Redirect(LocalOr(donus, "/sepet"));
+        }
+
+        var (_, refreshed) = await cartService.GetAsync(cartId, cancellationToken);
+        Response.StatusCode = (int)status;
+        return View("Index", new CartPageViewModel(refreshed.Data!, null));
+    }
+
+    [HttpPost("sepet/kupon/sil")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveCoupon(string? donus, CancellationToken cancellationToken)
+    {
+        if (CartCookie.Read(HttpContext) is { } cartId)
+        {
+            var (_, result) = await coupons.RemoveAsync(cartId, cancellationToken);
+            TempData[CouponKey] = result.Message;
+        }
+
+        return Redirect(LocalOr(donus, "/sepet"));
+    }
 
     /// <summary>Geçersiz sepet isteği sessizce yuvarlanmaz: durum kodu korunur, sepet sayfası mesajla çizilir.</summary>
     private async Task<IActionResult> RejectedAsync(

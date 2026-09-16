@@ -103,6 +103,25 @@ public static class NotificationTemplates
         return ($"{kind} talebiniz reddedildi · {order.OrderNo}", Page(body.ToString()));
     }
 
+    /// <summary>İşlemsel davet: satın alınan ürünleri değerlendirme bağlantısı. Kampanya içermez (İYS gerektirmez);
+    /// bağlantı sipariş numarasını taşır, yorum doğrulanmış alıcı rozetiyle yayınlanır.</summary>
+    public static (string Subject, string Body) ReviewInvite(
+        Order order,
+        IReadOnlyList<(string ProductName, string Url)> products)
+    {
+        var body = new StringBuilder();
+        body.Append(Heading("Ürününüz nasıl?", $"{Encode(order.OrderNo)} numaralı siparişiniz elinize geçeli bir hafta oldu."));
+        body.Append(Paragraph("Aldığınız ürünü değerlendirirseniz sizden sonra bakanlara çok yardımı olur. Yorumunuz "
+            + "sipariş numaranızla eşleştiği için \"doğrulanmış alıcı\" rozetiyle yayınlanır."));
+
+        foreach (var (name, url) in products)
+        {
+            body.Append(Row(Encode(name), $"<a href=\"{Encode(url)}\" style=\"color:{Brand}\">Değerlendir</a>"));
+        }
+
+        return ($"Ürününüz nasıl? · {order.OrderNo}", Page(body.ToString()));
+    }
+
     /// <summary>Faturanın indirme bağlantısı siparişin erişim anahtarını taşır; başka siparişin anahtarıyla açılmaz.</summary>
     public static (string Subject, string Body) InvoiceReady(Order order, string invoiceUrl)
     {

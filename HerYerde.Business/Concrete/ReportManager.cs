@@ -50,6 +50,8 @@ public class ReportManager : IReportService
             paid.Count,
             paid.Count == 0 ? 0m : Math.Round(revenue / paid.Count, 2),
             orders.Count == 0 ? 0m : Math.Round((decimal)(orders.Count - open.Count) / orders.Count, 4),
+            // İndirim iptal edilmemiş siparişlerden; kargo bedava kuponu tutar taşımaz, kargo satırında sıfırdır.
+            open.Sum(o => o.Discount),
             orders
                 .GroupBy(o => PeriodStart(DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(o.CreatedAt, DateTimeKind.Utc), zone)), period))
                 .OrderBy(g => g.Key)

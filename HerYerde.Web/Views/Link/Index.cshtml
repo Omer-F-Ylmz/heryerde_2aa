@@ -1,0 +1,86 @@
+@using HerYerde.Web.Models
+@model LinkPageVm
+@{
+    ViewData["Title"] = "Bağlantılar";
+    ViewData["Description"] = "HerYerde — günün kampanyası, öne çıkan ürünler, WhatsApp'tan sipariş ve sipariş sorgulama.";
+    // Aynı içerik ana sayfada zaten var; arama sonucunda iki sayfa yarışmasın.
+    ViewData["Robots"] = "noindex, follow";
+}
+
+<div class="linkpage">
+    <header class="linkpage__head">
+        <p class="eyebrow">HerYerde</p>
+        <h1 class="display-2 h-mark">Çeyizden mutfağa, evin her yeri</h1>
+        <p class="lead">Beğendiğinizi WhatsApp'tan söyleyin, kapıda ödeyin.</p>
+    </header>
+
+    @* Duyuru şeridi düzenin üstünde zaten çizilir; burada tekrar edilmez. *@
+    @if (Model.Hero is { } hero)
+    {
+        <a class="linkpage__hero surface-elevated" href="/urun/@hero.Slug">
+            <span class="linkpage__hero-media">
+                @if (Model.HeroImage is { } heroImage)
+                {
+                    <img src="@heroImage" alt="" width="160" height="160" />
+                }
+                else
+                {
+                    <span class="ph ph--pot"></span>
+                }
+            </span>
+            <span class="linkpage__hero-copy">
+                <span class="eyebrow">Günün kampanyası@(hero.CampaignLabel is null ? "" : " · " + hero.CampaignLabel)</span>
+                <span class="linkpage__hero-name">@hero.Name</span>
+                <partial name="Components/_PriceBlock" model="new PriceBlockVm(hero.Price, hero.CampaignPrice)" />
+            </span>
+        </a>
+    }
+
+    <a class="btn btn--cta btn--lg btn--block" href="@Model.WhatsAppUrl" rel="noopener">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+        WhatsApp'tan sipariş ver
+    </a>
+
+    @if (Model.Products.Count > 0)
+    {
+        <section class="linkpage__section" aria-labelledby="link-one-cikan">
+            <h2 id="link-one-cikan" class="heading-3">Öne çıkanlar</h2>
+            <ul class="linkpage__list">
+                @foreach (var product in Model.Products)
+                {
+                    <li>
+                        <a class="linkcard" href="@product.Url">
+                            <span class="linkcard__media">
+                                @if (product.ImageUrl is { } imageUrl)
+                                {
+                                    <img src="@imageUrl" alt="" width="72" height="72" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <span class="ph@(product.PlaceholderIcon is null ? "" : " ph--" + product.PlaceholderIcon)"></span>
+                                }
+                            </span>
+                            <span class="linkcard__copy">
+                                <span class="linkcard__name">@product.Name</span>
+                                <span class="linkcard__price">@product.Price</span>
+                            </span>
+                            @if (product.SoldOut)
+                            {
+                                <span class="tag">Tükendi</span>
+                            }
+                        </a>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    <nav class="linkpage__section" aria-label="Alanlar">
+        <h2 class="heading-3">Alanlar</h2>
+        <ul class="linkpage__list">
+            <li><a class="linkcard linkcard--plain" href="/ev"><span class="linkcard__name">Ev · mutfak, sofra, saklama</span></a></li>
+            <li><a class="linkcard linkcard--plain" href="/ortu"><span class="linkcard__name">Örtü &amp; Eşarp</span></a></li>
+            <li><a class="linkcard linkcard--plain" href="/siparis-sorgula"><span class="linkcard__name">Siparişimi sorgula</span></a></li>
+        </ul>
+    </nav>
+</div>

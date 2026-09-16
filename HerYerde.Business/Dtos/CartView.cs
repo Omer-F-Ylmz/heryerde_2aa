@@ -25,6 +25,14 @@ public sealed record CartLine(
 /// <summary>"1 alana 1 hediye" satırı: sepette gösterilmez, ödeme özetinde ve siparişte 0 ₺ görünür.</summary>
 public sealed record CartGift(string ProductName, int Quantity);
 
+/// <summary>Kupon değerlendirmesi. Problem doluysa kupon geçmez ve indirim 0'dır.</summary>
+public sealed record CouponView(string? Code, decimal Discount, bool FreeShipping, string? Problem = null)
+{
+    public static readonly CouponView None = new(null, 0m, false);
+
+    public bool Valid => Problem is null && Code is not null;
+}
+
 public sealed record CartView(
     Guid CartId,
     IReadOnlyList<CartLine> Lines,
@@ -32,9 +40,12 @@ public sealed record CartView(
     decimal ShippingFee,
     IReadOnlyList<CartGift>? Gifts = null,
     string? GiftNote = null,
-    decimal FreeShippingOver = 0m)
+    decimal FreeShippingOver = 0m,
+    string? CouponCode = null,
+    decimal Discount = 0m,
+    string? CouponProblem = null)
 {
-    public decimal Total => Subtotal + ShippingFee;
+    public decimal Total => Subtotal + ShippingFee - Discount;
     public int Count => Lines.Sum(l => l.Quantity);
     public bool IsEmpty => Lines.Count == 0;
     public IReadOnlyList<CartGift> GiftLines => Gifts ?? [];

@@ -1,0 +1,70 @@
+@using System.Globalization
+@using HerYerde.Entities.Concrete
+@model List<Announcement>
+@{
+    ViewData["Title"] = "Duyurular";
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+    var now = DateTime.UtcNow;
+}
+
+<div class="admin-head">
+    <h1 class="display-2 h-mark">Duyurular</h1>
+    <a class="btn btn--primary" href="/admin/duyurular/yeni">Yeni duyuru</a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <p class="admin-empty">Henüz duyuru yok. Şerit yalnız tarihi geçerli, yayındaki bir duyuru varken görünür.</p>
+}
+else
+{
+    <table class="admin-table">
+        <caption class="visually-hidden">Tanımlı duyurular</caption>
+        <thead>
+            <tr>
+                <th scope="col">Metin</th>
+                <th scope="col">Tarih</th>
+                <th scope="col">Renk</th>
+                <th scope="col">Durum</th>
+                <th scope="col"><span class="visually-hidden">İşlem</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var announcement in Model)
+            {
+                var live = announcement.IsActive && announcement.StartsAt <= now && announcement.EndsAt > now;
+                <tr>
+                    <th scope="row">
+                        <a href="/admin/duyurular/@announcement.Id">@announcement.Text</a>
+                        @if (announcement.Url is { Length: > 0 } url)
+                        {
+                            <span class="admin-table__sub">@url</span>
+                        }
+                    </th>
+                    <td>@announcement.StartsAt.ToString("d MMM yyyy", turkish) – @announcement.EndsAt.AddDays(-1).ToString("d MMM yyyy", turkish)</td>
+                    <td>@(announcement.Color == HerYerde.Entities.Enums.AnnouncementColor.Yesil ? "Yeşil" : "Kiremit")</td>
+                    <td>
+                        @if (live)
+                        {
+                            <span class="tag tag--live">Şeritte</span>
+                        }
+                        else if (announcement.IsActive)
+                        {
+                            <span class="tag">Tarih dışı</span>
+                        }
+                        else
+                        {
+                            <span class="tag">Kapalı</span>
+                        }
+                    </td>
+                    <td>
+                        <form method="post" action="/admin/duyurular/@announcement.Id/sil">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn--ghost btn--sm" type="submit">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

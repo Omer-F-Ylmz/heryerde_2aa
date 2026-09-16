@@ -25,6 +25,8 @@ public static class TestDb
         await context.ContactMessages.ExecuteDeleteAsync();
         await context.ProductReviews.ExecuteDeleteAsync();
         await context.KvkkRequests.ExecuteDeleteAsync();
+        await context.Announcements.ExecuteDeleteAsync();
+        await context.Coupons.ExecuteDeleteAsync();
         await context.OrderNotes.ExecuteDeleteAsync();
         await context.ReturnRequestItems.ExecuteDeleteAsync();
         await context.ReturnRequests.ExecuteDeleteAsync();

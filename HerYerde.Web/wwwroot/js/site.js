@@ -108,6 +108,31 @@ document.querySelectorAll(".tabs--scroll [aria-current=page]").forEach(function 
   sync();
 })();
 
+// Duyuru şeridi: çerezsiz kapatma. Kapatma yalnız bu oturum boyunca (sessionStorage) hatırlanır;
+// depolama kapalıysa şerit her sayfada görünür, sayfa yine çalışır.
+(function () {
+  var strip = document.querySelector("[data-announcement]");
+  if (!strip) { return; }
+
+  var key = "heryerde.duyuru." + strip.getAttribute("data-announcement");
+  var store = null;
+  try { store = window.sessionStorage; } catch (error) { store = null; }
+
+  if (store && store.getItem(key) === "1") {
+    strip.remove();
+    return;
+  }
+
+  var close = strip.querySelector("[data-announcement-close]");
+  if (!close) { return; }
+
+  close.hidden = false;
+  close.addEventListener("click", function () {
+    strip.remove();
+    try { if (store) { store.setItem(key, "1"); } } catch (error) { /* depolama yoksa bir sonraki sayfada yine görünür */ }
+  });
+})();
+
 // İl/ilçe: JS varsa "İlçeleri getir" düğmesi gizlenir, il değişince sayfa kendiliğinden tazelenir.
 (function () {
   var province = document.querySelector("[data-address] [data-province]");

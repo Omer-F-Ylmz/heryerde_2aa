@@ -32,6 +32,9 @@ public interface IProductService
 
     Task<(HttpStatusCode, IDataResult<List<ProductVariant>>)> GetVariantsAsync(int productId, CancellationToken cancellationToken = default);
 
+    /// <summary>Birden çok ürünün varyantları tek sorguda (ürün akışı).</summary>
+    Task<(HttpStatusCode, IDataResult<List<ProductVariant>>)> GetVariantsForAsync(IReadOnlyCollection<int> productIds, CancellationToken cancellationToken = default);
+
     /// <summary>Yönetim listesi: ürün kimliği başına varyant stok toplamı, tek sorguda.</summary>
     Task<(HttpStatusCode, IDataResult<Dictionary<int, int>>)> GetStockTotalsAsync(CancellationToken cancellationToken = default);
 

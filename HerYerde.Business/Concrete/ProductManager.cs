@@ -165,6 +165,8 @@ public class ProductManager : IProductService
         stored.GiftQty = Math.Max(product.GiftQty, 1);
         stored.Stock = product.Stock;
         stored.IsActive = product.IsActive;
+        stored.IsFeatured = product.IsFeatured;
+        stored.FeaturedOrder = product.FeaturedOrder;
         stored.VariantAxis1Label = NullIfBlank(product.VariantAxis1Label)?.Trim();
         stored.VariantAxis2Label = NullIfBlank(product.VariantAxis2Label)?.Trim();
         stored.Slug = slug;
@@ -192,6 +194,12 @@ public class ProductManager : IProductService
     public async Task<(HttpStatusCode, IDataResult<List<ProductVariant>>)> GetVariantsAsync(int productId, CancellationToken cancellationToken = default)
     {
         var variants = await _variantDal.GetListAsync(v => v.ProductId == productId, cancellationToken);
+        return (HttpStatusCode.OK, new SuccessDataResult<List<ProductVariant>>(variants));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<List<ProductVariant>>)> GetVariantsForAsync(IReadOnlyCollection<int> productIds, CancellationToken cancellationToken = default)
+    {
+        var variants = await _variantDal.GetListAsync(v => productIds.Contains(v.ProductId), cancellationToken);
         return (HttpStatusCode.OK, new SuccessDataResult<List<ProductVariant>>(variants));
     }
 

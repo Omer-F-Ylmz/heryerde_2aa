@@ -33,8 +33,14 @@ public class StoreController(
             new ProductQuery { Order = ProductOrder.Newest, Now = now, Take = 8 },
             cancellationToken);
 
+        // Öne çıkanlar rafı; işaretli yayındaki ürün yoksa yeni gelenlere düşer.
+        var (_, featured) = await productService.GetActiveAsync(
+            new ProductQuery { FeaturedOnly = true, Order = ProductOrder.Featured, Now = now, Take = 8 },
+            cancellationToken);
+        var shelf = featured.Data!.Items.Count > 0 ? featured.Data!.Items : arrivals.Data!.Items;
+
         var hero = heroItem.Data?.Product;
-        var ids = arrivals.Data!.Items.Select(i => i.Product.Id).ToList();
+        var ids = shelf.Select(i => i.Product.Id).ToList();
         if (hero is not null)
         {
             ids.Add(hero.Id);
@@ -58,7 +64,8 @@ public class StoreController(
             heroImage,
             hero is null ? null : StoreCatalog.PlaceholderIcon(heroItem.Data!.CategorySlug),
             hero is null ? null : StoreCatalog.WhatsAppUrl(WhatsAppBase, hero.Name),
-            Cards(arrivals.Data!.Items, images.Data!, now),
+            Cards(shelf, images.Data!, now),
+            featured.Data!.Items.Count > 0,
             testimonials,
             RootImage("ev"),
             RootImage("giyim")));
@@ -230,8 +237,10 @@ public class StoreController(
                 ("max", StoreCatalog.Amount(high))))));
     }
 
+    /// <summary>siparis: değerlendirme davetinden gelen sipariş numarası; yorum formuna yazılır, doğrulanmış
+    /// alıcı rozetini ReviewManager sipariş gerçekten bu ürünü içeriyorsa verir.</summary>
     [HttpGet("urun/{slug}")]
-    public async Task<IActionResult> Product(string slug, CancellationToken cancellationToken)
+    public async Task<IActionResult> Product(string slug, [FromQuery(Name = "siparis")] string? siparis, CancellationToken cancellationToken)
     {
         var (status, found) = await productService.GetActiveBySlugAsync(slug, cancellationToken);
         if (status != System.Net.HttpStatusCode.OK)
@@ -241,7 +250,11 @@ public class StoreController(
             return moved == System.Net.HttpStatusCode.OK ? RedirectPermanent("/urun/" + current.Data) : NotFound();
         }
 
-        return await ProductViewAsync(found.Data!, new ReviewFormViewModel(), TempData[ReviewNoticeKey] as string, cancellationToken);
+        var form = new ReviewFormViewModel
+        {
+            OrderNo = siparis is { Length: > 0 and <= 20 } ? siparis : null
+        };
+        return await ProductViewAsync(found.Data!, form, TempData[ReviewNoticeKey] as string, cancellationToken);
     }
 
     /// <summary>Yorum onaysız kaydedilir; başarıda 303 ile ürün sayfasına bildirimle dönülür, hatalı formda sayfa 400 ile

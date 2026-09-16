@@ -19,6 +19,7 @@ public class CartManager : ICartService
     private readonly IProductVariantDal _variantDal;
     private readonly IProductImageDal _imageDal;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICouponService _coupons;
     private readonly ShopSettings _shop;
     private readonly TimeProvider _clock;
 
@@ -29,6 +30,7 @@ public class CartManager : ICartService
         IProductVariantDal variantDal,
         IProductImageDal imageDal,
         IUnitOfWork unitOfWork,
+        ICouponService coupons,
         IOptions<ShopSettings> shop,
         TimeProvider clock)
     {
@@ -38,6 +40,7 @@ public class CartManager : ICartService
         _variantDal = variantDal;
         _imageDal = imageDal;
         _unitOfWork = unitOfWork;
+        _coupons = coupons;
         _shop = shop.Value;
         _clock = clock;
     }
@@ -128,14 +131,22 @@ public class CartManager : ICartService
         var subtotal = lines.Sum(l => l.LineTotal);
         var shipping = lines.Count == 0 ? 0m : ShippingRules.Fee(subtotal, _shop.ShippingFee, _shop.FreeShippingOver);
         var gifts = GiftRules.Plan(items, products, _clock.GetUtcNow().UtcDateTime);
+
+        // Kupon her görüntülemede yeniden değerlendirilir: arada süresi dolduysa ya da tutar düştüyse düşer.
+        var stored = await _cartDal.GetAsync(c => c.Id == cartId, cancellationToken);
+        var coupon = await _coupons.EvaluateAsync(stored?.CouponCode, subtotal, cancellationToken: cancellationToken);
+
         return (HttpStatusCode.OK, new SuccessDataResult<CartView>(new CartView(
             cartId,
             lines,
             subtotal,
-            shipping,
+            coupon.FreeShipping ? 0m : shipping,
             gifts.Where(g => g.Available).Select(g => new CartGift(g.ProductName, g.Quantity)).ToList(),
             GiftRules.Note(gifts) is { Length: > 0 } note ? note : null,
-            _shop.FreeShippingOver)));
+            _shop.FreeShippingOver,
+            coupon.Code,
+            coupon.Discount,
+            stored?.CouponCode is { Length: > 0 } ? coupon.Problem : null)));
     }
 
     public async Task<(HttpStatusCode, IResult)> AddAsync(Guid cartId, int productId, int? variantId, int quantity, CancellationToken cancellationToken = default)

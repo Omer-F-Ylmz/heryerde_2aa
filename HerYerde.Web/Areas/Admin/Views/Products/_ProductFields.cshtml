@@ -138,6 +138,16 @@
     <input asp-for="IsActive" type="checkbox" />
     <span>Yayında</span>
 </label>
+<label class="switch">
+    <input asp-for="IsFeatured" type="checkbox" />
+    <span>Ana sayfada öne çıkar</span>
+</label>
+<div class="field">
+    <label class="field__label" asp-for="FeaturedOrder"></label>
+    <input class="field__input" asp-for="FeaturedOrder" type="number" min="0" max="999" step="1" />
+    <span class="field__hint">Küçük sıra önce çıkar; işaretli ürün yoksa ana sayfa "Yeni gelenler"e döner.</span>
+    <span class="field__error" asp-validation-for="FeaturedOrder"></span>
+</div>
 @if (Model.RequiresVariants)
 {
     <p class="field__hint">Giyim alanı: yayına almak için en az bir beden/renk varyantı gerekir.</p>

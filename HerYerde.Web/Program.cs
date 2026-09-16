@@ -159,6 +159,7 @@ builder.Services.AddHostedService<PersonalDataCleanupHostedService>();
 builder.Services.AddSingleton<ILegalPdfArchive, LegalPdfArchive>();
 builder.Services.AddSingleton<INotificationSender, SmtpNotificationSender>();
 builder.Services.AddHostedService<OutboxHostedService>();
+builder.Services.AddHostedService<ReviewInviteHostedService>();
 builder.Services.AddHttpClient<IPaymentProvider, IyzicoPaymentProvider>(client => client.Timeout = TimeSpan.FromSeconds(30));
 
 builder.Services

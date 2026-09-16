@@ -6,6 +6,8 @@
     var cart = Model.Cart;
     var havale = Model.Form.PaymentMethod == PaymentMethod.HavaleEft;
     var kart = Model.CardEnabled && Model.Form.PaymentMethod == PaymentMethod.KrediKarti;
+    var couponMessage = TempData[HerYerde.Web.Controllers.CartController.CouponKey] as string ?? cart.CouponProblem;
+    var couponBox = new CouponBoxViewModel(cart.CouponCode, "/odeme", couponMessage);
 }
 
 <div class="container section">
@@ -160,6 +162,13 @@
                     <span>Kargo</span>
                     <span class="summary__value">@(cart.FreeShipping ? "Kargo bedava" : Money.Tl(cart.ShippingFee))</span>
                 </p>
+                @if (cart.Discount > 0m)
+                {
+                    <p class="summary__row summary__row--discount">
+                        <span>İndirim<span class="tag tag--gift">@cart.CouponCode</span></span>
+                        <span class="summary__value">−@Money.Tl(cart.Discount)</span>
+                    </p>
+                }
                 <partial name="Components/_FreeShipping" model="new OrderSummaryViewModel(cart.Subtotal, cart.ShippingFee, cart.Total, null, cart.FreeShippingOver)" />
                 <p class="summary__row summary__row--total">
                     <span>Toplam</span>
@@ -170,6 +179,7 @@
                     <p class="summary__note">Kargo ücreti alıcıya aittir.</p>
                 }
             </div>
+            <partial name="Components/_CouponBox" model="couponBox" />
         </aside>
     </div>
 </div>

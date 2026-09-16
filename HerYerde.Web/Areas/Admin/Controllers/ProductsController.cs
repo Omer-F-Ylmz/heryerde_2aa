@@ -275,7 +275,9 @@ public class ProductsController : Controller
         Stock = model.Stock,
         VariantAxis1Label = model.VariantAxis1Label,
         VariantAxis2Label = model.VariantAxis2Label,
-        IsActive = model.IsActive
+        IsActive = model.IsActive,
+        IsFeatured = model.IsFeatured,
+        FeaturedOrder = model.FeaturedOrder
     };
 
     private async Task<IActionResult> FormWithErrorAsync(
@@ -321,6 +323,8 @@ public class ProductsController : Controller
             VariantAxis1Label = product.VariantAxis1Label,
             VariantAxis2Label = product.VariantAxis2Label,
             IsActive = product.IsActive,
+            IsFeatured = product.IsFeatured,
+            FeaturedOrder = product.FeaturedOrder,
             Slug = product.Slug,
             ErrorMessage = errorMessage
         };

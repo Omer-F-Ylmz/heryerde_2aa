@@ -1,0 +1,84 @@
+@using System.Globalization
+@using HerYerde.DataAccess.Abstract
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Models
+@model List<CouponRow>
+@{
+    ViewData["Title"] = "Kuponlar";
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+    var now = DateTime.UtcNow;
+
+    string Benefit(HerYerde.Entities.Concrete.Coupon coupon) => coupon.Kind switch
+    {
+        CouponKind.Yuzde => "%" + coupon.Value.ToString("0.##", turkish),
+        CouponKind.Tutar => Money.Tl(coupon.Value),
+        _ => "Kargo bedava"
+    };
+}
+
+<div class="admin-head">
+    <h1 class="display-2 h-mark">Kuponlar</h1>
+    <a class="btn btn--primary" href="/admin/kuponlar/yeni">Yeni kupon</a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <p class="admin-empty">Henüz kupon yok. Kod sepette ve ödeme adımında girilir.</p>
+}
+else
+{
+    <table class="admin-table">
+        <caption class="visually-hidden">Tanımlı kuponlar ve kullanım sayıları</caption>
+        <thead>
+            <tr>
+                <th scope="col">Kod</th>
+                <th scope="col">İndirim</th>
+                <th scope="col">Alt sınır</th>
+                <th scope="col">Tarih</th>
+                <th scope="col">Kullanım</th>
+                <th scope="col">Durum</th>
+                <th scope="col"><span class="visually-hidden">İşlem</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var (coupon, used) in Model)
+            {
+                var live = coupon.IsActive && coupon.StartsAt <= now && coupon.EndsAt > now;
+                <tr>
+                    <th scope="row"><a href="/admin/kuponlar/@coupon.Id">@coupon.Code</a></th>
+                    <td>@Benefit(coupon)</td>
+                    <td>@(coupon.MinSubtotal > 0m ? Money.Tl(coupon.MinSubtotal) : "—")</td>
+                    <td>@coupon.StartsAt.ToString("d MMM yyyy", turkish) – @coupon.EndsAt.AddDays(-1).ToString("d MMM yyyy", turkish)</td>
+                    <td>
+                        @used@(coupon.TotalLimit is { } limit ? " / " + limit : "")
+                        @if (coupon.PerPersonLimit is { } perPerson)
+                        {
+                            <span class="admin-table__sub">kişi başı @perPerson</span>
+                        }
+                    </td>
+                    <td>
+                        @if (live)
+                        {
+                            <span class="tag tag--live">Geçerli</span>
+                        }
+                        else if (coupon.IsActive)
+                        {
+                            <span class="tag">Tarih dışı</span>
+                        }
+                        else
+                        {
+                            <span class="tag">Kapalı</span>
+                        }
+                    </td>
+                    <td>
+                        <form method="post" action="/admin/kuponlar/@coupon.Id/sil">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn--ghost btn--sm" type="submit">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="field__hint">Kullanım sayısı iptal edilmemiş siparişlerden gelir. Kupon silinse de geçmiş siparişlerdeki kod kaydı durur.</p>
+}

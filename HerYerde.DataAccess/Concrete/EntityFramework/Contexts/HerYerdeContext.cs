@@ -29,6 +29,8 @@ public class HerYerdeContext : DbContext
     public DbSet<ReturnRequestItem> ReturnRequestItems => Set<ReturnRequestItem>();
     public DbSet<KvkkRequest> KvkkRequests => Set<KvkkRequest>();
     public DbSet<OrderNote> OrderNotes => Set<OrderNote>();
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<Coupon> Coupons => Set<Coupon>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,6 +84,8 @@ public class HerYerdeContext : DbContext
             e.Property(p => p.GiftQty).HasColumnName("gift_qty").HasDefaultValue(1);
             e.Property(p => p.Stock).HasColumnName("stock");
             e.Property(p => p.IsActive).HasColumnName("is_active");
+            e.Property(p => p.IsFeatured).HasColumnName("is_featured");
+            e.Property(p => p.FeaturedOrder).HasColumnName("featured_order");
             e.Property(p => p.DeletedAt).HasColumnName("deleted_at");
             e.Property(p => p.CreatedAt).HasColumnName("created_at");
             e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
@@ -149,6 +153,7 @@ public class HerYerdeContext : DbContext
             e.HasKey(c => c.Id);
             e.Property(c => c.Id).HasColumnName("id").ValueGeneratedNever();
             e.Property(c => c.CreatedAt).HasColumnName("created_at");
+            e.Property(c => c.CouponCode).HasColumnName("coupon_code").HasMaxLength(20);
         });
 
         modelBuilder.Entity<CartItem>(e =>
@@ -179,6 +184,8 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.ShippingFee).HasColumnName("shipping_fee").HasPrecision(18, 2);
             // Eski siparişlerde kargo kuraldan gelmişti: geçiş 0 (false) yazar.
             e.Property(o => o.ShippingOverridden).HasColumnName("shipping_overridden");
+            e.Property(o => o.CouponCode).HasColumnName("coupon_code").HasMaxLength(20);
+            e.Property(o => o.Discount).HasColumnName("discount").HasPrecision(18, 2);
             e.Property(o => o.Total).HasColumnName("total").HasPrecision(18, 2);
             e.Property(o => o.FullName).HasColumnName("full_name").HasMaxLength(120).IsRequired();
             e.Property(o => o.Phone).HasColumnName("phone").HasMaxLength(11).IsRequired();
@@ -199,6 +206,9 @@ public class HerYerdeContext : DbContext
             e.Property(o => o.InvoiceDate).HasColumnName("invoice_date").HasColumnType("date");
             e.Property(o => o.InvoiceFile).HasColumnName("invoice_file").HasMaxLength(200);
             e.Property(o => o.DeliveredAt).HasColumnName("delivered_at");
+            e.Property(o => o.ReviewMailAt).HasColumnName("review_mail_at");
+            // Gecelik tarama: teslim edilmiş, daveti işlenmemiş siparişler.
+            e.HasIndex(o => new { o.ReviewMailAt, o.DeliveredAt }).HasDatabaseName("ix_order_review_mail_at_delivered_at");
             e.Property(o => o.RefundDue).HasColumnName("refund_due").HasPrecision(18, 2);
             e.Property(o => o.RefundIban).HasColumnName("refund_iban").HasMaxLength(34);
             e.Property(o => o.RefundedAt).HasColumnName("refunded_at");
@@ -318,6 +328,45 @@ public class HerYerdeContext : DbContext
             e.Property(n => n.CreatedAt).HasColumnName("created_at");
             e.HasIndex(n => n.OrderId).HasDatabaseName("ix_order_note_order_id");
             e.HasOne<Order>().WithMany().HasForeignKey(n => n.OrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Coupon>(e =>
+        {
+            e.ToTable("coupon", t =>
+            {
+                t.HasCheckConstraint("ck_coupon_dates", "[ends_at] > [starts_at]");
+                t.HasCheckConstraint("ck_coupon_value", "[value] >= 0 AND [min_subtotal] >= 0");
+                t.HasCheckConstraint("ck_coupon_limits", "([total_limit] IS NULL OR [total_limit] >= 1) AND ([per_person_limit] IS NULL OR [per_person_limit] >= 1)");
+            });
+            e.HasKey(c => c.Id);
+            e.Property(c => c.Id).HasColumnName("id");
+            e.Property(c => c.Code).HasColumnName("code").HasMaxLength(20).IsRequired();
+            e.Property(c => c.Kind).HasColumnName("kind").HasConversion<int>();
+            e.Property(c => c.Value).HasColumnName("value").HasPrecision(18, 2);
+            e.Property(c => c.MinSubtotal).HasColumnName("min_subtotal").HasPrecision(18, 2);
+            e.Property(c => c.StartsAt).HasColumnName("starts_at");
+            e.Property(c => c.EndsAt).HasColumnName("ends_at");
+            e.Property(c => c.TotalLimit).HasColumnName("total_limit");
+            e.Property(c => c.PerPersonLimit).HasColumnName("per_person_limit");
+            e.Property(c => c.IsActive).HasColumnName("is_active");
+            e.Property(c => c.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(c => c.Code).IsUnique().HasDatabaseName("ux_coupon_code");
+        });
+
+        modelBuilder.Entity<Announcement>(e =>
+        {
+            e.ToTable("announcement", t => t.HasCheckConstraint("ck_announcement_dates", "[ends_at] > [starts_at]"));
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).HasColumnName("id");
+            e.Property(a => a.Text).HasColumnName("text").HasMaxLength(200).IsRequired();
+            e.Property(a => a.Url).HasColumnName("url").HasMaxLength(200);
+            e.Property(a => a.StartsAt).HasColumnName("starts_at");
+            e.Property(a => a.EndsAt).HasColumnName("ends_at");
+            e.Property(a => a.Color).HasColumnName("color").HasConversion<int>();
+            e.Property(a => a.IsActive).HasColumnName("is_active");
+            e.Property(a => a.CreatedAt).HasColumnName("created_at");
+            // Her sayfa çiziminde geçerli duyuru sorulur: etkin + tarih aralığı.
+            e.HasIndex(a => new { a.IsActive, a.StartsAt, a.EndsAt }).HasDatabaseName("ix_announcement_is_active_starts_at_ends_at");
         });
 
         modelBuilder.Entity<OutboxMessage>(e =>

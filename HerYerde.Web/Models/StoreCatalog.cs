@@ -174,10 +174,36 @@ public sealed record HomeVm(
     string? HeroImage,
     string? HeroPlaceholderIcon,
     string? HeroWhatsApp,
-    IReadOnlyList<ProductCardVm> NewArrivals,
+    IReadOnlyList<ProductCardVm> Shelf,
+    bool ShelfIsFeatured,
     IReadOnlyList<TestimonialVm> Testimonials,
     string? EvImage = null,
-    string? OrtuImage = null);
+    string? OrtuImage = null)
+{
+    /// <summary>Raf başlığı: işaretli ürün varsa "Öne çıkanlar", yoksa "Yeni gelenler".</summary>
+    public string ShelfTitle => ShelfIsFeatured ? "Öne çıkanlar" : "Yeni gelenler";
+}
+
+/// <summary>/link sayfasındaki ürün kartı; tek sütunda ad, fiyat ve küçük görsel.</summary>
+public sealed record LinkProductVm(
+    string Name,
+    string Url,
+    string? ImageUrl,
+    string? PlaceholderIcon,
+    string Price,
+    bool SoldOut);
+
+/// <summary>Instagram profil bağlantısı sayfası: günün kampanyası, öne çıkanlar, alan kapıları, WhatsApp.</summary>
+public sealed record LinkPageVm(
+    Product? Hero,
+    string? HeroImage,
+    IReadOnlyList<LinkProductVm> Products,
+    string WhatsAppBase)
+{
+    public string WhatsAppUrl => StoreCatalog.WhatsAppUrl(
+        WhatsAppBase,
+        Hero?.Name ?? "ürünleriniz");
+}
 
 /// <summary>RootName kırıntı üst başlığı; EmptyLink boş rafta önerilen başka kök (Örtü'de Ev).</summary>
 public sealed record CategoryPageVm(

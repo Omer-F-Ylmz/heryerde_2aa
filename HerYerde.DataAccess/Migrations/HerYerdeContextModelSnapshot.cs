@@ -149,11 +149,67 @@ namespace HerYerde.DataAccess.Migrations
                     b.ToTable("admin_user", (string)null);
                 });
 
+            modelBuilder.Entity("HerYerde.Entities.Concrete.Announcement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Color")
+                        .HasColumnType("int")
+                        .HasColumnName("color");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("EndsAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("ends_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("starts_at");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("text");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("url");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive", "StartsAt", "EndsAt")
+                        .HasDatabaseName("ix_announcement_is_active_starts_at_ends_at");
+
+                    b.ToTable("announcement", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_announcement_dates", "[ends_at] > [starts_at]");
+                        });
+                });
+
             modelBuilder.Entity("HerYerde.Entities.Concrete.Cart", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("id");
+
+                    b.Property<string>("CouponCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("coupon_code");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
@@ -305,6 +361,75 @@ namespace HerYerde.DataAccess.Migrations
                     b.ToTable("contact_message", (string)null);
                 });
 
+            modelBuilder.Entity("HerYerde.Entities.Concrete.Coupon", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("EndsAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("ends_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int")
+                        .HasColumnName("kind");
+
+                    b.Property<decimal>("MinSubtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("min_subtotal");
+
+                    b.Property<int?>("PerPersonLimit")
+                        .HasColumnType("int")
+                        .HasColumnName("per_person_limit");
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("starts_at");
+
+                    b.Property<int?>("TotalLimit")
+                        .HasColumnType("int")
+                        .HasColumnName("total_limit");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_coupon_code");
+
+                    b.ToTable("coupon", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_coupon_dates", "[ends_at] > [starts_at]");
+
+                            t.HasCheckConstraint("ck_coupon_limits", "([total_limit] IS NULL OR [total_limit] >= 1) AND ([per_person_limit] IS NULL OR [per_person_limit] >= 1)");
+
+                            t.HasCheckConstraint("ck_coupon_value", "[value] >= 0 AND [min_subtotal] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("HerYerde.Entities.Concrete.KvkkRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -367,6 +492,11 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("consent_at");
 
+                    b.Property<string>("CouponCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("coupon_code");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
@@ -374,6 +504,11 @@ namespace HerYerde.DataAccess.Migrations
                     b.Property<DateTime?>("DeliveredAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("delivered_at");
+
+                    b.Property<decimal>("Discount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("discount");
 
                     b.Property<string>("District")
                         .IsRequired()
@@ -446,6 +581,10 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("refunded_at");
 
+                    b.Property<DateTime?>("ReviewMailAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("review_mail_at");
+
                     b.Property<DateTime?>("SeenAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("seen_at");
@@ -491,6 +630,9 @@ namespace HerYerde.DataAccess.Migrations
                     b.HasIndex("OrderNo")
                         .IsUnique()
                         .HasDatabaseName("ux_order_order_no");
+
+                    b.HasIndex("ReviewMailAt", "DeliveredAt")
+                        .HasDatabaseName("ix_order_review_mail_at_delivered_at");
 
                     b.HasIndex("Status", "CreatedAt")
                         .IsDescending(false, true)
@@ -808,6 +950,10 @@ namespace HerYerde.DataAccess.Migrations
                         .HasColumnType("nvarchar(60)")
                         .HasColumnName("dimensions");
 
+                    b.Property<int>("FeaturedOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("featured_order");
+
                     b.Property<int>("GiftMode")
                         .HasColumnType("int")
                         .HasColumnName("gift_mode");
@@ -825,6 +971,10 @@ namespace HerYerde.DataAccess.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
+
+                    b.Property<bool>("IsFeatured")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_featured");
 
                     b.Property<string>("Name")
                         .IsRequired()

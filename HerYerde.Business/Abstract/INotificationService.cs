@@ -29,6 +29,11 @@ public interface INotificationService
     /// <summary>Fatura yüklendi: müşteriye (e-postası varsa) token'lı indirme bağlantısı. Kaydetmez.</summary>
     Task QueueInvoiceReadyAsync(Order order, CancellationToken cancellationToken = default);
 
+    /// <summary>Teslimden bu yana yeterince geçmiş siparişlere değerlendirme daveti kuyruğa yazar ve hepsini
+    /// işlenmiş işaretler (e-postasızlar da: her gece yeniden taranmasınlar). Kuyruğa giren posta sayısını döner.
+    /// Kaydeder.</summary>
+    Task<int> QueueDueReviewInvitesAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Yönetici parola sıfırlama bağlantısı; anahtar yalnız postada açık, veritabanında özeti durur. Kaydetmez.</summary>
     Task QueueAdminPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default);
 

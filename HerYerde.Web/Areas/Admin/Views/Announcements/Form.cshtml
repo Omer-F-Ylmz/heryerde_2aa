@@ -1,0 +1,65 @@
+@using HerYerde.Entities.Enums
+@using HerYerde.Web.Areas.Admin.Models
+@model AnnouncementFormViewModel
+@{
+    var isNew = Model.Id == 0;
+    ViewData["Title"] = isNew ? "Yeni duyuru" : "Duyuruyu düzenle";
+}
+
+<div class="admin-head">
+    <h1 class="display-2 h-mark">@ViewData["Title"]</h1>
+    <a class="btn btn--ghost" href="/admin/duyurular">Listeye dön</a>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+<form class="form-card" method="post" action="@(isNew ? "/admin/duyurular/yeni" : $"/admin/duyurular/{Model.Id}")">
+    @Html.AntiForgeryToken()
+
+    <div class="field">
+        <label class="field__label" asp-for="Text"></label>
+        <input class="field__input" asp-for="Text" maxlength="200" />
+        <span class="field__hint">Tek cümle; şerit tüm sayfaların üstünde görünür.</span>
+        <span class="field__error" asp-validation-for="Text"></span>
+    </div>
+
+    <div class="field">
+        <label class="field__label" asp-for="Url"></label>
+        <input class="field__input" asp-for="Url" maxlength="200" placeholder="/ev" />
+        <span class="field__hint">Yalnız site içi yol; boş bırakılırsa şerit bağlantısız olur.</span>
+        <span class="field__error" asp-validation-for="Url"></span>
+    </div>
+
+    <div class="field-row">
+        <div class="field">
+            <label class="field__label" asp-for="StartsAt"></label>
+            <input class="field__input" asp-for="StartsAt" type="date" />
+            <span class="field__error" asp-validation-for="StartsAt"></span>
+        </div>
+        <div class="field">
+            <label class="field__label" asp-for="EndsAt"></label>
+            <input class="field__input" asp-for="EndsAt" type="date" />
+            <span class="field__error" asp-validation-for="EndsAt"></span>
+        </div>
+    </div>
+
+    <div class="field">
+        <label class="field__label" asp-for="Color"></label>
+        <select class="field__input" asp-for="Color">
+            <option value="@((int)AnnouncementColor.Kiremit)">Kiremit</option>
+            <option value="@((int)AnnouncementColor.Yesil)">Yeşil</option>
+        </select>
+    </div>
+
+    <label class="switch">
+        <input asp-for="IsActive" type="checkbox" />
+        <span>Yayında</span>
+    </label>
+
+    <div class="form-card__foot">
+        <button class="btn btn--primary btn--block" type="submit">Kaydet</button>
+    </div>
+</form>

@@ -6,7 +6,10 @@ public enum ProductOrder
     Newest,
 
     /// <summary>Kampanyalıda kampanya fiyatı esas alınarak artan.</summary>
-    Price
+    Price,
+
+    /// <summary>Öne çıkanlar rafı: Product.FeaturedOrder artan, eşitlikte en yeni önce.</summary>
+    Featured
 }
 
 /// <summary>Vitrin listesi: süzme, sıralama ve sayfalama tek SQL sorgusuna çevrilir.</summary>
@@ -16,6 +19,9 @@ public sealed record ProductQuery
     public IReadOnlyCollection<int> CategoryIds { get; init; } = [];
 
     public int? ExcludedProductId { get; init; }
+
+    /// <summary>Yalnız öne çıkan olarak işaretlenmiş ürünler.</summary>
+    public bool FeaturedOnly { get; init; }
 
     /// <summary>Doluysa ad, açıklama ya da kategori adında geçen ürünler; LIKE ile SQL'de.</summary>
     public string? Term { get; init; }
