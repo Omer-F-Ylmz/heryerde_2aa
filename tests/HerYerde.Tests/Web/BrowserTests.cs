@@ -103,4 +103,29 @@ public sealed class BrowserTests : IAsyncLifetime
         Assert.Contains("BreadcrumbList", types);
         Assert.Empty(scriptViolations);
     }
+
+    /// <summary>D14 A2: "İlçeleri getir" formdaki ilk submit düğmesi olduğu için formun varsayılan düğmesidir;
+    /// JS varken devre dışı bırakılmazsa alanda Enter'a basmak siparişi göndermek yerine ilçe listesini tazeler.</summary>
+    [Fact]
+    public async Task Adres_alaninda_enter_siparis_formunu_gonderir_ilce_tazelemez()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere");
+        }
+
+        await using var page = await _browser.NewPageAsync();
+        await page.GoToAsync(_baseUrl + "/urun/celik-tencere", WaitUntilNavigation.Networkidle0);
+        await Task.WhenAll(page.WaitForNavigationAsync(), page.ClickAsync("[data-add-button]"));
+        await page.GoToAsync(_baseUrl + "/odeme", WaitUntilNavigation.Networkidle0);
+
+        // JS açıkken tazeleme düğmesi gizli VE devre dışı olmalı: devre dışı düğme varsayılan submit sayılmaz.
+        Assert.True(await page.EvaluateExpressionAsync<bool>("document.querySelector('[data-district-refresh]').hidden"));
+        Assert.True(await page.EvaluateExpressionAsync<bool>("document.querySelector('[data-district-refresh]').disabled"));
+
+        // Tarayıcının seçtiği varsayılan düğme sipariş düğmesi olmalı.
+        var defaultButton = await page.EvaluateExpressionAsync<string>(
+            "[...document.querySelector('.checkout__form').elements].filter(e => e.type === 'submit' && !e.disabled)[0].textContent.trim()");
+        Assert.Equal("Siparişi tamamla", defaultButton);
+    }
 }

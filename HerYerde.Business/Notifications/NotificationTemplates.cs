@@ -171,6 +171,13 @@ public static class NotificationTemplates
 
         rows.Append(Row("Ara toplam", Tl(order.Subtotal)));
         rows.Append(Row("Kargo", order.ShippingFee == 0m ? "Kargo bedava" : Tl(order.ShippingFee)));
+
+        // İndirim yazılmazsa ara toplam + kargo, toplamı vermez.
+        if (order.Discount > 0m)
+        {
+            rows.Append(Row($"İndirim ({Encode(order.CouponCode ?? string.Empty)})", "−" + Tl(order.Discount)));
+        }
+
         rows.Append(Row("<strong>Toplam</strong>", $"<strong>{Tl(order.Total)}</strong>"));
         return rows.ToString();
     }

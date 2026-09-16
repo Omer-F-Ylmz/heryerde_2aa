@@ -68,6 +68,29 @@ public sealed class InstallmentTests
         Assert.Equal(2, provider.InstallmentCalls);
     }
 
+    /// <summary>İYZİCO-DOĞRULAMA-2: gerçek sandbox hesabı taksit anlaşması yoksa yalnız tek çekim döner.
+    /// Tek satırlık "tablo" fiyatı tekrarlamaktan başka bir şey söylemez; çizilmemeli.</summary>
+    [Fact]
+    public async Task Yalniz_tek_cekim_donerse_tablo_bos_sayilir()
+    {
+        var provider = new FakePaymentProvider { SingleInstallmentOnly = true };
+        var manager = NewManager(provider);
+
+        var table = await manager.GetAsync(Price);
+
+        Assert.NotNull(table);
+        Assert.False(table.HasInstallments);
+        Assert.Equal(1, Assert.Single(table.Options).Count);
+    }
+
+    [Fact]
+    public async Task Taksitli_tabloda_taksit_var_sayilir()
+    {
+        var table = await NewManager(new FakePaymentProvider()).GetAsync(Price);
+
+        Assert.True(table!.HasInstallments);
+    }
+
     private static InstallmentManager NewManager(
         FakePaymentProvider provider,
         IyzicoSettings? settings = null,

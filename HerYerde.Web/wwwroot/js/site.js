@@ -139,13 +139,21 @@ document.querySelectorAll(".tabs--scroll [aria-current=page]").forEach(function 
   var refresh = document.querySelector("[data-district-refresh]");
   if (!province || !refresh) { return; }
 
+  // Gizlemek yetmez, devre dışı da bırakılır: bu düğme formun ilk submit'i olduğu için varsayılan
+  // düğmedir ve bir alanda Enter'a basmak siparişi göndermek yerine ilçe listesini tazelerdi.
+  // Devre dışı düğme varsayılan sayılmaz; tazeleme için kısa süreliğine açılır.
   refresh.hidden = true;
+  refresh.disabled = true;
+
   // Klavyeyle gezinirken (ok tuşu her seçenekte "change" doğurur) sayfa her adımda yenilenmesin:
   // seçim durulunca tazelenir.
   var timer = null;
   province.addEventListener("change", function () {
     clearTimeout(timer);
-    timer = setTimeout(function () { refresh.click(); }, 500);
+    timer = setTimeout(function () {
+      refresh.disabled = false;
+      refresh.click();
+    }, 500);
   });
 })();
 

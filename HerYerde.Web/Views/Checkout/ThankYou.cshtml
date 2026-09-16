@@ -100,9 +100,21 @@
                 </p>
             }
             <p class="summary__row">
+                <span>Ara toplam</span>
+                <span class="summary__value">@Money.Tl(order.Subtotal)</span>
+            </p>
+            <p class="summary__row">
                 <span>Kargo</span>
                 <span class="summary__value">@(order.ShippingFee == 0m ? "Kargo bedava" : Money.Tl(order.ShippingFee))</span>
             </p>
+            @* İndirim yazılmazsa ara toplam + kargo, toplamı vermez. *@
+            @if (order.Discount > 0m)
+            {
+                <p class="summary__row summary__row--discount">
+                    <span>İndirim<span class="tag tag--gift">@order.CouponCode</span></span>
+                    <span class="summary__value">−@Money.Tl(order.Discount)</span>
+                </p>
+            }
             <p class="summary__row summary__row--total">
                 <span>Toplam</span>
                 <span class="summary__value">@Money.Tl(order.Total)</span>

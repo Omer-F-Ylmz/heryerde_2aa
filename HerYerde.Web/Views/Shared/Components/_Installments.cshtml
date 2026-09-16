@@ -1,7 +1,8 @@
 @using HerYerde.Web.Models
 @model InstallmentTableVm
 
-@if (Model.Options.Count > 0)
+@* Yalnız tek çekim varsa (taksit anlaşması yok) tablo fiyatı tekrarlamaktan başka bir şey söylemez. *@
+@if (Model.Options.Any(o => o.Count > 1))
 {
     <div class="installments">
         <h3 class="installments__title">@(Model.BankName is { Length: > 0 } bank ? bank + " taksitleri" : "Taksit seçenekleri")</h3>

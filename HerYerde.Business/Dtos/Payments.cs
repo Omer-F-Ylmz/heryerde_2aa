@@ -39,6 +39,11 @@ public sealed record PaymentAuthResult(bool Success, string? PaymentId, decimal 
 public sealed record InstallmentOption(int Count, decimal MonthlyPrice, decimal TotalPrice);
 
 /// <summary>Bir tutarın taksit tablosu; BIN verilmişse kartın bankası ve ailesi de dolu.</summary>
-public sealed record InstallmentTable(IReadOnlyList<InstallmentOption> Options, string? BankName = null, string? CardFamily = null);
+public sealed record InstallmentTable(IReadOnlyList<InstallmentOption> Options, string? BankName = null, string? CardFamily = null)
+{
+    /// <summary>Gerçekten taksit seçeneği var mı. Taksit anlaşması olmayan hesapta sağlayıcı yalnız tek çekim
+    /// döner; tek satırlık tablo fiyatı tekrarlamaktan başka bir şey söylemediği için çizilmez.</summary>
+    public bool HasInstallments => Options.Any(o => o.Count > 1);
+}
 
 public sealed record InstallmentResult(bool Success, InstallmentTable? Table, string? ErrorMessage);

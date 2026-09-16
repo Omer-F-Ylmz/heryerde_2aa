@@ -35,6 +35,9 @@ public sealed class FakePaymentProvider : IPaymentProvider
 
     public List<decimal> InstallmentPrices { get; } = [];
 
+    /// <summary>Taksit anlaşması olmayan hesabın gerçek sandbox davranışı: yalnız tek çekim döner.</summary>
+    public bool SingleInstallmentOnly { get; set; }
+
     /// <summary>Sahte taksit tablosu: her ek taksit tutarı %2 büyütür (3'te %4, 6'da %10).</summary>
     public Task<InstallmentResult> GetInstallmentsAsync(decimal price, string? bin, CancellationToken cancellationToken = default)
     {
@@ -46,7 +49,7 @@ public sealed class FakePaymentProvider : IPaymentProvider
             return Task.FromResult(new InstallmentResult(false, null, "Taksit bilgisi alınamadı."));
         }
 
-        var options = new[] { 1, 2, 3, 6, 9, 12 }
+        var options = (SingleInstallmentOnly ? [1] : new[] { 1, 2, 3, 6, 9, 12 })
             .Select(count =>
             {
                 var total = Math.Round(price * (1m + 0.02m * (count - 1)), 2);

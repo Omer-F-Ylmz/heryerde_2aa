@@ -334,7 +334,7 @@ public class StoreController(
         // Genel taksit tablosu (BIN yok): ürünün etkin fiyatı üzerinden, yalnız öne çıkan taksitler.
         var price = StoreCatalog.EffectivePrice(product, now);
         var table = await installments.GetAsync(price, cancellationToken: cancellationToken);
-        var highlighted = table is null
+        var highlighted = table is null || !table.HasInstallments
             ? null
             : new InstallmentTableVm(
                 table.Options.Where(o => InstallmentManager.Highlighted.Contains(o.Count)).ToList(),
