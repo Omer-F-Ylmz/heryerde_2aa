@@ -6,7 +6,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: heryerde-web:latest
+    # CD (compose hedefi) ghcr.io'daki commit imajını HERYERDE_WEB_IMAGE ile verir; boşsa yerelde derlenen imaj.
+    image: ${HERYERDE_WEB_IMAGE:-heryerde-web:latest}
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -51,7 +52,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: heryerde-web:latest
+    # CD (compose hedefi) ghcr.io'daki commit imajını HERYERDE_WEB_IMAGE ile verir; boşsa yerelde derlenen imaj.
+    image: ${HERYERDE_WEB_IMAGE:-heryerde-web:latest}
     restart: unless-stopped
     entrypoint: ["sh", "-c"]
     command: ["while :; do sleep $$((86400 - $$(date +%s) % 86400)); dotnet HerYerde.Web.dll --yedek-al /backups; done"]

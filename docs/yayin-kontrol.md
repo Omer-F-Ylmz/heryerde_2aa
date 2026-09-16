@@ -35,3 +35,26 @@ Değerlerin tam listesi docs/dis-hesaplar.md, yedek ayrıntısı docs/yedekleme.
 | 27 | Google Search Console: alan adı doğrulama, `sitemap.xml` gönderimi | Site haritası "Başarılı" | [MÜŞTERİ] |
 | 28 | Yayın duyurusu (Instagram profil bağlantısı) | Profil bağlantısı alan adına gidiyor | [MÜŞTERİ] |
 | 29 | Ayda bir: son canlı yedeği provaya aç | Prova çıktısı ve tarih bu dosyanın altına not | [Ömer] |
+
+## Sürekli yayın (CD) ve staging
+
+`.github/workflows/deploy.yml`. Staging, CI main'e push'ta yeşil bitince **otomatik**; prod yalnız **elle**
+(Actions › Deploy › Run workflow, `environment=production`). Hedef repo değişkeni `DEPLOY_TARGET` ile seçilir; boşsa
+iş "DEPLOY_TARGET tanımsız" notuyla atlanır. Staging ortamı (`ASPNETCORE_ENVIRONMENT=Staging`, `appsettings.Staging.json`):
+her yanıtta `X-Robots-Tag: noindex, nofollow`, `robots.txt` her şeyi kapatır, Basic Auth kapısı (`STAGING_USER` /
+`STAGING_PASS`; biri boşsa kapı kapalı kalır, `/health` açık), Sentry ortamı `staging`, İyzico sandbox, gerçek SMTP yok
+(postalar outbox'ta "atlandı").
+
+| Adım | Plesk / runasp.net (`DEPLOY_TARGET=plesk`) | Compose / SSH (`DEPLOY_TARGET=compose`) |
+|---|---|---|
+| GitHub ortamları | `staging` ve `production` ortamları; `production`'a koruma kuralı (onaylayıcı) [Ömer] | Aynı [Ömer] |
+| Ortam değişkenleri (vars) | `SITE_URL`, `PLESK_SERVER`, `PLESK_SITE`, `DEPLOY_METHOD` (`msdeploy` varsayılan ya da `ftp`), FTP'de `FTP_SERVER`, `FTP_DIR` | `SITE_URL`, `SSH_HOST`, `SSH_USER`, `DEPLOY_PATH` |
+| Ortam gizlileri (secrets) | `PLESK_USER`, `PLESK_PASSWORD` (FTP'de `FTP_USER`, `FTP_PASSWORD`); `APP_SETTINGS_JSON` = `{"ConnectionStrings__Default": "…", "Admin__Email": "…", "Iyzico__ApiKey": "…", …}` (docs/dis-hesaplar.md anahtarları, `:` yerine `__`); staging'de `STAGING_USER`, `STAGING_PASS` | `SSH_KEY` (yalnız yayın için anahtar), `SSH_KNOWN_HOSTS` (`ssh-keyscan` çıktısı, elle doğrulanmış); staging'de `STAGING_USER`, `STAGING_PASS`. Uygulama değerleri sunucudaki `.env`'de (docs/dis-hesaplar.md) ve staging'de `STAGING_USER`/`STAGING_PASS` da |
+| Derleme | Runner'da `npm run css:build` + `dotnet publish -p:EnvironmentName=…`; `tools/deploy/plesk.ps1 -Action Configure` ayarları `web.config` `environmentVariables`'a yazar | Runner'da `docker build`, imaj `ghcr.io/<repo>/web:<commit>` |
+| Migration (`--migrate`) | Runner'dan uzak veritabanına: `dotnet HerYerde.Web.dll --migrate`, dosyalardan önce | Sunucuda: `docker compose run --rm web --migrate` (yeni imajla), `up`'tan önce |
+| Yayın | Web Deploy (`msdeploy`, AppOffline; `wwwroot/uploads`, `private`, `logs` korunur) ya da FTP (`app_offline.htm`, silme yok) | `.env`'e `HERYERDE_WEB_IMAGE=<imaj>`, `docker compose -f docker-compose.prod.yml [-f docker-compose.staging.yml] up -d --wait` |
+| Smoke | `tools/smoke.ps1 -BaseUrl $SITE_URL` (staging'de `-Staging -Credential kullanıcı:parola`) | Aynı |
+| Başarı | `yayin/<ortam>/<çalıştırma>` etiketi | `.env`'deki imaj etiketi yeni sürüm olarak kalır |
+| Rollback | Migration sonrası bir adım kırmızıysa son `yayin/<ortam>/*` etiketi yeniden derlenip yayımlanır ve smoke koşar | `.env`'e önceki `HERYERDE_WEB_IMAGE` geri yazılır, compose o imajla kalkar, smoke koşar |
+| Veritabanı | Geçişler geri alınmaz: eklemeli yazılır; bozuk veri gerekirse yedekten döner (docs/yedekleme.md) | Aynı |
+| İlk kurulum | runasp.net panelinde site, SQL Server veritabanı ve Web Deploy/FTP kullanıcısı; staging için ayrı site ve veritabanı | Staging için ayrı sunucu ya da klasör; `DEPLOY_PATH`'te `.env`, `backups/` (docs/yedekleme.md) |

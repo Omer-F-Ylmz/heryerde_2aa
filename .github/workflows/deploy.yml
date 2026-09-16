@@ -1,0 +1,271 @@
+name: Deploy
+
+# Sürekli yayın (D16 C). Hedef repo değişkeni DEPLOY_TARGET ile seçilir:
+#   plesk   = runasp.net / Plesk: dotnet publish, Web Deploy (msdeploy) ya da FTP (DEPLOY_METHOD)
+#   compose = SSH ile sunucuda docker compose: ghcr.io imajı çekilir, compose yeniden kalkar
+# Staging: CI main push'ta yeşil bitince otomatik. Prod: Actions > Deploy > Run workflow, environment=production
+# (GitHub ortam koruması: onaylayıcı). Migration yayın adımında, dosyalardan önce; yayın sonrası smoke; smoke ya da yayın
+# kırmızıysa önceki sürüme geri dönülür. Değişkenler ve gizliler: docs/yayin-kontrol.md "Sürekli yayın (CD) ve staging".
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Hedef ortam"
+        type: choice
+        options: [staging, production]
+        default: staging
+      ref:
+        description: "Yayınlanacak commit ya da etiket (boşsa main)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    # workflow_run tüm CI bitince gelir: yalnız main'e push'ta ve sonuç yeşilse (build-test dahil) staging'e gidilir.
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.plan.outputs.environment }}
+      sha: ${{ steps.plan.outputs.sha }}
+    steps:
+      - name: Plan
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          INPUT_REF: ${{ inputs.ref }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          TARGET: ${{ vars.DEPLOY_TARGET }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            environment="$INPUT_ENVIRONMENT"
+            sha="$(gh api "repos/$REPO/commits/${INPUT_REF:-main}" --jq .sha)"
+          else
+            environment=staging
+            sha="$RUN_SHA"
+          fi
+          echo "environment=$environment" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          case "$TARGET" in
+            plesk|compose) echo "Hedef: $TARGET · ortam: $environment · commit: $sha" ;;
+            *) echo "::notice::DEPLOY_TARGET tanımsız (plesk | compose); yayın atlandı." ;;
+          esac
+
+  plesk:
+    needs: plan
+    if: vars.DEPLOY_TARGET == 'plesk'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    environment:
+      name: ${{ needs.plan.outputs.environment }}
+      url: ${{ vars.SITE_URL }}
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      ENVIRONMENT: ${{ needs.plan.outputs.environment }}
+      ASPNET_ENVIRONMENT: ${{ needs.plan.outputs.environment == 'production' && 'Production' || 'Staging' }}
+      SITE_URL: ${{ vars.SITE_URL }}
+      DEPLOY_METHOD: ${{ vars.DEPLOY_METHOD || 'msdeploy' }}
+      PLESK_SERVER: ${{ vars.PLESK_SERVER }}
+      PLESK_SITE: ${{ vars.PLESK_SITE }}
+      PLESK_USER: ${{ secrets.PLESK_USER }}
+      PLESK_PASSWORD: ${{ secrets.PLESK_PASSWORD }}
+      FTP_SERVER: ${{ vars.FTP_SERVER }}
+      FTP_DIR: ${{ vars.FTP_DIR }}
+      FTP_USER: ${{ secrets.FTP_USER }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      APP_SETTINGS_JSON: ${{ secrets.APP_SETTINGS_JSON }}
+      STAGING_USER: ${{ secrets.STAGING_USER }}
+      STAGING_PASS: ${{ secrets.STAGING_PASS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+          # Geri alma için önceki yayın etiketleri (yayin/<ortam>/<çalıştırma>) gerekir.
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Publish
+        run: |
+          npm ci --ignore-scripts
+          npm run css:build
+          dotnet publish HerYerde.Web -c Release -o publish "-p:EnvironmentName=$env:ASPNET_ENVIRONMENT"
+          ./tools/deploy/plesk.ps1 -Action Configure -Path publish
+
+      - name: Previous release
+        id: previous
+        run: |
+          $tag = git tag --list "yayin/$env:ENVIRONMENT/*" --sort=-creatordate | Select-Object -First 1
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Output "Önceki yayın: $(if ($tag) { $tag } else { 'yok' })"
+
+      - name: Migrate
+        id: migrate
+        # Yeni sürümün geçişleri dosyalardan önce uzak veritabanına uygulanır; eski sürüm eklenen şemayla çalışmaya devam eder.
+        run: |
+          $env:ASPNETCORE_ENVIRONMENT = $env:ASPNET_ENVIRONMENT
+          $env:ConnectionStrings__Default = ($env:APP_SETTINGS_JSON | ConvertFrom-Json).'ConnectionStrings__Default'
+          if (-not $env:ConnectionStrings__Default) { throw 'APP_SETTINGS_JSON içinde ConnectionStrings__Default yok.' }
+          Push-Location publish
+          dotnet HerYerde.Web.dll --migrate
+          $code = $LASTEXITCODE
+          # Komutun yazdığı yerel log klasörü siteye gönderilmez.
+          Remove-Item logs -Recurse -Force -ErrorAction SilentlyContinue
+          Pop-Location
+          if ($code -ne 0) { throw "Geçiş başarısız ($code)." }
+
+      - name: Deploy
+        run: ./tools/deploy/plesk.ps1 -Action Deploy -Path publish
+
+      - name: Smoke
+        run: |
+          $smoke = @('-BaseUrl', $env:SITE_URL)
+          if ($env:ENVIRONMENT -eq 'staging') { $smoke += @('-Staging', '-Credential', "$($env:STAGING_USER):$($env:STAGING_PASS)") }
+          ./tools/smoke.ps1 @smoke
+
+      - name: Tag release
+        run: |
+          $tag = "yayin/$env:ENVIRONMENT/$env:GITHUB_RUN_NUMBER"
+          git tag $tag
+          git push origin $tag
+
+      - name: Rollback
+        # Migration uygulandıktan sonra bir adım kırmızıysa son başarılı yayın etiketi yeniden yayımlanır (geçişler geri alınmaz:
+        # geçişler eklemeli yazılır, gerekirse veritabanı yedekten döner — docs/yedekleme.md).
+        if: failure() && steps.migrate.outcome == 'success'
+        env:
+          PREVIOUS: ${{ steps.previous.outputs.tag }}
+        run: |
+          if (-not $env:PREVIOUS) { throw 'Önceki yayın etiketi yok; geri dönülecek sürüm bulunamadı.' }
+          git worktree add rollback $env:PREVIOUS
+          Push-Location rollback
+          npm ci --ignore-scripts
+          npm run css:build
+          dotnet publish HerYerde.Web -c Release -o ../rollback-publish "-p:EnvironmentName=$env:ASPNET_ENVIRONMENT"
+          Pop-Location
+          ./tools/deploy/plesk.ps1 -Action Configure -Path rollback-publish
+          ./tools/deploy/plesk.ps1 -Action Deploy -Path rollback-publish
+          $smoke = @('-BaseUrl', $env:SITE_URL)
+          if ($env:ENVIRONMENT -eq 'staging') { $smoke += @('-Staging', '-Credential', "$($env:STAGING_USER):$($env:STAGING_PASS)") }
+          ./tools/smoke.ps1 @smoke
+          Write-Output "::warning::Yayın geri alındı: $env:PREVIOUS"
+
+  compose:
+    needs: plan
+    if: vars.DEPLOY_TARGET == 'compose'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: ${{ needs.plan.outputs.environment }}
+      url: ${{ vars.SITE_URL }}
+    env:
+      ENVIRONMENT: ${{ needs.plan.outputs.environment }}
+      SHA: ${{ needs.plan.outputs.sha }}
+      SITE_URL: ${{ vars.SITE_URL }}
+      SSH_TARGET: ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      COMPOSE_FILES: ${{ needs.plan.outputs.environment == 'production' && '-f docker-compose.prod.yml' || '-f docker-compose.prod.yml -f docker-compose.staging.yml' }}
+      STAGING_USER: ${{ secrets.STAGING_USER }}
+      STAGING_PASS: ${{ secrets.STAGING_PASS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+
+      - name: Image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/web:$SHA"
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build -t "$image" .
+          docker push "$image"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+
+      - name: SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_deploy ~/.ssh/known_hosts
+          printf 'Host *\n  IdentityFile ~/.ssh/id_deploy\n  StrictHostKeyChecking yes\n' > ~/.ssh/config
+          scp docker-compose.prod.yml docker-compose.staging.yml "$SSH_TARGET:$DEPLOY_PATH/"
+          # Sunucu imajı bu işin anahtarıyla çeker; anahtar komut satırına değil stdin'e yazılır.
+          echo "$GH_TOKEN" | ssh "$SSH_TARGET" docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Previous release
+        id: previous
+        run: |
+          # shellcheck disable=SC2029
+          previous="$(ssh "$SSH_TARGET" "grep -s '^HERYERDE_WEB_IMAGE=' '$DEPLOY_PATH/.env' | cut -d= -f2-" || true)"
+          echo "image=$previous" >> "$GITHUB_OUTPUT"
+          echo "Önceki imaj: ${previous:-yok}"
+
+      - name: Migrate
+        id: migrate
+        # Yeni imajın geçişleri, çalışan sürüm değişmeden uygulanır (db servisi gerekirse kalkar).
+        run: |
+          # shellcheck disable=SC2029
+          ssh "$SSH_TARGET" "cd '$DEPLOY_PATH' && export HERYERDE_WEB_IMAGE='$IMAGE' && docker compose $COMPOSE_FILES pull web backup && docker compose $COMPOSE_FILES run --rm web --migrate"
+
+      - name: Deploy
+        run: |
+          # shellcheck disable=SC2029
+          ssh "$SSH_TARGET" "cd '$DEPLOY_PATH' && sed -i '/^HERYERDE_WEB_IMAGE=/d' .env && echo 'HERYERDE_WEB_IMAGE=$IMAGE' >> .env && docker compose $COMPOSE_FILES up -d --wait --wait-timeout 300"
+
+      - name: Smoke
+        shell: pwsh
+        run: |
+          $smoke = @('-BaseUrl', $env:SITE_URL)
+          if ($env:ENVIRONMENT -eq 'staging') { $smoke += @('-Staging', '-Credential', "$($env:STAGING_USER):$($env:STAGING_PASS)") }
+          ./tools/smoke.ps1 @smoke
+
+      - name: Rollback
+        # Önceki imaj etiketi .env'e geri yazılır ve compose o imajla kalkar; geçişler geri alınmaz (eklemeli yazılır).
+        if: failure() && steps.migrate.outcome == 'success'
+        env:
+          PREVIOUS: ${{ steps.previous.outputs.image }}
+        run: |
+          if [ -z "$PREVIOUS" ]; then
+            echo "::error::Önceki HERYERDE_WEB_IMAGE yok; geri dönülecek sürüm bulunamadı."
+            exit 1
+          fi
+          # shellcheck disable=SC2029
+          ssh "$SSH_TARGET" "cd '$DEPLOY_PATH' && sed -i '/^HERYERDE_WEB_IMAGE=/d' .env && echo 'HERYERDE_WEB_IMAGE=$PREVIOUS' >> .env && docker compose $COMPOSE_FILES up -d --wait --wait-timeout 300"
+          if [ "$ENVIRONMENT" = "staging" ]; then
+            pwsh ./tools/smoke.ps1 -BaseUrl "$SITE_URL" -Staging -Credential "$STAGING_USER:$STAGING_PASS"
+          else
+            pwsh ./tools/smoke.ps1 -BaseUrl "$SITE_URL"
+          fi
+          echo "::warning::Yayın geri alındı: $PREVIOUS"

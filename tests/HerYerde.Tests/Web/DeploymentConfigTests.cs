@@ -27,7 +27,7 @@ public sealed class DeploymentConfigTests
     }
 
     private static readonly string[] OptionalComposeVariables =
-        ["HERYERDE_SMTP_PORT", "HERYERDE_ETBIS_NO", "HERYERDE_IYZICO_INSTALLMENTS"];
+        ["HERYERDE_SMTP_PORT", "HERYERDE_ETBIS_NO", "HERYERDE_IYZICO_INSTALLMENTS", "HERYERDE_WEB_IMAGE"];
 
     /// <summary>YAYIN-HAZIRLIK: dış hesap değerlerinden biri eksikse "docker compose up" yorumlama aşamasında durur.</summary>
     [Fact]

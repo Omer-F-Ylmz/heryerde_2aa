@@ -1,8 +1,12 @@
 # HerYerde smoke testi: verilen adrese karsi vitrinin ayakta ve dogru yapilandirilmis oldugunu dogrular.
 #   pwsh tools/smoke.ps1 -BaseUrl https://alanadi.com
+#   pwsh tools/smoke.ps1 -BaseUrl https://staging.alanadi.com -Staging -Credential "kullanici:parola"
 # Windows PowerShell 5.1 ve pwsh 7 ile calisir. Her denetim "OK" ya da "FAIL" satiri yazar; bir FAIL varsa cikis kodu 1.
+# -Credential: staging Basic Auth kapisi ("kullanici:parola"); -Staging: noindex basligi ve kapali robots denetlenir.
 param(
-    [Parameter(Mandatory = $true)][string]$BaseUrl
+    [Parameter(Mandatory = $true)][string]$BaseUrl,
+    [string]$Credential = '',
+    [switch]$Staging
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,6 +22,10 @@ $script:failures = 0
 function Get-Page([string]$path) {
     $request = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::Get, [Uri]($base + $path))
     $request.Headers.Accept.ParseAdd('text/html')
+    if ($Credential) {
+        $request.Headers.Authorization = [System.Net.Http.Headers.AuthenticationHeaderValue]::new(
+            'Basic', [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($Credential)))
+    }
     $response = $client.SendAsync($request).GetAwaiter().GetResult()
     $body = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
     [pscustomobject]@{ Status = [int]$response.StatusCode; Body = $body; Response = $response }
@@ -58,6 +66,9 @@ if ($homePage) {
     if ($base.StartsWith('https://')) {
         Check 'HSTS' ((Get-Header $homePage 'Strict-Transport-Security') -match 'max-age=\d+') 'Strict-Transport-Security yok'
     }
+    if ($Staging) {
+        Check 'staging noindex' ((Get-Header $homePage 'X-Robots-Tag') -match 'noindex') 'X-Robots-Tag noindex yok'
+    }
 }
 
 [void](Check-Ok '/ev')
@@ -76,7 +87,11 @@ if ($productPath) { [void](Check-Ok $productPath) }
 
 $robots = Check-Ok '/robots.txt'
 if ($robots) {
-    Check 'robots Sitemap satiri' ($robots.Body -match '(?m)^Sitemap: ') 'Sitemap satiri yok'
+    if ($Staging) {
+        Check 'staging robots kapali' ($robots.Body -match '(?m)^Disallow: /\s*$') 'Disallow: / yok'
+    } else {
+        Check 'robots Sitemap satiri' ($robots.Body -match '(?m)^Sitemap: ') 'Sitemap satiri yok'
+    }
 }
 
 try {

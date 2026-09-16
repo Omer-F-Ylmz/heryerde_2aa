@@ -44,7 +44,8 @@ builder.Host.ConfigureContainer<ContainerBuilder>(container => container.Registe
 builder.Logging.ClearProviders();
 builder.Services.AddSerilog((services, logger) =>
     {
-        var sentryDsn = services.GetRequiredService<IConfiguration>()["Sentry:Dsn"];
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var sentryDsn = configuration["Sentry:Dsn"];
         logger
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
@@ -55,7 +56,7 @@ builder.Services.AddSerilog((services, logger) =>
             .ReadFrom.Services(services);
         if (SentryReporting.Enabled(sentryDsn))
         {
-            logger.WriteTo.Sentry(options => SentryReporting.Configure(options, sentryDsn!, services.GetService<ITransport>()));
+            logger.WriteTo.Sentry(options => SentryReporting.Configure(options, sentryDsn!, services.GetService<ITransport>(), configuration["Sentry:Environment"]));
         }
     },
     preserveStaticLogger: true,
@@ -208,6 +209,11 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 // logger DI'dan verilir.
 app.UseSerilogRequestLogging(options => options.Logger = app.Services.GetRequiredService<Serilog.ILogger>());
 app.UseMiddleware<SecurityHeadersMiddleware>();
+// Staging: noindex başlığı ve Basic Auth kapısı; statik dosyalar dahil her şeyden önce.
+if (app.Environment.IsStaging())
+{
+    app.UseMiddleware<StagingGateMiddleware>();
+}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -275,6 +281,14 @@ if (BackupCommand.RestoreFileFrom(args) is { } restoreFile)
 {
     var restored = await BackupCommand.RestoreAsync(app.Configuration.GetConnectionString("Default")!, restoreFile);
     Console.WriteLine($"Geri yükleme: {restored.Database}, {restored.Products} ürün.");
+    return;
+}
+
+// Yayın adımı (CD): geçişleri uygulayıp çıkar, sunucu açılmaz; ortamdan bağımsız.
+if (MigrateCommand.Requested(args))
+{
+    var applied = await MigrateCommand.RunAsync(app.Services);
+    Console.WriteLine(applied.Count == 0 ? "Geçiş: şema güncel." : $"Geçiş: {applied.Count} uygulandı ({string.Join(", ", applied)}).");
     return;
 }
 

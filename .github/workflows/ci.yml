@@ -65,6 +65,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Workflow lint
+        # actionlint (shellcheck dahil): ci.yml ve deploy.yml söz dizimi, ifade ve betik denetimi.
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.7 -color
+
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
@@ -253,17 +257,21 @@ jobs:
       - name: ZAP admin (authenticated)
         # Compose'un tohumladığı 2FA'sız tarama hesabı; çerez replacer ile her isteğe eklenir. Plan .zap/yonetim.yaml: örümcek, pasif,
         # aktif tarama (40 dk), yıkıcı uçlar (çıkış, parola, silme, anonimleştirme, iade) dışarıda. Çıkış kodu 2 = uyarı, eşik sonraki adımda.
+        # D16: aynı Cookie başlığına doğrulanmış tarama üyesinin oturumu eklenir (/admin yönetici, diğer yollar üye çerezini okur).
         run: |
           cp .zap/yonetim.yaml zap-out/
           admin="$(bash .zap/yonetim-cerezi.sh http://localhost:8080 "$HERYERDE_ADMIN_EMAIL" "$HERYERDE_ADMIN_PASSWORD")"
+          uye="$(bash .zap/uye-cerezi.sh http://localhost:8080 zap-uye@example.com "$HERYERDE_ADMIN_PASSWORD")"
           echo "::add-mask::$admin"
+          echo "::add-mask::$uye"
           docker run --rm --network host -v "$PWD/zap-out:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
             zap.sh -cmd -port 8090 -config "replacer.full_list(0).description=yonetim" -config "replacer.full_list(0).enabled=true" \
             -config "replacer.full_list(0).matchtype=REQ_HEADER" -config "replacer.full_list(0).matchstr=Cookie" -config "replacer.full_list(0).regex=false" \
-            -config "replacer.full_list(0).replacement=$admin" -autorun /zap/wrk/yonetim.yaml || [ $? -eq 2 ]
-          # Oturumlu tarandığının kanıtı: menüdeki rapor sayfası 200 dönmüş olmalı (giriş betiği bu sayfaya gitmez).
+            -config "replacer.full_list(0).replacement=$admin;$uye" -autorun /zap/wrk/yonetim.yaml || [ $? -eq 2 ]
+          # Oturumlu tarandığının kanıtı: menüdeki rapor ve yorumlar sayfaları 200 dönmüş olmalı (giriş betikleri bu sayfalara gitmez).
           $COMPOSE logs web > zap-out/web.log 2>&1
           grep -q 'GET /admin/rapor responded 200' zap-out/web.log || { echo "::error::Yönetim taraması oturumsuz kaldı."; exit 1; }
+          grep -q 'GET /hesap/yorumlar responded 200' zap-out/web.log || { echo "::error::Üye taraması oturumsuz kaldı."; exit 1; }
           test -f zap-out/yonetim-full.json || { echo "::error::yonetim-full.json yok."; exit 1; }
 
       - name: Fail on Medium+
@@ -329,7 +337,7 @@ jobs:
           test "$live" -ge 1 && test "$live" = "$restored"
           $COMPOSE run -d --name heryerde-prova -p 8081:8080 \
             -e "ConnectionStrings__Default=${HERYERDE_CONNECTION_STRING/Database=HerYerde;/Database=HerYerde_prova;}" web
-          for attempt in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             if curl -fsS http://localhost:8081/health/ready; then exit 0; fi
             sleep 2
           done

@@ -31,7 +31,33 @@ public sealed class SmokeScriptTests : IAsyncLifetime
         Assert.DoesNotContain("FAIL", output);
     }
 
-    private static async Task<(int ExitCode, string Output)> RunAsync(string baseUrl)
+    /// <summary>D16 C: yayın sonrası staging'e karşı: kapı -Credential ile geçilir, -Staging noindex başlığını ve kapalı robots'u
+    /// denetler; kimliksiz koşu kırmızıdır.</summary>
+    [Fact]
+    public async Task Smoke_betigi_staging_kapisini_kimlikle_gecer_noindex_denetler_kimliksiz_kirmizi()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            await TestData.AddHomeProductAsync(context, "Cam Sürahi", "cam-surahi");
+        }
+
+        using var factory = new StagingEnvironmentTests.StagingFactory(StagingEnvironmentTests.User, StagingEnvironmentTests.Password);
+        factory.UseKestrel(0);
+        factory.StartServer();
+        var baseUrl = factory.CreateClient().BaseAddress!.GetLeftPart(UriPartial.Authority);
+
+        var (exitCode, output) = await RunAsync(baseUrl, "-Staging", "-Credential", $"{StagingEnvironmentTests.User}:{StagingEnvironmentTests.Password}");
+        var (deniedCode, deniedOutput) = await RunAsync(baseUrl, "-Staging");
+
+        Assert.True(exitCode == 0, output);
+        Assert.Contains("OK    staging noindex", output);
+        Assert.Contains("OK    staging robots kapali", output);
+        Assert.Contains("SMOKE OK", output);
+        Assert.Equal(1, deniedCode);
+        Assert.Contains("FAIL", deniedOutput);
+    }
+
+    private static async Task<(int ExitCode, string Output)> RunAsync(string baseUrl, params string[] extra)
     {
         var start = new ProcessStartInfo(OperatingSystem.IsWindows() ? "powershell.exe" : "pwsh")
         {
@@ -43,7 +69,7 @@ public sealed class SmokeScriptTests : IAsyncLifetime
                  {
                      "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
                      "-File", RepoFile.PathOf("tools", "smoke.ps1"), "-BaseUrl", baseUrl
-                 })
+                 }.Concat(extra))
         {
             start.ArgumentList.Add(argument);
         }

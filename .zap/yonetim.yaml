@@ -41,6 +41,21 @@ env:
       excludePaths:
         # Listeden kalem silmek taranacak yüzeyi boşaltır.
         - "http://localhost:8080/ceyizlistesi/yonet/sil.*"
+    # D16: .zap/uye-cerezi.sh'nin doğrulanmış tarama üyesiyle hesap sayfaları ve analitik beacon ucu. Oturumu düşüren
+    # (çıkış, parola, tüm oturumları kapat) ve hesabı ya da taranacak adresi silen uçlar dışarıda.
+    - name: uye
+      urls:
+        - http://localhost:8080/hesap/ayarlar
+        - http://localhost:8080/olay
+      includePaths:
+        - "http://localhost:8080/hesap.*"
+        - "http://localhost:8080/olay.*"
+      excludePaths:
+        - "http://localhost:8080/hesap/cikis.*"
+        - "http://localhost:8080/hesap/sil.*"
+        - "http://localhost:8080/hesap/parola.*"
+        - "http://localhost:8080/hesap/oturumlar/kapat.*"
+        - "http://localhost:8080/hesap/adresler/[0-9]+/sil.*"
   parameters:
     failOnError: true
     failOnWarning: false
@@ -92,6 +107,27 @@ jobs:
   - type: activeScan
     parameters:
       context: d15
+      maxScanDurationInMins: 15
+
+  # D16 üye hesabı ve beacon; beacon form gövdesiyle istenir ki aktif tarama ad/yol parametrelerine saldırsın.
+  - type: requestor
+    requests:
+      - url: http://localhost:8080/hesap/ayarlar
+      - url: http://localhost:8080/olay
+        method: POST
+        headers:
+          - "Content-Type:application/x-www-form-urlencoded"
+        data: "ad=whatsapp&yol=/"
+
+  - type: spider
+    parameters:
+      context: uye
+      url: http://localhost:8080/hesap/ayarlar
+      maxDuration: 2
+
+  - type: activeScan
+    parameters:
+      context: uye
       maxScanDurationInMins: 15
 
   - type: spider

@@ -18,6 +18,7 @@ public class SeoController(
     ICategoryService categoryService,
     IBrandService brandService,
     IOptions<ShopSettings> shop,
+    IConfiguration configuration,
     TimeProvider clock) : Controller
 {
     /// <summary>Kişiye özel ya da içeriği ince sayfalar taranmaz.</summary>
@@ -76,6 +77,12 @@ public class SeoController(
     [HttpGet("robots.txt")]
     public IActionResult Robots()
     {
+        // Staging (Seo:DisallowAll): hiçbir yol taranmaz, site haritası verilmez.
+        if (configuration.GetValue("Seo:DisallowAll", false))
+        {
+            return Content("User-agent: *\nDisallow: /\n", "text/plain");
+        }
+
         var lines = new List<string> { "User-agent: *" };
         lines.AddRange(Closed.Select(path => "Disallow: " + path));
         // Ürün akışları taranabilir: Meta ve Merchant botları buradan bulur.

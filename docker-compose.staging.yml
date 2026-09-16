@@ -1,0 +1,19 @@
+# Staging eki (D16 C): docker compose -f docker-compose.prod.yml -f docker-compose.staging.yml up -d
+# Sunucudaki .env prod şablonunun zorunlu değişkenlerini de taşır (SMTP ve İyzico değerleri yer tutucu olabilir: burada ezilir),
+# ek olarak STAGING_USER ve STAGING_PASS. Ayrıntı: docs/yayin-kontrol.md "Sürekli yayın (CD) ve staging".
+services:
+  web:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      # Gerçek SMTP yok: postalar outbox'ta "atlandı" olarak bekler.
+      Notifications__Host: ""
+      Iyzico__BaseUrl: https://sandbox-api.iyzipay.com
+      Iyzico__CspSources__0: https://sandbox-api.iyzipay.com
+      Sentry__Environment: staging
+      # Basic Auth kapısı; biri boşsa compose yorumlanmaz, uygulama da kapıyı kapalı tutar.
+      StagingGate__User: ${STAGING_USER:?STAGING_USER gerekli}
+      StagingGate__Password: ${STAGING_PASS:?STAGING_PASS gerekli}
+
+  backup:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging

@@ -12,9 +12,15 @@ public static class SentryReporting
     public static bool Enabled(string? dsn) => !string.IsNullOrWhiteSpace(dsn);
 
     /// <param name="transport">Yalnız testler DI'a kayıt taşıyıcısı koyar; üretimde null, SDK kendi HTTP taşıyıcısını kullanır.</param>
-    public static void Configure(SentrySerilogOptions options, string dsn, ITransport? transport)
+    /// <param name="environment">Sentry:Environment (staging'de "staging"); boşsa SDK varsayılanı.</param>
+    public static void Configure(SentrySerilogOptions options, string dsn, ITransport? transport, string? environment = null)
     {
         options.Dsn = dsn;
+        if (!string.IsNullOrWhiteSpace(environment))
+        {
+            options.Environment = environment;
+        }
+
         options.SendDefaultPii = false;
         options.MinimumEventLevel = LogEventLevel.Error;
         options.SetBeforeSend((sentryEvent, _) => Scrub(sentryEvent));

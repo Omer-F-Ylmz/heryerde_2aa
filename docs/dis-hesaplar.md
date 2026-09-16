@@ -36,12 +36,13 @@ Prod'da değerler `docker-compose.prod.yml` üzerinden verilir; son sütun orada
 | Fatura/dekont gizli klasörü | [Ömer] sunucu diski | `PrivateFiles:Root` (boşsa içerik kökü altında `private`; konteynerde `/app/private`, `heryerde-private` volume'u) | Hayır | — (compose volume) |
 | Toplu ürün içe aktarmada izinli görsel kökenleri | [Ömer] görsel barındırma | `Shop:ImageOrigins` (yerel `/uploads/…` her zaman izinli; listede olmayan kökenli görsel satırı hatalı sayılır) | Hayır | — (appsettings) |
 | Havale bildirimi hız sınırı | — | `RateLimit:PaymentNoticePerMinute` (IP başına, varsayılan 5) | Hayır | — (appsettings) |
+| Web imajı (CD, compose hedefi) | GitHub Actions `deploy.yml` yazar (`ghcr.io/<repo>/web:<commit>`) | — (compose `image`) | Hayır (boşsa yerelde derlenen `heryerde-web:latest`) | `HERYERDE_WEB_IMAGE` |
 | ETBİS kayıt numarası | [MÜŞTERİ] eticaret.gov.tr ETBİS kaydı | `Legal:EtbisNo` (boşken altbilgide bant görünmez) | Hayır (kayıt tamamlanınca) | `HERYERDE_ETBIS_NO` |
 
 ## Notlar
 - `Notifications:Host` ya da `Notifications__From` boşken gönderici "yapılandırılmamış" sayılır;
   kuyruktaki postalar silinmez, ayar geldiğinde ilk turda gönderilir. Bekleyen en eski posta 10 dakikayı
-  geçerse `/health/ready` 503 döner.
+  geçerse `/health/ready` 503 döner (staging hariç: orada SMTP bilerek kapalıdır).
 - `Notifications__StoreTo` boşsa mağaza bildirimi hiç kuyruğa girmez; müşteri postası etkilenmez.
 - `Iyzico__ApiKey` ya da `Iyzico__SecretKey` boşken ödeme sayfasında kart seçeneği hiç görünmez, kartla
   gelen sipariş isteği 400 alır; uygulama açılır. Canlı anahtarlar gelince `Iyzico:BaseUrl` ve

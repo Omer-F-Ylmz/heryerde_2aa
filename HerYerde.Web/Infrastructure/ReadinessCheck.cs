@@ -1,16 +1,19 @@
 using HerYerde.Business.Abstract;
 using HerYerde.DataAccess.Concrete.EntityFramework.Contexts;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 
 namespace HerYerde.Web.Infrastructure;
 
 /// <summary>/health/ready: veritabanına bağlanılır, uploads klasörüne yazılabilir ve bekleyen en eski posta 10 dakikadan
 /// genç. /health yalnız sürecin ayakta olduğunu söyler; bu denetim trafiğin gerçekten karşılanabildiğini.
-/// Hangi koşulun bozulduğu yanıt gövdesine değil, sağlık denetimi loguna yazılır.</summary>
+/// Hangi koşulun bozulduğu yanıt gövdesine değil, sağlık denetimi loguna yazılır. Staging'de SMTP bilerek kapalı olduğundan
+/// kuyruk gecikmesi denetlenmez.</summary>
 public sealed class ReadinessCheck(
     HerYerdeContext context,
     IProductImageStorage storage,
-    INotificationService notifications) : IHealthCheck
+    INotificationService notifications,
+    IHostEnvironment environment) : IHealthCheck
 {
     public const string Tag = "ready";
 
@@ -35,7 +38,7 @@ public sealed class ReadinessCheck(
             return HealthCheckResult.Unhealthy("Uploads klasörüne yazılamıyor.", exception);
         }
 
-        return await notifications.OldestPendingAgeAsync(cancellationToken) is { } age && age >= MaxOutboxDelay
+        return !environment.IsStaging() && await notifications.OldestPendingAgeAsync(cancellationToken) is { } age && age >= MaxOutboxDelay
             ? HealthCheckResult.Unhealthy($"Bekleyen en eski posta {age.TotalMinutes:F0} dakikadır kuyrukta.")
             : HealthCheckResult.Healthy();
     }
