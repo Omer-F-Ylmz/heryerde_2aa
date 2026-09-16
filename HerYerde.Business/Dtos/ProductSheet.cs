@@ -22,6 +22,7 @@ public sealed record ProductSheetRow(
     string VariantStock,
     string Images,
     string Dimensions,
+    string Attributes = "",
     string? ExportedStock = null)
 {
     public bool IsVariant => Sku.Length > 0;

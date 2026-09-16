@@ -200,6 +200,45 @@ namespace HerYerde.DataAccess.Migrations
                         });
                 });
 
+            modelBuilder.Entity("HerYerde.Entities.Concrete.Brand", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("logo_url");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)")
+                        .HasColumnName("slug");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_brand_name");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ux_brand_slug");
+
+                    b.ToTable("brand", (string)null);
+                });
+
             modelBuilder.Entity("HerYerde.Entities.Concrete.Cart", b =>
                 {
                     b.Property<Guid>("Id")
@@ -317,6 +356,38 @@ namespace HerYerde.DataAccess.Migrations
                         .HasDatabaseName("ux_category_slug");
 
                     b.ToTable("category", (string)null);
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.CategoryAttributeTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int")
+                        .HasColumnName("category_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_category_attribute_template_category_id_name");
+
+                    b.ToTable("category_attribute_template", (string)null);
                 });
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.ContactMessage", b =>
@@ -1041,6 +1112,10 @@ namespace HerYerde.DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("BrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("brand_id");
+
                     b.Property<DateTime?>("CampaignEndsAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("campaign_ends_at");
@@ -1140,6 +1215,9 @@ namespace HerYerde.DataAccess.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BrandId")
+                        .HasDatabaseName("ix_product_brand_id");
+
                     b.HasIndex("GiftProductId");
 
                     b.HasIndex("Slug")
@@ -1160,6 +1238,47 @@ namespace HerYerde.DataAccess.Migrations
 
                             t.HasCheckConstraint("ck_product_stock", "[stock] IS NULL OR [stock] >= 0");
                         });
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.ProductAttribute", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name", "Value")
+                        .HasDatabaseName("ix_product_attribute_name_value");
+
+                    b.HasIndex("ProductId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_product_attribute_product_id_name");
+
+                    b.ToTable("product_attribute", (string)null);
                 });
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.ProductImage", b =>
@@ -1476,6 +1595,37 @@ namespace HerYerde.DataAccess.Migrations
                         });
                 });
 
+            modelBuilder.Entity("HerYerde.Entities.Concrete.SearchLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("ResultCount")
+                        .HasColumnType("int")
+                        .HasColumnName("result_count");
+
+                    b.Property<string>("Term")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("term");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt", "Term")
+                        .HasDatabaseName("ix_search_log_created_at_term");
+
+                    b.ToTable("search_log", (string)null);
+                });
+
             modelBuilder.Entity("HerYerde.Entities.Concrete.SlugHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -1547,6 +1697,15 @@ namespace HerYerde.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("HerYerde.Entities.Concrete.CategoryAttributeTemplate", b =>
+                {
+                    b.HasOne("HerYerde.Entities.Concrete.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("HerYerde.Entities.Concrete.GiftRegistryItem", b =>
                 {
                     b.HasOne("HerYerde.Entities.Concrete.GiftRegistry", null)
@@ -1605,6 +1764,11 @@ namespace HerYerde.DataAccess.Migrations
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.Product", b =>
                 {
+                    b.HasOne("HerYerde.Entities.Concrete.Brand", null)
+                        .WithMany()
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("HerYerde.Entities.Concrete.Category", null)
                         .WithMany()
                         .HasForeignKey("CategoryId")
@@ -1615,6 +1779,15 @@ namespace HerYerde.DataAccess.Migrations
                         .WithMany()
                         .HasForeignKey("GiftProductId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.ProductAttribute", b =>
+                {
+                    b.HasOne("HerYerde.Entities.Concrete.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.ProductImage", b =>

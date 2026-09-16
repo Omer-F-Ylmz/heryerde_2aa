@@ -34,7 +34,8 @@ public static class ProductSheet
         ("eksen2", "Varyantın 2. ekseni (renk …)."),
         ("varyant_stok", "Varyant satırında zorunlu stok."),
         ("gorseller", "\";\" ile ayrılmış görsel adresleri: yerel /uploads/… ya da izinli köken. Doluysa görsel listesi bununla değişir."),
-        ("olcu", "İsteğe bağlı ölçü (70x70 cm).")
+        ("olcu", "İsteğe bağlı ölçü (70x70 cm)."),
+        ("ozellikler", "İsteğe bağlı \"ad:değer\" çiftleri \";\" ile (Malzeme:Çelik;Hacim:3 L). Doluysa ürünün özellikleri bununla değişir; boşsa dokunulmaz.")
     ];
 
     public static byte[] Write(IEnumerable<ProductSheetRow> rows)
@@ -133,7 +134,7 @@ public static class ProductSheet
                 }
 
                 rows.Add(new ProductSheetRow(number, cells[0], cells[1], cells[2], cells[3], cells[4], cells[5], cells[6], cells[7],
-                    cells[8], cells[9], cells[10], cells[11], cells[12], cells[13], cells[14], cells[15], cells[16],
+                    cells[8], cells[9], cells[10], cells[11], cells[12], cells[13], cells[14], cells[15], cells[16], cells[17],
                     exported.GetValueOrDefault(StampKey(cells[0], cells[11]))));
             }
 
@@ -167,7 +168,8 @@ public static class ProductSheet
         string[] values =
         [
             row.Id, row.Name, row.Slug, row.CategorySlug, row.Description, row.Price, row.CampaignPrice, row.CampaignLabel,
-            row.CampaignEndsAt, row.Stock, row.IsActive, row.Sku, row.Axis1, row.Axis2, row.VariantStock, row.Images, row.Dimensions
+            row.CampaignEndsAt, row.Stock, row.IsActive, row.Sku, row.Axis1, row.Axis2, row.VariantStock, row.Images, row.Dimensions,
+            row.Attributes
         ];
         for (var i = 0; i < values.Length; i++)
         {

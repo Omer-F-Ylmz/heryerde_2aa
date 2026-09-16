@@ -37,21 +37,25 @@ public sealed class ProductRulesTests
     public void Varyant_zorunlulugu_kok_kategoriye_bagli(string rootSlug, bool expected)
         => Assert.Equal(expected, ProductRules.RequiresVariants(new Category { Slug = rootSlug }));
 
-    /// <summary>GÖZ-FIX-2: ad standardı cümle düzeni; marka ve kısaltmalar büyük kalır. Yalnız öneri, zorlama yok.</summary>
+    private static readonly string[] Brands = ["TAÇ", "Karaca"];
+
+    /// <summary>GÖZ-FIX-2: ad standardı cümle düzeni; marka adları kendi yazımıyla kalır. Yalnız öneri, zorlama yok.</summary>
     [Theory]
     [InlineData("Katlanabilir Mutfak Seti 4'lü", "Katlanabilir mutfak seti 4'lü")]
     [InlineData("Çelik Telli Peynir Kesme Tahtası", "Çelik telli peynir kesme tahtası")]
     [InlineData("TAÇ Çelik Tencere Seti 3'lü", "TAÇ çelik tencere seti 3'lü")]
-    [InlineData("Kristal Görünümlü LED Masa Lambası", "Kristal görünümlü LED masa lambası")]
+    // D15 B1: istisna listesi marka tablosundan; "LED" marka olmadığı için artık korunmaz.
+    [InlineData("Kristal Görünümlü LED Masa Lambası", "Kristal görünümlü led masa lambası")]
+    [InlineData("DÖKÜM TAVA KARACA 28 CM", "Döküm tava Karaca 28 cm")]
     [InlineData("altın işlemeli çatal kaşık takımı", "Altın işlemeli çatal kaşık takımı")]
     [InlineData("İPEK DESENLİ SERVİS TABAĞI", "İpek desenli servis tabağı")]
     [InlineData("  hasır  örgü   saksı sepeti  ", "Hasır örgü saksı sepeti")]
     public void Onerilen_ad_cumle_duzenine_cekilir(string input, string expected)
-        => Assert.Equal(expected, ProductRules.NormalizeName(input));
+        => Assert.Equal(expected, ProductRules.NormalizeName(input, Brands));
 
     [Theory]
     [InlineData("Hasır örgü saksı sepeti")]
     [InlineData("TAÇ çelik tencere seti 3'lü")]
     public void Standarda_uyan_ad_degismez(string name)
-        => Assert.Equal(name, ProductRules.NormalizeName(name));
+        => Assert.Equal(name, ProductRules.NormalizeName(name, Brands));
 }

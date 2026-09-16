@@ -91,6 +91,11 @@ public static class TestData
         new EfUnitOfWork(context),
         TestClock.Fixed);
 
+    public static SearchLogManager NewSearchLogManager(HerYerdeContext context) => new(
+        new EfSearchLogDal(context),
+        new EfUnitOfWork(context),
+        TestClock.Fixed);
+
     public static CouponManager NewCouponManager(HerYerdeContext context, TimeProvider? clock = null) => new(
         new EfCouponDal(context),
         new EfCartDal(context),
@@ -321,6 +326,27 @@ public static class TestData
         });
         await new EfUnitOfWork(context).SaveChangesAsync();
         return url;
+    }
+
+    public static async Task<int> AddBrandAsync(HerYerdeContext context, string name, string slug)
+    {
+        var brand = new Brand { Name = name, Slug = slug };
+        await new EfBrandDal(context).AddAsync(brand);
+        await new EfUnitOfWork(context).SaveChangesAsync();
+        return brand.Id;
+    }
+
+    public static async Task AddAttributeAsync(HerYerdeContext context, int productId, string name, string value, int sortOrder = 0)
+    {
+        await new EfProductAttributeDal(context).AddAsync(new ProductAttribute { ProductId = productId, Name = name, Value = value, SortOrder = sortOrder });
+        await new EfUnitOfWork(context).SaveChangesAsync();
+    }
+
+    public static async Task SetBrandAsync(HerYerdeContext context, int productId, int brandId)
+    {
+        var product = (await new EfProductDal(context).GetTrackedAsync(p => p.Id == productId))!;
+        product.BrandId = brandId;
+        await new EfUnitOfWork(context).SaveChangesAsync();
     }
 
     /// <summary>Çeyiz listesi; paylaşılan adres ve yönetim anahtarıyla döner.</summary>

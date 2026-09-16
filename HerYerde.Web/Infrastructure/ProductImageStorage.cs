@@ -27,6 +27,12 @@ public interface IProductImageStorage
 
     /// <summary>Kategori görselinin iki kesitini siler; depo biçiminde olmayan adres atlanır.</summary>
     void DeleteCategory(string url);
+
+    /// <summary>Marka logosu: oranı korunarak en çok 320×160 webp; adresini döner.</summary>
+    Task<string> SaveBrandLogoAsync(int brandId, Stream content, CancellationToken cancellationToken = default);
+
+    /// <summary>Depo biçimindeki marka logosunu siler; başka adres atlanır.</summary>
+    void DeleteBrandLogo(string url);
 }
 
 /// <summary>Kategori görseli adresleri: kayıtta 16:9 kesit tutulur, kare kesit aynı addan türetilir.</summary>
@@ -130,6 +136,28 @@ public sealed partial class ProductImageStorage : IProductImageStorage
         File.Delete(Path.Combine(directory, match.Groups[2].Value + CategoryImages.SquareSuffix));
     }
 
+    public async Task<string> SaveBrandLogoAsync(int brandId, Stream content, CancellationToken cancellationToken = default)
+    {
+        using var source = await Image.LoadAsync<Rgba32>(content, cancellationToken);
+        var id = brandId.ToString(CultureInfo.InvariantCulture);
+        var directory = Path.Combine(UploadsPath, "brands", id);
+        var name = Guid.NewGuid().ToString("n");
+        Directory.CreateDirectory(directory);
+
+        source.Mutate(context => context.Resize(new ResizeOptions { Size = new Size(320, 160), Mode = ResizeMode.Max }));
+        await source.SaveAsync(Path.Combine(directory, name + ".webp"), new WebpEncoder { Quality = 90 }, cancellationToken);
+        return $"/uploads/brands/{id}/{name}.webp";
+    }
+
+    public void DeleteBrandLogo(string url)
+    {
+        var match = BrandLogoUrl().Match(url);
+        if (match.Success)
+        {
+            File.Delete(Path.Combine(UploadsPath, "brands", match.Groups[1].Value, match.Groups[2].Value + ".webp"));
+        }
+    }
+
     /// <summary>Kare doldurma rengi: kaynağın dört kenarındaki piksellerin kanal bazlı medyanı.
     /// Medyan uç değerleri (logo, etiket, gölge köşesi) kendiliğinden kırpar; zemin rengi kalır.</summary>
     internal static Color EdgeColor(Image<Rgba32> source)
@@ -197,4 +225,7 @@ public sealed partial class ProductImageStorage : IProductImageStorage
 
     [GeneratedRegex(@"^/uploads/categories/(\d+)/([0-9a-f]{32})-16x9\.webp$")]
     private static partial Regex CategoryUrl();
+
+    [GeneratedRegex(@"^/uploads/brands/(\d+)/([0-9a-f]{32})\.webp$")]
+    private static partial Regex BrandLogoUrl();
 }

@@ -23,6 +23,7 @@ public static class TestDb
         await context.Database.MigrateAsync();
         await context.OutboxMessages.ExecuteDeleteAsync();
         await context.ContactMessages.ExecuteDeleteAsync();
+        await context.SearchLogs.ExecuteDeleteAsync();
         await context.ProductReviews.ExecuteDeleteAsync();
         await context.KvkkRequests.ExecuteDeleteAsync();
         await context.Announcements.ExecuteDeleteAsync();
@@ -39,8 +40,11 @@ public static class TestDb
         await context.GiftRegistries.ExecuteDeleteAsync();
         await context.ProductImages.ExecuteDeleteAsync();
         await context.ProductVideos.ExecuteDeleteAsync();
+        await context.ProductAttributes.ExecuteDeleteAsync();
+        await context.CategoryAttributeTemplates.ExecuteDeleteAsync();
         await context.ProductVariants.ExecuteDeleteAsync();
         await context.Products.IgnoreQueryFilters().ExecuteDeleteAsync();
+        await context.Brands.ExecuteDeleteAsync();
         await context.Categories.ExecuteDeleteAsync();
         await context.AdminAuditLogs.ExecuteDeleteAsync();
         await context.AdminUsers.ExecuteDeleteAsync();

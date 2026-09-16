@@ -1,0 +1,84 @@
+@using System.Globalization
+@using HerYerde.Business.Dtos
+@model SearchReport
+@{
+    ViewData["Title"] = "Arama raporu";
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Vitrin</p>
+        <h1 class="display-2">Arama raporu</h1>
+        <p class="page-head__note">Son 30 günde vitrinde aranan terimler. Günlükte yalnız terim, sonuç sayısı ve zaman durur; ziyaretçiye bağlanan bilgi tutulmaz. Bir yılı dolduran satırlar gecelik silinir.</p>
+    </div>
+</div>
+
+<section class="report-block" id="sonucsuz" aria-labelledby="sonucsuz-baslik">
+    <h2 class="heading-3" id="sonucsuz-baslik">Sonuç bulunamayan aramalar</h2>
+    <p class="page-head__note">Ürün adına ya da docs/arama-esanlam.md sözlüğüne eklenecek kelimeler.</p>
+    @if (Model.ZeroResults.Count == 0)
+    {
+        <p class="empty surface-elevated">Son 30 günde sonuçsuz arama yok.</p>
+    }
+    else
+    {
+        <div class="table-wrap surface-elevated">
+            <table class="table">
+                <caption class="visually-hidden">Sonuç bulunamayan terimler ve aranma sayıları</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Terim</th>
+                        <th scope="col" class="table__num">Aranma</th>
+                        <th scope="col">Son arama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var row in Model.ZeroResults)
+                {
+                    <tr>
+                        <th scope="row">@row.Term</th>
+                        <td class="table__num">@row.Searches</td>
+                        <td>@row.LastSearchedAt.ToString("d MMM yyyy HH:mm", turkish)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section class="report-block" id="en-cok" aria-labelledby="en-cok-baslik">
+    <h2 class="heading-3" id="en-cok-baslik">En çok arananlar</h2>
+    @if (Model.Top.Count == 0)
+    {
+        <p class="empty surface-elevated">Son 30 günde arama yok.</p>
+    }
+    else
+    {
+        <div class="table-wrap surface-elevated">
+            <table class="table">
+                <caption class="visually-hidden">En çok aranan terimler, aranma ve sonuç sayıları</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Terim</th>
+                        <th scope="col" class="table__num">Aranma</th>
+                        <th scope="col" class="table__num">Sonuç</th>
+                        <th scope="col">Son arama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var row in Model.Top)
+                {
+                    <tr>
+                        <th scope="row">@row.Term</th>
+                        <td class="table__num">@row.Searches</td>
+                        <td class="table__num">@row.MaxResults</td>
+                        <td>@row.LastSearchedAt.ToString("d MMM yyyy HH:mm", turkish)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

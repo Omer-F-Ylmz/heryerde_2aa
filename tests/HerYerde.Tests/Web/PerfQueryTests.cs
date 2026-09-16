@@ -29,14 +29,15 @@ public sealed class PerfQueryTests : IAsyncLifetime
     public async Task Ana_sayfa_en_cok_yedi_sorgu_atar()
         => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/"), 1, 7);
 
-    /// <summary>(D14) Duyuru şeridi her vitrin sayfasına bir sorgu ekler.</summary>
+    /// <summary>(D14) Duyuru şeridi her vitrin sayfasına bir sorgu ekler. (D15) Süzgeç panelinin marka ve özellik
+    /// sayıları bir sorgu ekler (tek SQL, UNION ALL).</summary>
     [Fact]
-    public async Task Ev_listesi_en_cok_dort_sorgu_atar()
-        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/ev"), 1, 4);
+    public async Task Ev_listesi_en_cok_bes_sorgu_atar()
+        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/ev"), 1, 5);
 
     [Fact]
-    public async Task Alt_kategori_en_cok_dort_sorgu_atar()
-        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/ev/tencere-tava"), 1, 4);
+    public async Task Alt_kategori_en_cok_bes_sorgu_atar()
+        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/ev/tencere-tava"), 1, 5);
 
     /// <summary>(D15) Ürünün videosu galerinin ilk öğesi olduğu için bir sorgu ekler; benzer ürünlerin kart önizlemesi
     /// listeleme sorgusunun içinde gelir, ayrıca sorulmaz.</summary>

@@ -257,3 +257,106 @@ document.querySelectorAll("[data-iban-copy]").forEach(function (button) {
     card.addEventListener("pointerleave", stop);
   });
 })();
+
+// Süzgeç paneli: seçim değişince sonuç sayısı sayfa yenilenmeden sorulur (sayim=1, düz metin); gönderim yine formun
+// kendisi, JS'siz de çalışır. ::details-content desteklemeyen tarayıcıda geniş ekranda panel açık başlar.
+(function () {
+  var form = document.querySelector("[data-filter-form]");
+  if (!form) { return; }
+
+  var details = form.closest("[data-filters]");
+  if (details && !(window.CSS && CSS.supports("selector(::details-content)")) && window.matchMedia("(min-width: 1024px)").matches) {
+    details.open = true;
+  }
+
+  var button = form.querySelector("[data-filter-count]");
+  var status = form.querySelector("[data-filter-status]");
+  var pending = null;
+
+  form.addEventListener("change", function () {
+    var params = new URLSearchParams(new FormData(form));
+    params.set("sayim", "1");
+    if (pending) { pending.abort(); }
+    pending = new AbortController();
+
+    fetch(form.getAttribute("action") + "?" + params.toString(), { signal: pending.signal })
+      .then(function (response) { return response.ok ? response.text() : ""; })
+      .then(function (text) {
+        if (!/^\d+$/.test(text)) { return; }
+        button.textContent = text === "0" ? "Uyan ürün yok" : text + " ürünü göster";
+        status.textContent = text + " ürün bulundu";
+      })
+      .catch(function () {});
+  });
+})();
+
+// Arama önerileri: başlıktaki kutuya yazılınca 200 ms durulunca /ara/oner sorulur; aşağı/yukarı ok önerilerde gezer, Esc
+// kapatıp kutuya döner. JS yoksa kutu düz GET formudur.
+(function () {
+  var input = document.querySelector("[data-suggest]");
+  if (!input || !window.fetch) { return; }
+
+  var form = input.form;
+  var panel = document.createElement("div");
+  panel.className = "suggest";
+  panel.id = "search-suggest";
+  panel.hidden = true;
+  var status = document.createElement("p");
+  status.className = "visually-hidden";
+  status.setAttribute("role", "status");
+  form.appendChild(panel);
+  form.appendChild(status);
+  input.setAttribute("autocomplete", "off");
+  input.setAttribute("aria-controls", panel.id);
+  input.setAttribute("aria-expanded", "false");
+
+  var timer = null;
+  var pending = null;
+  var items = function () { return Array.prototype.slice.call(panel.querySelectorAll(".suggest__item")); };
+  var show = function (open) {
+    panel.hidden = !open;
+    input.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+
+  input.addEventListener("input", function () {
+    clearTimeout(timer);
+    if (pending) { pending.abort(); }
+    var term = input.value.trim();
+    if (term.length < 2) { show(false); return; }
+
+    timer = setTimeout(function () {
+      pending = new AbortController();
+      fetch("/ara/oner?q=" + encodeURIComponent(term), { signal: pending.signal })
+        .then(function (response) { return response.ok ? response.text() : ""; })
+        .then(function (html) {
+          panel.innerHTML = html;
+          var count = items().length;
+          status.textContent = count > 0 ? count + " öneri" : "";
+          show(count > 0);
+        })
+        .catch(function () {});
+    }, 200);
+  });
+
+  form.addEventListener("keydown", function (event) {
+    var list = items();
+    if (panel.hidden || list.length === 0) { return; }
+
+    if (event.key === "Escape") {
+      show(false);
+      input.focus();
+      return;
+    }
+
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") { return; }
+    event.preventDefault();
+    var next = list.indexOf(document.activeElement) + (event.key === "ArrowDown" ? 1 : -1);
+    if (next < 0) { input.focus(); } else { list[Math.min(next, list.length - 1)].focus(); }
+  });
+
+  // Tıklama odağı kutuda tutar (Safari bağlantıya odak vermez, yoksa panel tıklamadan önce kapanırdı); odak formdan çıkınca kapanır.
+  panel.addEventListener("mousedown", function (event) { event.preventDefault(); });
+  form.addEventListener("focusout", function (event) {
+    if (!form.contains(event.relatedTarget)) { show(false); }
+  });
+})();

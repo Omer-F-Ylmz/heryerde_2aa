@@ -1,0 +1,56 @@
+@using HerYerde.Web.Models
+@model FilterPanelVm
+@* Mobilde kapalı <details>: JS'siz açılır, içerik akışta kalır. 1024+ özet gizli, içerik her zaman açık (CSS). *@
+<details class="filter-panel" data-filters>
+    <summary class="btn btn--outline filter-panel__toggle">
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg>
+        Filtrele@(Model.ActiveCount > 0 ? $" ({Model.ActiveCount})" : "")
+    </summary>
+    <form class="filter-panel__form" method="get" action="@Model.Action" data-no-csrf data-filter-form>
+        <h2 class="filter-panel__title">Filtrele</h2>
+        @foreach (var hidden in Model.Hidden)
+        {
+            <input type="hidden" name="@hidden.Name" value="@hidden.Value" />
+        }
+        @foreach (var group in Model.Groups)
+        {
+            <fieldset class="filter-panel__group">
+                <legend class="filter-panel__legend">@group.Title</legend>
+                @foreach (var option in group.Options)
+                {
+                    <label class="filter-option">
+                        <input type="checkbox" name="@option.Name" value="@option.Value" checked="@option.Checked" />
+                        <span class="filter-option__label">@option.Label</span>
+                        @if (option.Count is { } count)
+                        {
+                            <span class="filter-option__count">@count</span>
+                        }
+                    </label>
+                }
+            </fieldset>
+        }
+        <fieldset class="filter-panel__group">
+            <legend class="filter-panel__legend">Fiyat (₺)</legend>
+            <div class="filter-panel__range">
+                <div class="field">
+                    <label class="field__label" for="filter-min">En az</label>
+                    <input class="field__input" id="filter-min" name="min" type="number"
+                           min="0" step="0.01" inputmode="decimal" value="@StoreCatalog.Amount(Model.Min)" />
+                </div>
+                <div class="field">
+                    <label class="field__label" for="filter-max">En çok</label>
+                    <input class="field__input" id="filter-max" name="max" type="number"
+                           min="0" step="0.01" inputmode="decimal" value="@StoreCatalog.Amount(Model.Max)" />
+                </div>
+            </div>
+        </fieldset>
+        <div class="filter-panel__foot">
+            <button class="btn btn--cta filter-panel__go" type="submit" data-filter-count>@Model.Total ürünü göster</button>
+            @if (Model.ActiveCount > 0)
+            {
+                <a class="btn btn--ghost btn--sm" href="@Model.ClearUrl">Temizle</a>
+            }
+            <p class="visually-hidden" role="status" aria-live="polite" data-filter-status></p>
+        </div>
+    </form>
+</details>

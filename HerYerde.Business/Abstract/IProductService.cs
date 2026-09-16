@@ -16,6 +16,9 @@ public interface IProductService
     /// <summary>Vitrin: yayındaki ürünler alt kategori slug'ıyla; süzme/sıralama/sayfalama SQL'de.</summary>
     Task<(HttpStatusCode, IDataResult<ProductPage>)> GetActiveAsync(ProductQuery query, CancellationToken cancellationToken = default);
 
+    /// <summary>Süzgeç paneli seçenekleri; sayılar ziyaretçinin seçimlerinden bağımsız, kapsamdan.</summary>
+    Task<ListingFacets> GetFacetsAsync(ProductQuery query, CancellationToken cancellationToken = default);
+
     /// <summary>Ana sayfa hero'su: kampanyası süren, en yakın biten ürün; yoksa null.</summary>
     Task<(HttpStatusCode, IDataResult<ProductListItem?>)> GetCampaignHeroAsync(DateTime now, CancellationToken cancellationToken = default);
 

@@ -21,21 +21,11 @@
     else
     {
         <h1 class="display-2 h-mark">&#8220;@Model.Query&#8221; için @Model.Total sonuç</h1>
-        <div class="listing-bar">
-            <partial name="Components/_SortTabs" model="Model.Sort" />
-            <partial name="Components/_PriceFilter" model="Model.Filter" />
-        </div>
 
-        if (Model.Cards.Count > 0)
+        // Süzgeçsiz boş sonuçta panelin süzeceği bir şey yok: öneriler gösterilir.
+        if (Model.Total > 0 || Model.Filter!.ActiveCount > 0)
         {
-            <h2 class="visually-hidden">Sonuçlar</h2>
-            <div class="grid">
-                @foreach (var card in Model.Cards)
-                {
-                    <partial name="Components/_ProductCard" model="card" />
-                }
-            </div>
-            <partial name="Components/_Pagination" model="Model.Pagination" />
+            <partial name="Components/_Listing" model="new ListingVm(Model.Sort, Model.Filter!, Model.Cards, Model.Pagination)" />
         }
         else
         {

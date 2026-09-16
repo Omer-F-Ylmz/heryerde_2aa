@@ -175,6 +175,19 @@
             </form>
         </section>
 
+        <section class="side-card surface-elevated" aria-labelledby="attributes-heading">
+            <h2 class="heading-3" id="attributes-heading">Özellikler</h2>
+            <p class="side-card__note">Her satıra "ad: değer" (ör. Malzeme: Çelik). Değeri boş satır kaydedilmez; boş satırlar kategori şablonundan gelir. Ürün sayfasında tablo, listelemede süzgeç olur.</p>
+            <form class="side-card__form" asp-area="Admin" asp-controller="Products" asp-action="Attributes" method="post">
+                <input type="hidden" name="productId" value="@Model.Id" />
+                <div class="field">
+                    <label class="field__label" for="product-attributes">Özellikler</label>
+                    <textarea class="field__input field__input--area" id="product-attributes" name="text" rows="6" spellcheck="false">@Model.AttributesText</textarea>
+                </div>
+                <button class="btn btn--secondary btn--block" type="submit">Özellikleri kaydet</button>
+            </form>
+        </section>
+
         <section class="side-card surface-elevated" aria-labelledby="videos-heading">
             <h2 class="heading-3" id="videos-heading">Video</h2>
             <p class="side-card__note">mp4 ya da mov yükleyin (en çok 80 MB, 90 saniye). Sunucu 720p'ye indirir, kapak karesini ve kartlarda oynayan kısa önizlemeyi kendisi üretir.</p>

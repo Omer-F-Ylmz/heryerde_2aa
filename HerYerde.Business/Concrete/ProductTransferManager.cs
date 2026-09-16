@@ -17,6 +17,7 @@ public class ProductTransferManager : IProductTransferService
     private readonly IProductDal _productDal;
     private readonly IProductVariantDal _variantDal;
     private readonly IProductImageDal _imageDal;
+    private readonly IProductAttributeDal _attributeDal;
     private readonly ICategoryDal _categoryDal;
     private readonly ISlugHistoryDal _slugHistoryDal;
     private readonly IUnitOfWork _unitOfWork;
@@ -27,6 +28,7 @@ public class ProductTransferManager : IProductTransferService
         IProductDal productDal,
         IProductVariantDal variantDal,
         IProductImageDal imageDal,
+        IProductAttributeDal attributeDal,
         ICategoryDal categoryDal,
         ISlugHistoryDal slugHistoryDal,
         IUnitOfWork unitOfWork,
@@ -36,6 +38,7 @@ public class ProductTransferManager : IProductTransferService
         _productDal = productDal;
         _variantDal = variantDal;
         _imageDal = imageDal;
+        _attributeDal = attributeDal;
         _categoryDal = categoryDal;
         _slugHistoryDal = slugHistoryDal;
         _unitOfWork = unitOfWork;
@@ -49,6 +52,7 @@ public class ProductTransferManager : IProductTransferService
         var categories = (await _categoryDal.GetListAsync(null, cancellationToken)).ToDictionary(c => c.Id, c => c.Slug);
         var variants = (await _variantDal.GetListAsync(null, cancellationToken)).ToLookup(v => v.ProductId);
         var images = (await _imageDal.GetListAsync(null, cancellationToken)).ToLookup(i => i.ProductId);
+        var attributes = (await _attributeDal.GetListAsync(null, cancellationToken)).ToLookup(a => a.ProductId);
 
         var rows = new List<ProductSheetRow>();
         foreach (var product in products)
@@ -71,7 +75,8 @@ public class ProductTransferManager : IProductTransferService
                 string.Empty,
                 string.Empty,
                 string.Join("; ", images[product.Id].OrderBy(i => i.SortOrder).ThenBy(i => i.Id).Select(i => i.Url)),
-                product.Dimensions ?? string.Empty));
+                product.Dimensions ?? string.Empty,
+                AttributeText.Format(attributes[product.Id].OrderBy(a => a.SortOrder).Select(a => new AttributePair(a.Name, a.Value)), ";")));
 
             foreach (var variant in variants[product.Id].OrderBy(v => v.Id))
             {
@@ -143,6 +148,13 @@ public class ProductTransferManager : IProductTransferService
                 if (step.Images is { } urls)
                 {
                     removedImages.AddRange(await ReplaceImagesAsync(product, urls, cancellationToken));
+                }
+
+                // Boş kolon özelliklere dokunmaz: eski şablonla hazırlanmış tablo özellikleri silmesin.
+                if (row.Attributes.Trim().Length > 0)
+                {
+                    await AttributeManager.ReplaceAsync(_attributeDal, product.Id, AttributeText.Parse(row.Attributes).Pairs, cancellationToken);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
                 }
             }
 
@@ -256,6 +268,11 @@ public class ProductTransferManager : IProductTransferService
                 if (row.IsActive.Trim().Length > 0 && !IsFlag(row.IsActive))
                 {
                     return "yayinda 1/0 (evet/hayır) olmalı.";
+                }
+
+                if (AttributeText.Parse(row.Attributes).Problem is { } attributeProblem)
+                {
+                    return "ozellikler: " + attributeProblem;
                 }
 
                 var root = category.ParentId is { } parentId ? categories.FirstOrDefault(c => c.Id == parentId) ?? category : category;

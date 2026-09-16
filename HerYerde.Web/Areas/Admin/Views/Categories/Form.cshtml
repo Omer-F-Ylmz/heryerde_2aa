@@ -74,6 +74,12 @@
         </div>
     }
 
+    <div class="field">
+        <label class="field__label" asp-for="AttributeTemplate"></label>
+        <textarea class="field__input field__input--area" asp-for="AttributeTemplate" rows="4" spellcheck="false"></textarea>
+        <span class="field__hint">Her satıra bir özellik adı (ör. Malzeme, Hacim). Bu kategorideki ürün formunda boş satır olarak önerilir; alt kategoride şablon yoksa üst kategorininki kullanılır.</span>
+    </div>
+
     <label class="switch">
         <input asp-for="IsActive" type="checkbox" />
         <span>Yayında</span>

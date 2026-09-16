@@ -1,0 +1,57 @@
+@using HerYerde.Web.Models
+@model ListingVm
+@* Kategori, marka ve arama listesi: solda süzgeç paneli; sağda sıralama, seçili süzgeç çipleri, ızgara ve sayfalar. *@
+<div class="listing">
+    <partial name="Components/_FilterPanel" model="Model.Filter" />
+    <div class="listing__main">
+        <div class="listing-bar">
+            <partial name="Components/_SortTabs" model="Model.Sort" />
+        </div>
+        @if (Model.Filter.Chips.Count > 0)
+        {
+            <ul class="filter-chips" aria-label="Seçili süzgeçler">
+                @foreach (var chip in Model.Filter.Chips)
+                {
+                    <li>
+                        <a class="filter-chip" href="@chip.RemoveUrl" aria-label="@chip.Label süzgecini kaldır">
+                            @chip.Label
+                            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                        </a>
+                    </li>
+                }
+                <li><a class="filter-chips__clear" href="@Model.Filter.ClearUrl">Tümünü temizle</a></li>
+            </ul>
+        }
+        <h2 class="visually-hidden">Ürünler</h2>
+        @if (Model.Cards.Count == 0)
+        {
+            <div class="empty surface-elevated">
+                @if (Model.Filter.ActiveCount > 0)
+                {
+                    <p class="empty__title">Bu süzgeçlere uyan ürün yok.</p>
+                    <p>Bir süzgeci kaldırın ya da hepsini temizleyip yeniden seçin.</p>
+                    <a class="btn btn--outline" href="@Model.Filter.ClearUrl">Süzgeçleri temizle</a>
+                }
+                else
+                {
+                    <p class="empty__title">Şu an ürün yok.</p>
+                    <p>Bu rafa yeni ürünler geldiğinde burada göreceksiniz.</p>
+                    @if (Model.EmptyLink is { } other)
+                    {
+                        <a class="btn btn--outline" href="@other.Url">@other.Name</a>
+                    }
+                }
+            </div>
+        }
+        else
+        {
+            <div class="grid">
+                @foreach (var card in Model.Cards)
+                {
+                    <partial name="Components/_ProductCard" model="card" />
+                }
+            </div>
+        }
+        <partial name="Components/_Pagination" model="Model.Pagination" />
+    </div>
+</div>

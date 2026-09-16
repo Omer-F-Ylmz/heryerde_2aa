@@ -127,6 +127,11 @@ public sealed class CategoryFormViewModel
 
     /// <summary>Kayıtlı 16:9 görsel; formda önizleme.</summary>
     public string? ImageUrl { get; set; }
+
+    /// <summary>Bu kategorideki ürünlere önerilecek özellik adları; her satıra bir ad.</summary>
+    [StringLength(2000)]
+    [Display(Name = "Özellik şablonu")]
+    public string? AttributeTemplate { get; set; }
     public List<Category> Parents { get; set; } = [];
     public string? ErrorMessage { get; set; }
 }
@@ -150,7 +155,7 @@ public sealed class ProductFormViewModel
 
     /// <summary>Ad standarttan sapıyorsa önerilen yazım; uyuyorsa null. Yalnız ipucudur, kayıt engellenmez.</summary>
     public string? SuggestedName
-        => ProductRules.NormalizeName(Name) is var suggested && suggested.Length > 0 && suggested != Name ? suggested : null;
+        => ProductRules.NormalizeName(Name, Brands.Select(b => b.Name)) is var suggested && suggested.Length > 0 && suggested != Name ? suggested : null;
 
     [Required(ErrorMessage = "Açıklama gerekli.")]
     [Display(Name = "Açıklama")]
@@ -159,6 +164,9 @@ public sealed class ProductFormViewModel
     [Range(1, int.MaxValue, ErrorMessage = "Kategori seçin.")]
     [Display(Name = "Kategori")]
     public int CategoryId { get; set; }
+
+    [Display(Name = "Marka (isteğe bağlı)")]
+    public int? BrandId { get; set; }
 
     [Range(0, 999999)]
     [Display(Name = "Fiyat")]
@@ -218,11 +226,17 @@ public sealed class ProductFormViewModel
 
     public List<Category> Categories { get; set; } = [];
 
+    /// <summary>Seçim listesi; adların yazımı ad önerisinde de kullanılır.</summary>
+    public List<Brand> Brands { get; set; } = [];
+
     /// <summary>Hediye olarak seçilebilecek ürünler; kendisi listede yer almaz.</summary>
     public List<Product> GiftProducts { get; set; } = [];
     public List<ProductVariant> Variants { get; set; } = [];
     public List<ProductImage> Images { get; set; } = [];
     public List<ProductVideo> Videos { get; set; } = [];
+
+    /// <summary>"ad: değer" satırları; özellik yoksa kategori şablonunun adları boş değerle önerilir.</summary>
+    public string AttributesText { get; set; } = string.Empty;
     public string? ErrorMessage { get; set; }
 }
 
@@ -561,4 +575,20 @@ public sealed class VideoFormViewModel
 
     /// <summary>Yüklenen kaynak; adres kullanıcıdan alınmaz, sunucu yeniden kodlayıp üretir.</summary>
     public IFormFile? Video { get; set; }
+}
+
+public sealed class BrandFormViewModel
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Marka adı gerekli.")]
+    [StringLength(60)]
+    [Display(Name = "Marka adı")]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>İsteğe bağlı; sunucu en çok 320×160 webp'ye indirir.</summary>
+    public IFormFile? Logo { get; set; }
+
+    public string? LogoUrl { get; set; }
+    public string? ErrorMessage { get; set; }
 }

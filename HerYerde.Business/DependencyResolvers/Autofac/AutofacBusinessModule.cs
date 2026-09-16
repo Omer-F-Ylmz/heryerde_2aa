@@ -14,10 +14,13 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfUnitOfWork>().As<IUnitOfWork>().InstancePerLifetimeScope();
 
         builder.RegisterType<EfCategoryDal>().As<ICategoryDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfBrandDal>().As<IBrandDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductDal>().As<IProductDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductVariantDal>().As<IProductVariantDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductImageDal>().As<IProductImageDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductVideoDal>().As<IProductVideoDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfProductAttributeDal>().As<IProductAttributeDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfCategoryAttributeTemplateDal>().As<ICategoryAttributeTemplateDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfAdminUserDal>().As<IAdminUserDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfCartDal>().As<ICartDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfCartItemDal>().As<ICartItemDal>().InstancePerLifetimeScope();
@@ -27,6 +30,7 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfOutboxMessageDal>().As<IOutboxMessageDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfPaymentDal>().As<IPaymentDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfContactMessageDal>().As<IContactMessageDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfSearchLogDal>().As<ISearchLogDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductReviewDal>().As<IProductReviewDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfSlugHistoryDal>().As<ISlugHistoryDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfPaymentNoticeDal>().As<IPaymentNoticeDal>().InstancePerLifetimeScope();
@@ -41,6 +45,8 @@ public class AutofacBusinessModule : Module
 
         builder.RegisterType<AdminAuthManager>().As<IAdminAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<CategoryManager>().As<ICategoryService>().InstancePerLifetimeScope();
+        builder.RegisterType<BrandManager>().As<IBrandService>().InstancePerLifetimeScope();
+        builder.RegisterType<AttributeManager>().As<IAttributeService>().InstancePerLifetimeScope();
         builder.RegisterType<ProductManager>().As<IProductService>().InstancePerLifetimeScope();
         builder.RegisterType<CartManager>().As<ICartService>().InstancePerLifetimeScope();
         builder.RegisterType<OrderManager>().As<IOrderService>().InstancePerLifetimeScope();
@@ -48,6 +54,7 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<NotificationManager>().As<INotificationService>().InstancePerLifetimeScope();
         builder.RegisterType<PaymentManager>().As<IPaymentService>().InstancePerLifetimeScope();
         builder.RegisterType<ContactManager>().As<IContactService>().InstancePerLifetimeScope();
+        builder.RegisterType<SearchLogManager>().As<ISearchLogService>().InstancePerLifetimeScope();
         builder.RegisterType<ReviewManager>().As<IReviewService>().InstancePerLifetimeScope();
         builder.RegisterType<ReportManager>().As<IReportService>().InstancePerLifetimeScope();
         builder.RegisterType<ProductTransferManager>().As<IProductTransferService>().InstancePerLifetimeScope();

@@ -5,6 +5,7 @@ using ClosedXML.Excel;
 using HerYerde.DataAccess.Concrete.EntityFramework;
 using HerYerde.Entities.Concrete;
 using HerYerde.Web.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 namespace HerYerde.Tests.Web;
 
@@ -15,7 +16,7 @@ public sealed class ProductTransferTests : IAsyncLifetime
 {
     private static readonly string[] Headers =
         ["id", "ad", "slug", "kategori_slug", "aciklama", "fiyat", "kampanya_fiyat", "kampanya_etiket", "kampanya_bitis",
-         "stok", "yayinda", "sku", "eksen1", "eksen2", "varyant_stok", "gorseller", "olcu"];
+         "stok", "yayinda", "sku", "eksen1", "eksen2", "varyant_stok", "gorseller", "olcu", "ozellikler"];
 
     private readonly UploadFactory _factory = new();
 
@@ -162,6 +163,36 @@ public sealed class ProductTransferTests : IAsyncLifetime
         Assert.Equal(3, tencere.Stock);
         Assert.Equal(1, (await new EfProductVariantDal(check).GetAsync(v => v.Sku == "SALVAR-M"))!.Stock);
         Assert.Equal(7, (await new EfProductVariantDal(check).GetAsync(v => v.Sku == "SALVAR-L"))!.Stock);
+    }
+
+    /// <summary>D15 B2: özellikler "ad:değer;ad:değer" kolonunda dışa çıkar ve içe aktarımda ürüne yazılır.</summary>
+    [Fact]
+    public async Task Ozellikler_kolonu_disa_aktarilir_ve_ice_aktarimda_yazilir()
+    {
+        await SeedAsync();
+        await using (var context = TestDb.NewContext())
+        {
+            var productId = (await new EfProductDal(context).GetAsync(p => p.Slug == "celik-tencere"))!.Id;
+            await TestData.AddAttributeAsync(context, productId, "Malzeme", "Çelik", sortOrder: 0);
+            await TestData.AddAttributeAsync(context, productId, "Hacim", "3 L", sortOrder: 1);
+        }
+
+        var admin = await _factory.CreateSignedInClientAsync();
+        using (var exported = new XLWorkbook(await (await admin.GetAsync("/admin/products/export")).Content.ReadAsStreamAsync()))
+        {
+            var row = exported.Worksheet(1).RowsUsed().Single(r => r.Cell(3).GetString() == "celik-tencere" && r.Cell(12).GetString().Length == 0);
+            Assert.Equal("Malzeme:Çelik;Hacim:3 L", row.Cell(18).GetString());
+        }
+
+        var preview = await (await UploadAsync(admin, Book(
+            Row(slug: "celik-tencere", name: "Çelik Tencere", category: "ev", price: "450", stock: "5", attributes: "Malzeme:Döküm;Renk:Kırmızı")))).Content.ReadAsStringAsync();
+        var confirm = await ConfirmAsync(admin, preview);
+
+        Assert.Equal(HttpStatusCode.Found, confirm.StatusCode);
+        await using var check = TestDb.NewContext();
+        Assert.Equal(
+            [("Malzeme", "Döküm"), ("Renk", "Kırmızı")],
+            (await check.ProductAttributes.OrderBy(a => a.SortOrder).ToListAsync()).Select(a => (a.Name, a.Value)));
     }
 
     [Fact]
@@ -341,8 +372,9 @@ public sealed class ProductTransferTests : IAsyncLifetime
         string axis1 = "",
         string axis2 = "",
         string variantStock = "",
-        string images = "")
-        => ["", name, slug, category, "", price, "", "", "", stock, "1", sku, axis1, axis2, variantStock, images, ""];
+        string images = "",
+        string attributes = "")
+        => ["", name, slug, category, "", price, "", "", "", stock, "1", sku, axis1, axis2, variantStock, images, "", attributes];
 
     private static byte[] Book(params string[][] rows)
     {

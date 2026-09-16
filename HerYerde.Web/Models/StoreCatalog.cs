@@ -212,21 +212,25 @@ public sealed record CategoryPageVm(
     string Title,
     IReadOnlyList<CategoryTabVm> Tabs,
     SortTabsVm Sort,
-    PriceFilterVm Filter,
+    FilterPanelVm Filter,
     IReadOnlyList<ProductCardVm> Cards,
     PaginationVm Pagination,
     int Total,
     string RootName = "Ev",
     CategoryTabVm? EmptyLink = null,
     string? BannerImage = null,
-    string? BannerIcon = null);
+    string? BannerIcon = null,
+    string? LogoUrl = null);
 
-/// <summary>Arama sonucu. Message doluysa (kısa terim) liste hiç sorgulanmaz.</summary>
+/// <summary>Arama önerisi satırı: ad, bağlantı ve sağdaki not (üründe fiyat, yoksa "Kategori"/"Marka").</summary>
+public sealed record SuggestionVm(string Name, string Url, string Note);
+
+/// <summary>Arama sonucu. Message doluysa (kısa terim) liste hiç sorgulanmaz, süzgeç paneli de yoktur.</summary>
 public sealed record SearchPageVm(
     string Query,
     string? Message,
     SortTabsVm Sort,
-    PriceFilterVm Filter,
+    FilterPanelVm? Filter,
     IReadOnlyList<ProductCardVm> Cards,
     IReadOnlyList<ProductCardVm> Suggestions,
     int Total,
@@ -247,7 +251,9 @@ public sealed record ProductPageVm(
     string WhatsAppUrl,
     IReadOnlyList<ProductCardVm> Similar,
     ReviewSectionVm Reviews,
-    InstallmentTableVm? Installments = null)
+    InstallmentTableVm? Installments = null,
+    IReadOnlyList<ProductAttribute>? Attributes = null,
+    Brand? Brand = null)
 {
     public string? PlaceholderIcon => StoreCatalog.PlaceholderIcon(CategorySlug);
 

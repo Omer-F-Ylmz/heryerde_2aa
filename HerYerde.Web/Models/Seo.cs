@@ -67,7 +67,9 @@ public static class Seo
         decimal price,
         bool soldOut,
         IEnumerable<string> images,
-        RatingSummary? rating = null)
+        RatingSummary? rating = null,
+        string? brand = null,
+        IReadOnlyList<ProductAttribute>? attributes = null)
     {
         var url = Absolute(baseUrl, "/urun/" + product.Slug);
         var data = new Dictionary<string, object?>
@@ -93,6 +95,18 @@ public static class Seo
             ["availability"] = soldOut ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
             ["url"] = url
         };
+
+        if (brand is not null)
+        {
+            data["brand"] = new Dictionary<string, object?> { ["@type"] = "Brand", ["name"] = brand };
+        }
+
+        if (attributes is { Count: > 0 })
+        {
+            data["additionalProperty"] = attributes
+                .Select(a => new Dictionary<string, object?> { ["@type"] = "PropertyValue", ["name"] = a.Name, ["value"] = a.Value })
+                .ToList();
+        }
 
         if (rating is { Count: > 0 })
         {

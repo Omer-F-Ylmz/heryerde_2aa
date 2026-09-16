@@ -158,4 +158,70 @@ public sealed class BrowserTests : IAsyncLifetime
         await still.HoverAsync(".card:has([data-onizleme]) .card__media");
         Assert.False(await still.EvaluateExpressionAsync<bool>(preview));
     }
+
+    /// <summary>D15 B3: 390'da süzgeç paneli kapalı başlar ve düğmeyle açılır; 1440'ta her zaman açıktır. Seçenek
+    /// işaretlenince sayfa yenilenmeden gönder düğmesi yeni sonuç sayısını yazar.</summary>
+    [Fact]
+    public async Task Suzgec_paneli_mobilde_katlanir_secimde_sonuc_sayisini_canli_yazar()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            var tac = await TestData.AddBrandAsync(context, "TAÇ", "tac");
+            await TestData.SetBrandAsync(context, await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere"), tac);
+            await TestData.AddHomeProductAsync(context, "Cam Sürahi", "cam-surahi");
+            await TestData.AddHomeProductAsync(context, "Keten Örtü", "keten-ortu");
+        }
+
+        // Kapalı <details> içeriği content-visibility: hidden; boyut ölçümü yerleşimi zorlar, görünürlük checkVisibility ile sorulur.
+        const string optionVisible = "document.querySelector('.filter-option').checkVisibility()";
+
+        await using var phone = await _browser.NewPageAsync();
+        await phone.SetViewportAsync(new ViewPortOptions { Width = 390, Height = 900 });
+        await phone.GoToAsync(_baseUrl + "/ev", WaitUntilNavigation.Networkidle0);
+        Assert.False(await phone.EvaluateExpressionAsync<bool>(optionVisible));
+        await phone.ClickAsync(".filter-panel__toggle");
+        Assert.True(await phone.EvaluateExpressionAsync<bool>(optionVisible));
+        // Açık panel (fiyat alanları dahil) 390'da yatay taşmaz.
+        Assert.Equal(390, await phone.EvaluateExpressionAsync<int>("document.documentElement.scrollWidth"));
+
+        const string button = "document.querySelector('[data-filter-count]').textContent.trim()";
+        Assert.Equal("3 ürünü göster", await phone.EvaluateExpressionAsync<string>(button));
+        var url = phone.Url;
+        await phone.ClickAsync("input[name=marka][value=tac]");
+        await phone.WaitForExpressionAsync(button + " === '1 ürünü göster'", new WaitForFunctionOptions { Timeout = 5000 });
+        Assert.Equal(url, phone.Url);
+
+        await using var desktop = await _browser.NewPageAsync();
+        await desktop.SetViewportAsync(new ViewPortOptions { Width = 1440, Height = 900 });
+        await desktop.GoToAsync(_baseUrl + "/ev", WaitUntilNavigation.Networkidle0);
+        Assert.True(await desktop.EvaluateExpressionAsync<bool>(optionVisible));
+        Assert.False(await desktop.EvaluateExpressionAsync<bool>("document.querySelector('.filter-panel__toggle').checkVisibility()"));
+    }
+
+    /// <summary>D15 B4: başlıktaki arama kutusuna yazınca öneriler açılır; aşağı ok ilk öneriye, Esc kapatıp kutuya döner.</summary>
+    [Fact]
+    public async Task Arama_onerileri_yazinca_acilir_klavyeyle_gezilir_esc_kapatir()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            await TestData.AddHomeProductAsync(context, "Döküm Tava", "dokum-tava");
+        }
+
+        await using var page = await _browser.NewPageAsync();
+        await page.SetViewportAsync(new ViewPortOptions { Width = 1440, Height = 900 });
+        await page.GoToAsync(_baseUrl + "/", WaitUntilNavigation.Networkidle0);
+        await page.TypeAsync("#site-search", "tav");
+        await page.WaitForExpressionAsync("document.querySelectorAll('.suggest__item').length > 0", new WaitForFunctionOptions { Timeout = 5000 });
+
+        Assert.Equal("true", await page.EvaluateExpressionAsync<string>("document.querySelector('#site-search').getAttribute('aria-expanded')"));
+        Assert.Equal("/urun/dokum-tava", await page.EvaluateExpressionAsync<string>("document.querySelector('.suggest__item').getAttribute('href')"));
+
+        await page.Keyboard.PressAsync("ArrowDown");
+        Assert.True(await page.EvaluateExpressionAsync<bool>("document.activeElement.classList.contains('suggest__item')"));
+
+        await page.Keyboard.PressAsync("Escape");
+        Assert.Equal("site-search", await page.EvaluateExpressionAsync<string>("document.activeElement.id"));
+        Assert.False(await page.EvaluateExpressionAsync<bool>("document.querySelector('.suggest').checkVisibility()"));
+        Assert.Equal("false", await page.EvaluateExpressionAsync<string>("document.querySelector('#site-search').getAttribute('aria-expanded')"));
+    }
 }

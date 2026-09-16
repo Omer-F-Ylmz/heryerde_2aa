@@ -69,6 +69,15 @@ Yön keşfi yok; palet, tipografi, ölçek yukarıdaki karardan miras. Yalnız b
   sayı (`#6B5B4E`); seçili süzgeçler listenin üstünde `chip` olarak kaldırılabilir.
 - Canlı sonuç sayısı `aria-live="polite"`; düğme metni "N ürünü göster".
 
+**Marka sayfası ve özellikler** — marka bandında görsel yerine logo: `#FDFAF5` düz yüzey, logo kırpılmadan
+ortada (32px iç boşluk), desen yok; logosuz markada kategori deseni. Ürün sayfası "Özellikler" tablosu olgu
+listesinin (Marka/Ölçü) dilinde: ad `#8A361F` 600 14px %40 sütun, değer gövde, satır arası `#E5DBCB` ayraç.
+
+**Arama önerileri (başlık kutusu)** — kutunun hemen altında yüzen yüzey (`--shadow-floating`, `#FDFAF5`,
+`#E5DBCB` çerçeve, 12px köşe); satır 44px: ad solda Figtree 600, not sağda 14px `#6B5B4E` (üründe fiyat,
+yoksa "Kategori"/"Marka"). Önce ürünler, sonra kategori ve marka; en çok 8 satır. Üzerinde/odakta `#F2DED6`.
+Görsel küçük resim yok: satır hızlı taranır, ek sorgu yok.
+
 **Hareket**: yalnız çubuk dolumu (`transform: scaleX`, 240ms, ana easing) ve kart önizleme
 opaklığı; ikisi de `prefers-reduced-motion` ile kapalı.
 **Yasak**: çeyiz sayfasında konfeti/kalp ikonu, pembe ton, eşit kart ızgarası; filtrede

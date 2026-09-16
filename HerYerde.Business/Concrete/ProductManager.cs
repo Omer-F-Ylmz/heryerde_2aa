@@ -46,6 +46,27 @@ public class ProductManager : IProductService
         return (HttpStatusCode.OK, new SuccessDataResult<List<Product>>(products));
     }
 
+    public async Task<ListingFacets> GetFacetsAsync(ProductQuery query, CancellationToken cancellationToken = default)
+    {
+        var turkish = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+        var comparer = StringComparer.Create(turkish, ignoreCase: true);
+        var rows = await _productDal.GetFacetsAsync(query, cancellationToken);
+
+        var brands = rows
+            .Where(r => r.Kind == FacetRow.BrandKind)
+            .Select(r => new BrandFacet(r.Second, r.First, r.Count))
+            .OrderBy(b => b.Name, comparer)
+            .ToList();
+        var attributes = rows
+            .Where(r => r.Kind == FacetRow.AttributeKind)
+            .GroupBy(r => r.First, comparer)
+            .Select(g => new AttributeFacet(g.Key, g.Select(r => new AttributeValueFacet(r.Second, r.Count)).OrderBy(v => v.Value, comparer).ToList()))
+            .OrderBy(a => a.Name, comparer)
+            .ToList();
+
+        return new ListingFacets(brands, attributes);
+    }
+
     public async Task<(HttpStatusCode, IDataResult<ProductPage>)> GetActiveAsync(ProductQuery query, CancellationToken cancellationToken = default)
     {
         var (rows, total) = await _productDal.GetActiveAsync(query, cancellationToken);
@@ -62,7 +83,7 @@ public class ProductManager : IProductService
 
     public async Task<(HttpStatusCode, IDataResult<ProductDetail>)> GetActiveBySlugAsync(string slug, CancellationToken cancellationToken = default)
         => await _productDal.GetActiveWithVariantsBySlugAsync(slug, cancellationToken) is { } row
-            ? (HttpStatusCode.OK, new SuccessDataResult<ProductDetail>(new ProductDetail(row.Product, row.Variants)))
+            ? (HttpStatusCode.OK, new SuccessDataResult<ProductDetail>(new ProductDetail(row.Product, row.Variants, row.Attributes)))
             : (HttpStatusCode.NotFound, new ErrorDataResult<ProductDetail>("Ürün bulunamadı."));
 
     public async Task<(HttpStatusCode, IDataResult<Product>)> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -158,6 +179,7 @@ public class ProductManager : IProductService
         stored.Name = product.Name;
         stored.Description = product.Description;
         stored.CategoryId = product.CategoryId;
+        stored.BrandId = product.BrandId;
         stored.Price = product.Price;
         stored.CampaignPrice = product.CampaignPrice;
         stored.CampaignLabel = product.CampaignLabel;

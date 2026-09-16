@@ -19,17 +19,20 @@ public class CategoriesController : Controller
     private readonly IProductService _productService;
     private readonly IAdminAuditService _auditService;
     private readonly IProductImageStorage _imageStorage;
+    private readonly IAttributeService _attributeService;
 
     public CategoriesController(
         ICategoryService categoryService,
         IProductService productService,
         IAdminAuditService auditService,
-        IProductImageStorage imageStorage)
+        IProductImageStorage imageStorage,
+        IAttributeService attributeService)
     {
         _categoryService = categoryService;
         _productService = productService;
         _auditService = auditService;
         _imageStorage = imageStorage;
+        _attributeService = attributeService;
     }
 
     [HttpGet]
@@ -61,6 +64,7 @@ public class CategoriesController : Controller
 
         if (status == HttpStatusCode.Created)
         {
+            await _attributeService.SetTemplateAsync(category.Id, TemplateNames(model.AttributeTemplate), cancellationToken);
             await _auditService.WriteAsync(HttpContext, "ekle", Entity, category.Id);
             return RedirectToAction(nameof(Index));
         }
@@ -91,6 +95,7 @@ public class CategoriesController : Controller
             IsActive = category.IsActive,
             IsRoot = CategoryRules.IsRoot(category),
             ImageUrl = category.ImageUrl,
+            AttributeTemplate = string.Join("\n", await _attributeService.GetTemplateAsync(category.Id, cancellationToken)),
             Parents = await RootsAsync(category.Id, cancellationToken)
         });
     }
@@ -125,6 +130,7 @@ public class CategoriesController : Controller
 
         if (status == HttpStatusCode.OK)
         {
+            await _attributeService.SetTemplateAsync(model.Id, TemplateNames(model.AttributeTemplate), cancellationToken);
             await _auditService.WriteAsync(HttpContext, "güncelle", Entity, model.Id);
             if (model.Image is { } upload)
             {
@@ -195,4 +201,7 @@ public class CategoriesController : Controller
             .ThenBy(c => c.Name)
             .ToList();
     }
+
+    private static string[] TemplateNames(string? text)
+        => (text ?? string.Empty).Split(['\n', '\r', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }

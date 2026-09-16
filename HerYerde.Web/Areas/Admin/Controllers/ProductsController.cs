@@ -23,6 +23,8 @@ public class ProductsController : Controller
     private readonly IAdminAuditService _auditService;
     private readonly IProductImageStorage _imageStorage;
     private readonly IProductVideoStorage _videoStorage;
+    private readonly IBrandService _brandService;
+    private readonly IAttributeService _attributeService;
     private readonly TimeProvider _clock;
 
     public ProductsController(
@@ -31,6 +33,8 @@ public class ProductsController : Controller
         IAdminAuditService auditService,
         IProductImageStorage imageStorage,
         IProductVideoStorage videoStorage,
+        IBrandService brandService,
+        IAttributeService attributeService,
         TimeProvider clock)
     {
         _productService = productService;
@@ -38,6 +42,8 @@ public class ProductsController : Controller
         _auditService = auditService;
         _imageStorage = imageStorage;
         _videoStorage = videoStorage;
+        _brandService = brandService;
+        _attributeService = attributeService;
         _clock = clock;
     }
 
@@ -68,6 +74,7 @@ public class ProductsController : Controller
         => View(new ProductFormViewModel
         {
             Categories = await CategoriesAsync(cancellationToken),
+            Brands = await _brandService.GetAllAsync(cancellationToken),
             GiftProducts = await GiftProductsAsync(0, cancellationToken)
         });
 
@@ -224,6 +231,26 @@ public class ProductsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Attributes(int productId, string? text, CancellationToken cancellationToken)
+    {
+        var (pairs, problem) = AttributeText.Parse(text);
+        if (problem is not null)
+        {
+            return await FormWithErrorAsync(productId, problem, cancellationToken);
+        }
+
+        var outcome = await _attributeService.SetForProductAsync(productId, pairs, cancellationToken);
+        if (outcome.Item1 != HttpStatusCode.OK)
+        {
+            return await FormWithErrorAsync(productId, outcome.Item2.Message, cancellationToken, outcome.Item1);
+        }
+
+        await AuditIfDoneAsync(outcome, "özellikler", productId);
+        return RedirectToAction(nameof(Edit), new { id = productId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     [RequestSizeLimit(VideoFile.MaxBytes + 64_000)]
     public async Task<IActionResult> AddVideo(VideoFormViewModel model, CancellationToken cancellationToken)
     {
@@ -329,6 +356,7 @@ public class ProductsController : Controller
         Name = model.Name,
         Description = model.Description,
         CategoryId = model.CategoryId,
+        BrandId = model.BrandId,
         Price = model.Price,
         CampaignPrice = model.CampaignPrice,
         CampaignLabel = string.IsNullOrWhiteSpace(model.CampaignLabel) ? null : model.CampaignLabel,
@@ -376,6 +404,7 @@ public class ProductsController : Controller
             Name = product.Name,
             Description = product.Description,
             CategoryId = product.CategoryId,
+            BrandId = product.BrandId,
             Price = product.Price,
             CampaignPrice = product.CampaignPrice,
             CampaignLabel = product.CampaignLabel,
@@ -405,10 +434,15 @@ public class ProductsController : Controller
         var (_, videos) = await _productService.GetVideosAsync(model.Id, cancellationToken);
 
         model.Categories = await CategoriesAsync(cancellationToken);
+        model.Brands = await _brandService.GetAllAsync(cancellationToken);
         model.GiftProducts = await GiftProductsAsync(model.Id, cancellationToken);
         model.Variants = variants.Data!.OrderBy(v => v.Size).ThenBy(v => v.Color).ThenBy(v => v.Sku).ToList();
         model.Images = images.Data!.OrderBy(i => i.SortOrder).ToList();
         model.Videos = videos.Data!.OrderBy(v => v.SortOrder).ToList();
+        var attributes = await _attributeService.GetForProductAsync(model.Id, cancellationToken);
+        model.AttributesText = attributes.Count > 0
+            ? string.Join("\n", attributes.Select(a => $"{a.Name}: {a.Value}"))
+            : string.Join("\n", (await _attributeService.GetTemplateAsync(model.CategoryId, cancellationToken)).Select(n => n + ": "));
         model.RequiresVariants = await RequiresVariantsAsync(model.CategoryId, cancellationToken);
     }
 

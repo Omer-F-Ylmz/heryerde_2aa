@@ -1,0 +1,41 @@
+@using HerYerde.Web.Areas.Admin.Models
+@model BrandFormViewModel
+@{
+    var isNew = Model.Id == 0;
+    ViewData["Title"] = isNew ? "Marka ekle" : "Markayı düzenle";
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Katalog</p>
+        <h1 class="display-2">@ViewData["Title"]</h1>
+    </div>
+    <div class="page-head__actions">
+        <a class="btn btn--ghost" href="/admin/markalar">Listeye dön</a>
+    </div>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <p class="form-alert" role="alert">@Model.ErrorMessage</p>
+}
+
+<form class="form-card surface-elevated" method="post" action="@(isNew ? "/admin/markalar/yeni" : $"/admin/markalar/{Model.Id}")" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div class="field">
+        <label class="field__label" asp-for="Name"></label>
+        <input class="field__input" asp-for="Name" maxlength="60" autocomplete="off" />
+        <span class="field__hint">Vitrinde ve ürün adı önerisinde bu yazımla görünür (ör. "TAÇ").</span>
+        <span class="field__error" asp-validation-for="Name"></span>
+    </div>
+    <div class="field">
+        <label class="field__label" for="brand-logo">Logo (isteğe bağlı)</label>
+        @if (Model.LogoUrl is { } logo)
+        {
+            <img class="thumb" src="@logo" alt="Mevcut logo" width="160" height="80" />
+        }
+        <input class="field__input field__input--file" id="brand-logo" name="Logo" type="file" accept="image/jpeg,image/png,image/webp" />
+        <span class="field__hint">jpg, png ya da webp; en çok 8 MB. Sunucu en çok 320×160'a indirir.</span>
+    </div>
+    <button class="btn btn--primary" type="submit">Kaydet</button>
+</form>

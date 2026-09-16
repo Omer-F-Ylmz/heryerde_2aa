@@ -29,7 +29,7 @@ public sealed class ZapAdminScanTests
         foreach (var excluded in new[]
                  {
                      "/admin/auth/logout", "/admin/sifre", "/admin/orders/anonymize", "/admin/kvkk/anonimlestir",
-                     "/admin/duyurular/[0-9]+/sil", "/admin/kuponlar/[0-9]+/sil", "/admin/ceyizlistesi/[0-9]+/sil"
+                     "/admin/duyurular/[0-9]+/sil", "/admin/kuponlar/[0-9]+/sil", "/admin/ceyizlistesi/[0-9]+/sil", "/admin/markalar/[0-9]+/sil"
                  })
         {
             Assert.Contains(excluded, plan);

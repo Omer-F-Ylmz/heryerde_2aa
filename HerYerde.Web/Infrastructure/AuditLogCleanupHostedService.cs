@@ -2,11 +2,12 @@ using HerYerde.Business.Abstract;
 
 namespace HerYerde.Web.Infrastructure;
 
-/// <summary>Gecede bir, bir yıldan eski denetim izini siler (saklama süresi: docs/veri-envanteri.md).</summary>
+/// <summary>Gecede bir, bir yıldan eski denetim izini ve arama günlüğünü siler (saklama süresi: docs/veri-envanteri.md).</summary>
 public sealed class AuditLogCleanupHostedService : BackgroundService
 {
     public static readonly TimeSpan Interval = TimeSpan.FromDays(1);
     public static readonly TimeSpan MaxAge = TimeSpan.FromDays(365);
+    public static readonly TimeSpan SearchLogMaxAge = TimeSpan.FromDays(365);
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly TimeProvider _clock;
@@ -32,7 +33,8 @@ public sealed class AuditLogCleanupHostedService : BackgroundService
                 await using var scope = _scopeFactory.CreateAsyncScope();
                 var audit = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
                 var removed = await audit.PurgeOlderThanAsync(MaxAge, stoppingToken);
-                _logger.LogInformation("Denetim izi temizliği: {Removed} satır silindi.", removed);
+                var searches = await scope.ServiceProvider.GetRequiredService<ISearchLogService>().PurgeOlderThanAsync(SearchLogMaxAge, stoppingToken);
+                _logger.LogInformation("Denetim izi temizliği: {Removed} satır, arama günlüğünden {Searches} satır silindi.", removed, searches);
             }
             catch (OperationCanceledException)
             {

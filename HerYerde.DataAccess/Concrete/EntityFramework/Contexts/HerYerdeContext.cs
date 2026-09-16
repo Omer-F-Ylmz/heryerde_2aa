@@ -10,10 +10,13 @@ public class HerYerdeContext : DbContext
     }
 
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
     public DbSet<ProductVideo> ProductVideos => Set<ProductVideo>();
+    public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
+    public DbSet<CategoryAttributeTemplate> CategoryAttributeTemplates => Set<CategoryAttributeTemplate>();
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
@@ -34,6 +37,7 @@ public class HerYerdeContext : DbContext
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<GiftRegistry> GiftRegistries => Set<GiftRegistry>();
     public DbSet<GiftRegistryItem> GiftRegistryItems => Set<GiftRegistryItem>();
+    public DbSet<SearchLog> SearchLogs => Set<SearchLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +57,18 @@ public class HerYerdeContext : DbContext
             e.Property(c => c.ImageUrl).HasColumnName("image_url").HasMaxLength(300);
             e.HasIndex(c => c.Slug).IsUnique().HasDatabaseName("ux_category_slug");
             e.HasOne<Category>().WithMany().HasForeignKey(c => c.ParentId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Brand>(e =>
+        {
+            e.ToTable("brand");
+            e.HasKey(b => b.Id);
+            e.Property(b => b.Id).HasColumnName("id");
+            e.Property(b => b.Name).HasColumnName("name").HasMaxLength(60).IsRequired();
+            e.Property(b => b.Slug).HasColumnName("slug").HasMaxLength(80).IsRequired();
+            e.Property(b => b.LogoUrl).HasColumnName("logo_url").HasMaxLength(300);
+            e.HasIndex(b => b.Name).IsUnique().HasDatabaseName("ux_brand_name");
+            e.HasIndex(b => b.Slug).IsUnique().HasDatabaseName("ux_brand_slug");
         });
 
         modelBuilder.Entity<Product>(e =>
@@ -75,6 +91,7 @@ public class HerYerdeContext : DbContext
             e.Property(p => p.Slug).HasColumnName("slug").HasMaxLength(200).IsRequired();
             e.Property(p => p.Description).HasColumnName("description").HasColumnType("nvarchar(max)").IsRequired();
             e.Property(p => p.CategoryId).HasColumnName("category_id");
+            e.Property(p => p.BrandId).HasColumnName("brand_id");
             e.Property(p => p.Price).HasColumnName("price").HasPrecision(18, 2);
             e.Property(p => p.CampaignPrice).HasColumnName("campaign_price").HasPrecision(18, 2);
             e.Property(p => p.CampaignLabel).HasColumnName("campaign_label").HasMaxLength(40);
@@ -100,6 +117,9 @@ public class HerYerdeContext : DbContext
             e.HasQueryFilter(p => p.DeletedAt == null);
             e.HasOne<Category>().WithMany().HasForeignKey(p => p.CategoryId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Product>().WithMany().HasForeignKey(p => p.GiftProductId).OnDelete(DeleteBehavior.Restrict);
+            // Marka sayfası ve marka süzgeci.
+            e.HasIndex(p => p.BrandId).HasDatabaseName("ix_product_brand_id");
+            e.HasOne<Brand>().WithMany().HasForeignKey(p => p.BrandId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ProductVariant>(e =>
@@ -144,6 +164,33 @@ public class HerYerdeContext : DbContext
             e.Property(v => v.CreatedAt).HasColumnName("created_at");
             e.HasIndex(v => v.ProductId).HasDatabaseName("ix_product_video_product_id");
             e.HasOne<Product>().WithMany().HasForeignKey(v => v.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductAttribute>(e =>
+        {
+            e.ToTable("product_attribute");
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).HasColumnName("id");
+            e.Property(a => a.ProductId).HasColumnName("product_id");
+            e.Property(a => a.Name).HasColumnName("name").HasMaxLength(60).IsRequired();
+            e.Property(a => a.Value).HasColumnName("value").HasMaxLength(120).IsRequired();
+            e.Property(a => a.SortOrder).HasColumnName("sort_order");
+            e.HasIndex(a => new { a.ProductId, a.Name }).IsUnique().HasDatabaseName("ux_product_attribute_product_id_name");
+            // Süzgeç: ad + değer ile ürün arama.
+            e.HasIndex(a => new { a.Name, a.Value }).HasDatabaseName("ix_product_attribute_name_value");
+            e.HasOne<Product>().WithMany().HasForeignKey(a => a.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CategoryAttributeTemplate>(e =>
+        {
+            e.ToTable("category_attribute_template");
+            e.HasKey(t => t.Id);
+            e.Property(t => t.Id).HasColumnName("id");
+            e.Property(t => t.CategoryId).HasColumnName("category_id");
+            e.Property(t => t.Name).HasColumnName("name").HasMaxLength(60).IsRequired();
+            e.Property(t => t.SortOrder).HasColumnName("sort_order");
+            e.HasIndex(t => new { t.CategoryId, t.Name }).IsUnique().HasDatabaseName("ux_category_attribute_template_category_id_name");
+            e.HasOne<Category>().WithMany().HasForeignKey(t => t.CategoryId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AdminUser>(e =>
@@ -464,6 +511,18 @@ public class HerYerdeContext : DbContext
             e.Property(h => h.OldSlug).HasColumnName("old_slug").HasMaxLength(220).IsRequired();
             e.Property(h => h.CreatedAt).HasColumnName("created_at");
             e.HasIndex(h => new { h.EntityType, h.OldSlug }).IsUnique().HasDatabaseName("ux_slug_history_entity_type_old_slug");
+        });
+
+        modelBuilder.Entity<SearchLog>(e =>
+        {
+            e.ToTable("search_log");
+            e.HasKey(l => l.Id);
+            e.Property(l => l.Id).HasColumnName("id");
+            e.Property(l => l.Term).HasColumnName("term").HasMaxLength(60).IsRequired();
+            e.Property(l => l.ResultCount).HasColumnName("result_count");
+            e.Property(l => l.CreatedAt).HasColumnName("created_at");
+            // Rapor pencereyle süzüp terime göre gruplar; temizlik tarihe göre siler.
+            e.HasIndex(l => new { l.CreatedAt, l.Term }).HasDatabaseName("ix_search_log_created_at_term");
         });
 
         modelBuilder.Entity<ContactMessage>(e =>

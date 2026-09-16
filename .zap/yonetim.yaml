@@ -23,6 +23,24 @@ env:
         - "http://localhost:8080/admin/duyurular/[0-9]+/sil.*"
         - "http://localhost:8080/admin/kuponlar/[0-9]+/sil.*"
         - "http://localhost:8080/admin/ceyizlistesi/[0-9]+/sil.*"
+        - "http://localhost:8080/admin/markalar/[0-9]+/sil.*"
+    # D15: .zap/d15-tohum.sh'nin ürünü ve çeyiz listesiyle öneri ucu, süzgeçli liste, çeyiz sayfaları ve ürün video formu.
+    - name: d15
+      urls:
+        - http://localhost:8080/ara/oner?q=tencere
+        - http://localhost:8080/ev?marka=karaca&oz=Malzeme:D%C3%B6k%C3%BCm&stok=1
+        - http://localhost:8080/ceyizlistesi/yeni
+        - http://localhost:8080/ceyizlistesi/zaptarama1
+        - http://localhost:8080/ceyizlistesi/yonet?t=0d15a000-0000-4000-8000-00000000d15a
+        - http://localhost:8080/admin/products/edit/1
+      includePaths:
+        - "http://localhost:8080/ara/oner.*"
+        - "http://localhost:8080/ev[?].*"
+        - "http://localhost:8080/ceyizlistesi.*"
+        - "(?i)http://localhost:8080/admin/products/(edit/1|addvideo).*"
+      excludePaths:
+        # Listeden kalem silmek taranacak yüzeyi boşaltır.
+        - "http://localhost:8080/ceyizlistesi/yonet/sil.*"
   parameters:
     failOnError: true
     failOnWarning: false
@@ -39,6 +57,27 @@ jobs:
         urlRegex: true
         parameter: "Id|SortOrder"
         parameterRegex: true
+
+  # D15 yüzeyleri önce ve kendi süresiyle: yönetim aktif taraması 40 dk tavanına ulaşıyor.
+  - type: requestor
+    requests:
+      - url: http://localhost:8080/ara/oner?q=tencere
+      - url: http://localhost:8080/ev?marka=karaca&oz=Malzeme:D%C3%B6k%C3%BCm&stok=1
+      - url: http://localhost:8080/ceyizlistesi/yeni
+      - url: http://localhost:8080/ceyizlistesi/zaptarama1
+      - url: http://localhost:8080/ceyizlistesi/yonet?t=0d15a000-0000-4000-8000-00000000d15a
+      - url: http://localhost:8080/admin/products/edit/1
+
+  - type: spider
+    parameters:
+      context: d15
+      url: http://localhost:8080/ceyizlistesi/zaptarama1
+      maxDuration: 2
+
+  - type: activeScan
+    parameters:
+      context: d15
+      maxScanDurationInMins: 15
 
   - type: spider
     parameters:

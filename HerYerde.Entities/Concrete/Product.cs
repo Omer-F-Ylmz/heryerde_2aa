@@ -10,6 +10,9 @@ public class Product : IEntity
     public string Slug { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public int CategoryId { get; set; }
+
+    /// <summary>Markasız ürün (el yapımı, markasız ithal) boş kalır.</summary>
+    public int? BrandId { get; set; }
     public decimal Price { get; set; }
 
     /// <summary>Doluysa fiyattan küçük olmak zorunda (ck_product_campaign_price).</summary>

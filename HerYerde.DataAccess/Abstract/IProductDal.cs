@@ -14,6 +14,10 @@ public interface IProductDal : IEntityRepository<Product>
 {
     /// <summary>Yayındaki ürünler, kendi kategorilerinin slug'ıyla; süzme/sıralama/sayfalama ve
     /// süzgece uyan toplam sayı tek sorguda.</summary>
+    /// <summary>Süzgeç paneli seçenekleri: kapsamdaki (kategori/marka/terim/fiyat) ürünlerin markaları ve özellik değerleri,
+    /// ziyaretçi seçimlerinden bağımsız sayılarıyla; tek SQL (UNION ALL).</summary>
+    Task<List<FacetRow>> GetFacetsAsync(ProductQuery query, CancellationToken cancellationToken = default);
+
     Task<(List<ProductRow> Items, int Total)> GetActiveAsync(
         ProductQuery query,
         CancellationToken cancellationToken = default);
@@ -31,7 +35,8 @@ public interface IProductDal : IEntityRepository<Product>
     Task<List<LowStockRow>> GetLowStockAsync(int threshold, CancellationToken cancellationToken = default);
 
     /// <summary>Yayındaki ürün varyantlarıyla birlikte tek gidiş-dönüşte; yoksa null.</summary>
-    Task<(Product Product, List<ProductVariant> Variants)?> GetActiveWithVariantsBySlugAsync(string slug, CancellationToken cancellationToken = default);
+    /// <summary>Ürün, varyantları ve (sıralı) özellikleri tek gidiş-dönüşte.</summary>
+    Task<(Product Product, List<ProductVariant> Variants, List<ProductAttribute> Attributes)?> GetActiveWithVariantsBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
     /// <summary>GetLowStockAsync satır sayısı, tek sorguda (yönetim menüsündeki sayaç her sayfada çalışır).</summary>
     Task<int> CountLowStockAsync(int threshold, CancellationToken cancellationToken = default);

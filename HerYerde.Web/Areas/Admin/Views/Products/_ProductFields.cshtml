@@ -6,7 +6,7 @@
     <input class="field__input" asp-for="Name" autocomplete="off" />
     @if (Model.SuggestedName is { } suggested)
     {
-        <p class="field__hint field__hint--inline">Önerilen yazım: <strong class="field__hint-value">@suggested</strong> — cümle düzeni; marka ve kısaltmalar büyük kalır.</p>
+        <p class="field__hint field__hint--inline">Önerilen yazım: <strong class="field__hint-value">@suggested</strong> — cümle düzeni; marka adları kendi yazımıyla kalır.</p>
     }
     <span class="field__error" asp-validation-for="Name"></span>
 </div>
@@ -35,6 +35,18 @@
         <input class="field__input" asp-for="Price" type="number" step="0.01" min="0" inputmode="decimal" />
         <span class="field__error" asp-validation-for="Price"></span>
     </div>
+</div>
+
+<div class="field">
+    <label class="field__label" asp-for="BrandId"></label>
+    <select class="field__input" asp-for="BrandId">
+        <option value="">Markasız</option>
+        @foreach (var brand in Model.Brands)
+        {
+            <option value="@brand.Id" selected="@(Model.BrandId == brand.Id)">@brand.Name</option>
+        }
+    </select>
+    <span class="field__hint">Liste yönetimde, Markalar sayfasında. Marka adının yazımı ürün adı önerisinde de korunur.</span>
 </div>
 
 <div class="field">

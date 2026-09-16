@@ -16,6 +16,7 @@ namespace HerYerde.Web.Controllers;
 public class SeoController(
     IProductService productService,
     ICategoryService categoryService,
+    IBrandService brandService,
     IOptions<ShopSettings> shop,
     TimeProvider clock) : Controller
 {
@@ -50,6 +51,15 @@ public class SeoController(
             var childIds = children.Select(c => c.Id).ToHashSet();
             urls.Add((rootPath, Latest(i => i.Product.CategoryId == root.Id || childIds.Contains(i.Product.CategoryId))));
             urls.AddRange(children.Select(c => (rootPath + "/" + c.Slug, Latest(i => i.Product.CategoryId == c.Id))));
+        }
+
+        // Yalnız yayında ürünü olan markalar: boş marka sayfası dizine girmesin.
+        foreach (var brand in await brandService.GetAllAsync(cancellationToken))
+        {
+            if (items.Any(i => i.Product.BrandId == brand.Id))
+            {
+                urls.Add(("/marka/" + brand.Slug, Latest(i => i.Product.BrandId == brand.Id)));
+            }
         }
 
         urls.AddRange(items.Select(i => ("/urun/" + i.Product.Slug, i.Product.UpdatedAt)));

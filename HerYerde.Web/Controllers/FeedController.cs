@@ -16,6 +16,7 @@ namespace HerYerde.Web.Controllers;
 /// gibi okur, Google'da ek olarak kampanyalıda sale_price gider.</summary>
 public class FeedController(
     IProductService productService,
+    IBrandService brandService,
     IOptions<ShopSettings> shop,
     TimeProvider clock) : Controller
 {
@@ -46,6 +47,7 @@ public class FeedController(
         var (_, images) = await productService.GetImagesForAsync(ids, cancellationToken);
         var (_, variants) = await productService.GetVariantsForAsync(ids, cancellationToken);
         var variantsByProduct = variants.Data!.ToLookup(v => v.ProductId);
+        var brandNames = (await brandService.GetAllAsync(cancellationToken)).ToDictionary(b => b.Id, b => b.Name);
 
         var items = new List<XElement>();
         foreach (var listItem in products)
@@ -109,7 +111,8 @@ public class FeedController(
                 new XElement(G + "link", Seo.Absolute(baseUrl, "/urun/" + product.Slug)),
                 new XElement(G + "availability", inStock ? "in stock" : "out of stock"),
                 new XElement(G + "condition", "new"),
-                new XElement(G + "brand", FeedCatalog.Brand),
+                // Markasız ürün (el yapımı, markasız ithal) mağaza adıyla çıkar: Merchant marka alanını boş kabul etmez.
+                new XElement(G + "brand", product.BrandId is { } brandId && brandNames.TryGetValue(brandId, out var brandName) ? brandName : FeedCatalog.Brand),
                 new XElement(G + "google_product_category", category));
 
             if (image is not null)

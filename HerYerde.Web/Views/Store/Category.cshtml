@@ -14,10 +14,15 @@
             <p class="eyebrow">@Model.RootName</p>
             <h1 class="display-2 h-mark">@Model.Title</h1>
         </div>
-        <div class="category-band__media">
+        <div class="category-band__media@(Model.BannerImage is null && Model.LogoUrl is not null ? " category-band__media--logo" : "")">
             @if (Model.BannerImage is { } banner)
             {
                 <img src="@banner" alt="" width="1200" height="675" />
+            }
+            else if (Model.LogoUrl is { } logo)
+            {
+                @* Marka sayfası: bant görseli yerine logo, düz yüzeyde ortada. *@
+                <img class="category-band__logo" src="@logo" alt="" width="320" height="160" />
             }
             else
             {
@@ -26,30 +31,5 @@
         </div>
     </div>
     <partial name="Components/_CategoryTabs" model="Model.Tabs" />
-    <div class="listing-bar">
-        <partial name="Components/_SortTabs" model="Model.Sort" />
-        <partial name="Components/_PriceFilter" model="Model.Filter" />
-    </div>
-    <h2 class="visually-hidden">Ürünler</h2>
-    @if (Model.Cards.Count == 0)
-    {
-        <div class="empty surface-elevated">
-            <p class="empty__title">Şu an ürün yok.</p>
-            <p>Bu rafa yeni ürünler geldiğinde burada göreceksiniz.</p>
-            @if (Model.EmptyLink is { } other)
-            {
-                <a class="btn btn--outline" href="@other.Url">@other.Name</a>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="grid">
-            @foreach (var card in Model.Cards)
-            {
-                <partial name="Components/_ProductCard" model="card" />
-            }
-        </div>
-    }
-    <partial name="Components/_Pagination" model="Model.Pagination" />
+    <partial name="Components/_Listing" model="new ListingVm(Model.Sort, Model.Filter, Model.Cards, Model.Pagination, Model.EmptyLink)" />
 </div>

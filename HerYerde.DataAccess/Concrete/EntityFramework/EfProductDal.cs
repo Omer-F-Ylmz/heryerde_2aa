@@ -37,53 +37,7 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
         ProductQuery query,
         CancellationToken cancellationToken = default)
     {
-        var source = Context.Products
-            .AsNoTracking()
-            .Where(p => p.IsActive)
-            .Join(Context.Categories, p => p.CategoryId, c => c.Id, (p, c) => new
-            {
-                Product = p,
-                c.Slug,
-                CategoryName = c.Name,
-                // Etkin fiyat: kampanya süresi içindeyse kampanya fiyatı. Süzme de sıralama da buna bakar.
-                Effective = p.CampaignPrice != null
-                            && p.CampaignPrice < p.Price
-                            && (p.CampaignEndsAt == null || p.CampaignEndsAt > query.Now)
-                    ? p.CampaignPrice!.Value
-                    : p.Price
-            });
-
-        if (query.CategoryIds.Count > 0)
-        {
-            source = source.Where(r => query.CategoryIds.Contains(r.Product.CategoryId));
-        }
-
-        if (query.ExcludedProductId is { } excluded)
-        {
-            source = source.Where(r => r.Product.Id != excluded);
-        }
-
-        if (query.FeaturedOnly)
-        {
-            source = source.Where(r => r.Product.IsFeatured);
-        }
-
-        if (LikePattern(query.Term) is { } pattern)
-        {
-            source = source.Where(r => EF.Functions.Like(r.Product.Name, pattern, LikeEscape)
-                                       || EF.Functions.Like(r.Product.Description, pattern, LikeEscape)
-                                       || EF.Functions.Like(r.CategoryName, pattern, LikeEscape));
-        }
-
-        if (query.MinPrice is { } min)
-        {
-            source = source.Where(r => r.Effective >= min);
-        }
-
-        if (query.MaxPrice is { } max)
-        {
-            source = source.Where(r => r.Effective <= max);
-        }
+        var source = Scope(query, withSelections: true);
 
         var ordered = query.Order switch
         {
@@ -124,6 +78,134 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
 
         var items = rows.Select(r => new ProductRow(r.Product, r.Slug, r.SoldOut, r.PreviewUrl)).ToList();
         return (items, rows.Count == 0 ? 0 : rows[0].Total);
+    }
+
+    public async Task<List<FacetRow>> GetFacetsAsync(ProductQuery query, CancellationToken cancellationToken = default)
+    {
+        var ids = Scope(query, withSelections: false).Select(r => r.Product.Id);
+
+        var brands = Context.Products
+            .Where(p => ids.Contains(p.Id) && p.BrandId != null)
+            .Join(Context.Brands, p => p.BrandId, b => (int?)b.Id, (p, b) => new { b.Name, b.Slug })
+            .GroupBy(x => new { x.Name, x.Slug })
+            .Select(g => new FacetRow { Kind = FacetRow.BrandKind, First = g.Key.Name, Second = g.Key.Slug, Count = g.Count() });
+
+        var attributes = Context.ProductAttributes
+            .Where(a => ids.Contains(a.ProductId))
+            .GroupBy(a => new { a.Name, a.Value })
+            .Select(g => new FacetRow { Kind = FacetRow.AttributeKind, First = g.Key.Name, Second = g.Key.Value, Count = g.Count() });
+
+        return await brands.Concat(attributes).ToListAsync(cancellationToken);
+    }
+
+    /// <summary>Kapsam (kategori, marka sayfası, terim, fiyat …) her zaman; ziyaretçinin marka/özellik/stok/kampanya seçimleri
+    /// yalnız istenirse. Süzgeç paneli sayıları seçimsiz kapsamdan gelir.</summary>
+    private IQueryable<ListingRow> Scope(ProductQuery query, bool withSelections)
+    {
+        var source = Context.Products
+            .AsNoTracking()
+            .Where(p => p.IsActive)
+            .Join(Context.Categories, p => p.CategoryId, c => c.Id, (p, c) => new ListingRow
+            {
+                Product = p,
+                Slug = c.Slug,
+                CategoryName = c.Name,
+                // Etkin fiyat: kampanya süresi içindeyse kampanya fiyatı. Süzme de sıralama da buna bakar.
+                Effective = p.CampaignPrice != null
+                            && p.CampaignPrice < p.Price
+                            && (p.CampaignEndsAt == null || p.CampaignEndsAt > query.Now)
+                    ? p.CampaignPrice!.Value
+                    : p.Price
+            });
+
+        if (query.CategoryIds.Count > 0)
+        {
+            source = source.Where(r => query.CategoryIds.Contains(r.Product.CategoryId));
+        }
+
+        if (query.BrandIds.Count > 0)
+        {
+            source = source.Where(r => r.Product.BrandId != null && query.BrandIds.Contains(r.Product.BrandId.Value));
+        }
+
+        if (query.ExcludedProductId is { } excluded)
+        {
+            source = source.Where(r => r.Product.Id != excluded);
+        }
+
+        if (query.FeaturedOnly)
+        {
+            source = source.Where(r => r.Product.IsFeatured);
+        }
+
+        if (LikePattern(query.Term) is { } pattern)
+        {
+            source = source.Where(r => EF.Functions.Like(r.Product.Name, pattern, LikeEscape)
+                                       || EF.Functions.Like(r.Product.Description, pattern, LikeEscape)
+                                       || EF.Functions.Like(r.CategoryName, pattern, LikeEscape));
+        }
+
+        foreach (var word in query.SearchWords)
+        {
+            var patterns = word.Select(LikePattern).OfType<string>().ToList();
+            source = source.Where(r => patterns.Any(p => EF.Functions.Like(r.Product.Name, p, LikeEscape)
+                                                         || EF.Functions.Like(r.Product.Description, p, LikeEscape)
+                                                         || EF.Functions.Like(r.CategoryName, p, LikeEscape)));
+        }
+
+        if (query.MinPrice is { } min)
+        {
+            source = source.Where(r => r.Effective >= min);
+        }
+
+        if (query.MaxPrice is { } max)
+        {
+            source = source.Where(r => r.Effective <= max);
+        }
+
+        if (!withSelections)
+        {
+            return source;
+        }
+
+        if (query.BrandSlugs.Count > 0)
+        {
+            var brandIds = Context.Brands.Where(b => query.BrandSlugs.Contains(b.Slug)).Select(b => (int?)b.Id);
+            source = source.Where(r => brandIds.Contains(r.Product.BrandId));
+        }
+
+        foreach (var attribute in query.Attributes)
+        {
+            var name = attribute.Name;
+            var values = attribute.Values;
+            source = source.Where(r => Context.ProductAttributes.Any(a => a.ProductId == r.Product.Id && a.Name == name && values.Contains(a.Value)));
+        }
+
+        if (query.InStockOnly)
+        {
+            source = source.Where(r => r.Product.Stock > 0
+                                       || (r.Product.Stock == null
+                                           && (!Context.ProductVariants.Any(v => v.ProductId == r.Product.Id)
+                                               || Context.ProductVariants.Any(v => v.ProductId == r.Product.Id && v.Stock > 0))));
+        }
+
+        if (query.CampaignOnly)
+        {
+            source = source.Where(r => r.Product.CampaignPrice != null
+                                       && r.Product.CampaignPrice < r.Product.Price
+                                       && (r.Product.CampaignEndsAt == null || r.Product.CampaignEndsAt > query.Now));
+        }
+
+        return source;
+    }
+
+    /// <summary>Listeleme satırı; nesne başlatıcıyla kurulduğu için üzerindeki süzme ve sıralama SQL'e çevrilir.</summary>
+    private sealed class ListingRow
+    {
+        public Product Product { get; init; } = null!;
+        public string Slug { get; init; } = string.Empty;
+        public string CategoryName { get; init; } = string.Empty;
+        public decimal Effective { get; init; }
     }
 
     public async Task<(Product Product, string CategorySlug)?> GetCampaignHeroAsync(DateTime now, CancellationToken cancellationToken = default)
@@ -172,15 +254,20 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
         return products.Concat(variants).OrderBy(r => r.Stock).ThenBy(r => r.ProductName).ToList();
     }
 
-    public async Task<(Product Product, List<ProductVariant> Variants)?> GetActiveWithVariantsBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    public async Task<(Product Product, List<ProductVariant> Variants, List<ProductAttribute> Attributes)?> GetActiveWithVariantsBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
         var row = await Context.Products
             .AsNoTracking()
             .Where(p => p.Slug == slug && p.IsActive)
-            .Select(p => new { Product = p, Variants = Context.ProductVariants.Where(v => v.ProductId == p.Id).ToList() })
+            .Select(p => new
+            {
+                Product = p,
+                Variants = Context.ProductVariants.Where(v => v.ProductId == p.Id).ToList(),
+                Attributes = Context.ProductAttributes.Where(a => a.ProductId == p.Id).OrderBy(a => a.SortOrder).ToList()
+            })
             .FirstOrDefaultAsync(cancellationToken);
 
-        return row is null ? null : (row.Product, row.Variants);
+        return row is null ? null : (row.Product, row.Variants, row.Attributes);
     }
 
     public Task<int> CountLowStockAsync(int threshold, CancellationToken cancellationToken = default)

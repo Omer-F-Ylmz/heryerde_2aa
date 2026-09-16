@@ -71,15 +71,8 @@ public sealed record VariantPickerVm(
 /// <summary>ImageUrl: sekmede küçük kare görsel (kategorinin 1:1 kesiti); yoksa yalnız metin.</summary>
 public sealed record CategoryTabVm(string Name, string Url, bool Current, string? ImageUrl = null);
 
-/// <summary>FRONT kiti: fiyat aralığı süzgeci. Hidden, arama terimi/sıralama gibi korunacak alanlar.</summary>
+/// <summary>Süzgeç formunda korunacak alan (arama terimi, sıralama).</summary>
 public sealed record HiddenFieldVm(string Name, string Value);
-
-public sealed record PriceFilterVm(
-    string Action,
-    decimal? Min,
-    decimal? Max,
-    IReadOnlyList<HiddenFieldVm> Hidden,
-    string SubmitLabel = "Uygula");
 
 /// <summary>FRONT kiti: yeni/fiyat sıralama sekmeleri; bağlantılar süzgeçleri korur.</summary>
 public sealed record SortTabsVm(string NewUrl, string PriceUrl, bool ByPrice);

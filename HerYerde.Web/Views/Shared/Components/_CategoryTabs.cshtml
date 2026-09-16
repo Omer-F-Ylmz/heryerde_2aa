@@ -1,4 +1,7 @@
 @model IReadOnlyList<HerYerde.Web.Models.CategoryTabVm>
+@* Tek sekme (marka sayfası) seçenek sunmaz: şerit hiç çizilmez. *@
+@if (Model.Count > 1)
+{
 <nav class="tabs tabs--scroll" aria-label="Alt kategoriler">
     <ul class="tabs__list">
         @foreach (var tab in Model)
@@ -15,3 +18,4 @@
         }
     </ul>
 </nav>
+}
