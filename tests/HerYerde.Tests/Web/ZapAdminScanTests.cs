@@ -25,7 +25,12 @@ public sealed class ZapAdminScanTests
 
         Assert.Contains("maxScanDurationInMins: 40", plan);
         Assert.Contains("newRisk: \"False Positive\"", plan);
-        foreach (var excluded in new[] { "/admin/auth/logout", "/admin/sifre", "/admin/orders/anonymize", "/admin/kvkk/anonimlestir" })
+        // D14: yeni silme uçları Türkçe adlandığı için [Dd]elete kalıbına girmez, ayrıca yazılır.
+        foreach (var excluded in new[]
+                 {
+                     "/admin/auth/logout", "/admin/sifre", "/admin/orders/anonymize", "/admin/kvkk/anonimlestir",
+                     "/admin/duyurular/[0-9]+/sil", "/admin/kuponlar/[0-9]+/sil"
+                 })
         {
             Assert.Contains(excluded, plan);
         }
