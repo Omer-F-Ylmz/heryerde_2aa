@@ -12,6 +12,9 @@ public sealed class ZapAccountScanTests
 
         Assert.Contains("bash .zap/uye-cerezi.sh", job);
         Assert.Contains("GET /hesap/yorumlar responded 200", job);
+        // Bir kez 200 görmek yetmez: oturum taramanın sonunda da geçerli olmalı (ilk koşuda "tüm oturumları kapat" düşürmüştü).
+        Assert.Contains("-H \"Cookie: $uye\" http://localhost:8080/hesap/yorumlar", job);
+        Assert.Contains("Üye oturumu tarama sırasında düştü", job);
         Assert.True(File.Exists(RepoFile.PathOf(".zap", "uye-cerezi.sh")));
     }
 
@@ -34,5 +37,10 @@ public sealed class ZapAccountScanTests
         Assert.Contains("method: POST", plan);
         Assert.Contains("data: \"ad=whatsapp&yol=/\"", plan);
         Assert.Contains("context: uye", plan);
+
+        // DOM XSS kuralı (40026) tarayıcıyla sayfadaki formlara tıklar; context dışı bırakılan "tüm oturumları kapat" da gönderilir.
+        var memberScan = plan[plan.IndexOf("      context: uye\n      maxScanDurationInMins", StringComparison.Ordinal)..];
+        memberScan = memberScan[..memberScan.IndexOf("  - type:", StringComparison.Ordinal)];
+        Assert.Contains("        - id: 40026\n          threshold: \"off\"", memberScan);
     }
 }

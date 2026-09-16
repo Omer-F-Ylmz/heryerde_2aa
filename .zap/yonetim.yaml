@@ -129,6 +129,13 @@ jobs:
     parameters:
       context: uye
       maxScanDurationInMins: 15
+    # DOM XSS (40026) tarayıcıyla sayfadaki düğmelere basar: /hesap/ayarlar'daki "tüm oturumları kapat" context dışında olsa da
+    # gönderildi ve oturum damgası değişip tarama oturumsuz sürdü (D16c ilk koşu). Vitrinin ortak site.js'i d15 bağlamında bu
+    # kuralla taranır; üye sayfaları sunucuda işlenir.
+    policyDefinition:
+      rules:
+        - id: 40026
+          threshold: "off"
 
   - type: spider
     parameters:

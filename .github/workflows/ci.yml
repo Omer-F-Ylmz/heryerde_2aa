@@ -272,6 +272,9 @@ jobs:
           $COMPOSE logs web > zap-out/web.log 2>&1
           grep -q 'GET /admin/rapor responded 200' zap-out/web.log || { echo "::error::Yönetim taraması oturumsuz kaldı."; exit 1; }
           grep -q 'GET /hesap/yorumlar responded 200' zap-out/web.log || { echo "::error::Üye taraması oturumsuz kaldı."; exit 1; }
+          # Tarama bitince üye çerezi hâlâ geçerli olmalı: oturumu düşüren bir uç (tüm oturumları kapat, parola) gönderilmemiş.
+          code="$(curl -s -o /dev/null -w '%{http_code}' -H "Cookie: $uye" http://localhost:8080/hesap/yorumlar)"
+          [ "$code" = "200" ] || { echo "::error::Üye oturumu tarama sırasında düştü ($code)."; exit 1; }
           test -f zap-out/yonetim-full.json || { echo "::error::yonetim-full.json yok."; exit 1; }
 
       - name: Fail on Medium+
