@@ -1,0 +1,72 @@
+@using System.Globalization
+@using HerYerde.Business.Dtos
+@model List<GiftRegistrySummary>
+@{
+    ViewData["Title"] = "Çeyiz listeleri";
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Vitrin</p>
+        <h1 class="display-2">Çeyiz listeleri</h1>
+        <p class="page-head__note">Müşteriler /ceyizlistesi/yeni adresinden açar. Liste, etkinlik tarihinden bir yıl sonra kendiliğinden silinir; silmek sepetlerdeki hediye satırlarını da kaldırır, verilmiş siparişlere dokunmaz.</p>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <p class="empty surface-elevated">Henüz çeyiz listesi yok.</p>
+}
+else
+{
+    <div class="table-wrap surface-elevated">
+        <table class="table">
+            <caption class="visually-hidden">Çeyiz listeleri, etkinlik tarihi ve alınan hediye sayıları</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Sahip</th>
+                    <th scope="col">Etkinlik</th>
+                    <th scope="col" class="table__num">Ürün</th>
+                    <th scope="col" class="table__num">Alınan</th>
+                    <th scope="col">Paylaşım</th>
+                    <th scope="col"><span class="visually-hidden">İşlem</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var (registry, itemCount, desired, received) in Model)
+            {
+                <tr>
+                    <th scope="row">
+                        <div class="cell-product">
+                            <span>@registry.OwnerName</span>
+                            <span class="cell-mono">açıldı @registry.CreatedAt.ToString("d MMM yyyy", turkish)</span>
+                        </div>
+                    </th>
+                    <td>@registry.EventDate.ToString("d MMM yyyy", turkish)</td>
+                    <td class="table__num">@itemCount</td>
+                    <td class="table__num">@received / @desired</td>
+                    <td>
+                        @if (registry.IsPublic)
+                        {
+                            <a class="cell-mono" href="/ceyizlistesi/@registry.Slug" rel="noopener">/ceyizlistesi/@registry.Slug</a>
+                        }
+                        else
+                        {
+                            <span class="tag tag--draft">Gizli</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="table__actions">
+                            <form method="post" action="/admin/ceyizlistesi/@registry.Id/sil">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn--danger btn--sm" type="submit">Sil</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

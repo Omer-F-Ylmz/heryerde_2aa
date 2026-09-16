@@ -42,4 +42,6 @@ public static class OutboxType
     public const string ReturnRejected = "iade-reddedildi";
     public const string InvoiceReady = "fatura-hazir";
     public const string ReviewInvite = "degerlendirme-daveti";
+    public const string GiftRegistryCreated = "ceyiz-listesi-yonetim";
+    public const string GiftRegistryPurchase = "ceyiz-listesi-hediye";
 }

@@ -18,6 +18,8 @@ public class CartManager : ICartService
     private readonly IProductDal _productDal;
     private readonly IProductVariantDal _variantDal;
     private readonly IProductImageDal _imageDal;
+    private readonly IGiftRegistryDal _registryDal;
+    private readonly IGiftRegistryItemDal _registryItemDal;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICouponService _coupons;
     private readonly ShopSettings _shop;
@@ -29,6 +31,8 @@ public class CartManager : ICartService
         IProductDal productDal,
         IProductVariantDal variantDal,
         IProductImageDal imageDal,
+        IGiftRegistryDal registryDal,
+        IGiftRegistryItemDal registryItemDal,
         IUnitOfWork unitOfWork,
         ICouponService coupons,
         IOptions<ShopSettings> shop,
@@ -39,6 +43,8 @@ public class CartManager : ICartService
         _productDal = productDal;
         _variantDal = variantDal;
         _imageDal = imageDal;
+        _registryDal = registryDal;
+        _registryItemDal = registryItemDal;
         _unitOfWork = unitOfWork;
         _coupons = coupons;
         _shop = shop.Value;
@@ -98,6 +104,7 @@ public class CartManager : ICartService
             ? (await _variantDal.GetListAsync(v => productIds.Contains(v.ProductId), cancellationToken)).ToDictionary(v => v.Id)
             : [];
         var images = await _imageDal.GetListAsync(i => productIds.Contains(i.ProductId), cancellationToken);
+        var owners = await RegistryOwnersAsync(items, cancellationToken);
 
         var lines = new List<CartLine>();
         foreach (var item in items.OrderBy(i => i.Id))
@@ -125,7 +132,8 @@ public class CartManager : ICartService
                 item.Quantity,
                 item.UnitPrice,
                 variant?.Stock ?? product.Stock ?? 0,
-                variant is not null || product.Stock is not null));
+                variant is not null || product.Stock is not null,
+                item.GiftRegistryItemId is { } registryItemId ? owners.GetValueOrDefault(registryItemId) : null));
         }
 
         var subtotal = lines.Sum(l => l.LineTotal);
@@ -178,7 +186,7 @@ public class CartManager : ICartService
         }
 
         var existing = await _itemDal.GetTrackedAsync(
-            i => i.CartId == cartId && i.ProductId == productId && i.VariantId == variantId,
+            i => i.CartId == cartId && i.ProductId == productId && i.VariantId == variantId && i.GiftRegistryItemId == null,
             cancellationToken);
 
         // Satır birleştiğinde tavan toplam adet üzerinden bakılır.
@@ -207,6 +215,58 @@ public class CartManager : ICartService
         return (HttpStatusCode.OK, new SuccessResult("Ürün sepete eklendi."));
     }
 
+    public async Task<(HttpStatusCode, IResult)> AddGiftAsync(Guid cartId, int registryItemId, CancellationToken cancellationToken = default)
+    {
+        if (await _cartDal.GetAsync(c => c.Id == cartId, cancellationToken) is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Sepet bulunamadı."));
+        }
+
+        var registryItem = await _registryItemDal.GetAsync(i => i.Id == registryItemId, cancellationToken);
+        if (registryItem is null
+            || await _registryDal.GetAsync(r => r.Id == registryItem.GiftRegistryId && r.IsPublic, cancellationToken) is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Liste kalemi bulunamadı."));
+        }
+
+        var product = await _productDal.GetAsync(p => p.Id == registryItem.ProductId && p.IsActive, cancellationToken);
+        if (product is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Ürün bulunamadı."));
+        }
+
+        var variant = registryItem.VariantId is { } variantId
+            ? await _variantDal.GetAsync(v => v.Id == variantId, cancellationToken)
+            : null;
+        var existing = await _itemDal.GetTrackedAsync(i => i.CartId == cartId && i.GiftRegistryItemId == registryItemId, cancellationToken);
+        var quantity = (existing?.Quantity ?? 0) + 1;
+
+        if ((RegistryProblem(quantity, registryItem) ?? QuantityProblem(quantity, variant, product)) is { } problem)
+        {
+            return problem;
+        }
+
+        if (existing is null)
+        {
+            await _itemDal.AddAsync(new CartItem
+            {
+                CartId = cartId,
+                ProductId = product.Id,
+                VariantId = registryItem.VariantId,
+                Quantity = 1,
+                UnitPrice = CurrentPrice(product),
+                GiftRegistryItemId = registryItemId
+            }, cancellationToken);
+        }
+        else
+        {
+            existing.Quantity = quantity;
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (HttpStatusCode.OK, new SuccessResult("Hediye sepete eklendi."));
+    }
+
     public async Task<(HttpStatusCode, IResult)> SetQuantityAsync(Guid cartId, int itemId, int quantity, CancellationToken cancellationToken = default)
     {
         if (quantity < 0)
@@ -231,7 +291,11 @@ public class CartManager : ICartService
                 : null;
             var product = await _productDal.GetAsync(p => p.Id == item.ProductId, cancellationToken);
 
-            if (QuantityProblem(quantity, variant, product) is { } problem)
+            var registryItem = item.GiftRegistryItemId is { } registryItemId
+                ? await _registryItemDal.GetAsync(i => i.Id == registryItemId, cancellationToken)
+                : null;
+
+            if (((registryItem is null ? null : RegistryProblem(quantity, registryItem)) ?? QuantityProblem(quantity, variant, product)) is { } problem)
             {
                 return problem;
             }
@@ -289,6 +353,34 @@ public class CartManager : ICartService
 
     /// <summary>Satır adedi 1..MaxQtyPerLine arasında; stok takipli üründe (varyant ya da Ev ürünü)
     /// ayrıca kalan stok kadar.</summary>
+    /// <summary>Hediye satırı listede kalan adedi aşamaz; sepetteki adet henüz alınmış sayılmaz.</summary>
+    private static (HttpStatusCode, IResult)? RegistryProblem(int quantity, GiftRegistryItem registryItem)
+    {
+        var remaining = registryItem.DesiredQty - registryItem.ReceivedQty;
+        return quantity <= remaining
+            ? null
+            : (HttpStatusCode.Conflict, new ErrorResult(remaining <= 0
+                ? "Bu hediye listede tamamlandı."
+                : $"Listede bu üründen yalnız {remaining} adet kaldı."));
+    }
+
+    /// <summary>Hediye satırı olan sepette liste sahibinin adı; olmayanda veritabanına gidilmez.</summary>
+    private async Task<Dictionary<int, string>> RegistryOwnersAsync(List<CartItem> items, CancellationToken cancellationToken)
+    {
+        var itemIds = items.Where(i => i.GiftRegistryItemId is not null).Select(i => i.GiftRegistryItemId!.Value).Distinct().ToList();
+        if (itemIds.Count == 0)
+        {
+            return [];
+        }
+
+        var registryItems = await _registryItemDal.GetListAsync(i => itemIds.Contains(i.Id), cancellationToken);
+        var registryIds = registryItems.Select(i => i.GiftRegistryId).Distinct().ToList();
+        var names = (await _registryDal.GetListAsync(r => registryIds.Contains(r.Id), cancellationToken)).ToDictionary(r => r.Id, r => r.OwnerName);
+        return registryItems
+            .Where(i => names.ContainsKey(i.GiftRegistryId))
+            .ToDictionary(i => i.Id, i => names[i.GiftRegistryId]);
+    }
+
     private (HttpStatusCode, IResult)? QuantityProblem(int quantity, ProductVariant? variant, Product? product)
     {
         if (quantity < 1)

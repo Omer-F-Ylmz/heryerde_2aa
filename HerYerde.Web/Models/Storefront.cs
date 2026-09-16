@@ -39,6 +39,9 @@ public sealed class ProductCardVm
     public decimal? CampaignPrice { get; init; }
     public string? ImageUrl { get; init; }
     public string? SecondImageUrl { get; init; }
+
+    /// <summary>Kartın üzerine gelince oynayan sessiz webm; ürünün videosu yoksa null.</summary>
+    public string? PreviewUrl { get; init; }
     public string ImageAlt { get; init; } = string.Empty;
     public BadgeVm? Badge { get; init; }
     public string? PlaceholderIcon { get; init; }

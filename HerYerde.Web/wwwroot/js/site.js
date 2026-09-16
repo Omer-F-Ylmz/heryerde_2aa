@@ -215,3 +215,45 @@ document.querySelectorAll("[data-iban-copy]").forEach(function (button) {
     shown();
   });
 });
+
+// Kart önizlemesi: üzerine gelince ürün videosunun 3 saniyelik sessiz webm'i oynar, ayrılınca görsel geri gelir.
+// Azaltılmış hareket tercihinde oynatıcı hiç kurulmaz; dokunmatikte ilk dokunuş da başlatır.
+(function () {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { return; }
+
+  document.querySelectorAll("[data-onizleme]").forEach(function (marker) {
+    var source = marker.getAttribute("data-onizleme");
+    var card = marker.closest(".card");
+    var media = card && card.querySelector(".card__media");
+    if (!source || !media) { return; }
+
+    var video = null;
+    var start = function () {
+      if (!video) {
+        video = document.createElement("video");
+        video.className = "card__preview";
+        video.src = source;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.setAttribute("aria-hidden", "true");
+        media.appendChild(video);
+      }
+
+      video.currentTime = 0;
+      var playing = video.play();
+      if (playing && playing.catch) { playing.catch(function () {}); }
+      media.classList.add("card__media--playing");
+    };
+
+    var stop = function () {
+      if (!video) { return; }
+      video.pause();
+      media.classList.remove("card__media--playing");
+    };
+
+    // Başlık bağlantısı kartın tamamını kaplar (::after): imleç medyaya hiç "girmez", olay kartta dinlenir.
+    card.addEventListener("pointerenter", start);
+    card.addEventListener("pointerleave", stop);
+  });
+})();

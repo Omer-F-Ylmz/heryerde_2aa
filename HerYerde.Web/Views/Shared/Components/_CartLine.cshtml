@@ -22,6 +22,10 @@
             <p class="line__meta">@variant</p>
         }
         <p class="line__meta">@Money.Tl(line.UnitPrice) @(Model.Editable ? "" : "× " + line.Quantity)</p>
+        @if (line.RegistryOwner is { } owner)
+        {
+            <p class="line__meta line__registry">@owner çeyiz listesi için</p>
+        }
         @if (line.Insufficient)
         {
             <p class="line__warn">

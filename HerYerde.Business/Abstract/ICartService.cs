@@ -15,6 +15,9 @@ public interface ICartService
     /// <summary>Aynı ürün-varyant zaten sepetteyse adet birleşir, fiyat ilk satırdan korunur.</summary>
     Task<(HttpStatusCode, IResult)> AddAsync(Guid cartId, int productId, int? variantId, int quantity, CancellationToken cancellationToken = default);
 
+    /// <summary>Çeyiz listesinden hediye: ayrı satır olur, listede kalan adedi aşamaz, gizli listeden eklenemez.</summary>
+    Task<(HttpStatusCode, IResult)> AddGiftAsync(Guid cartId, int registryItemId, CancellationToken cancellationToken = default);
+
     /// <summary>Adet 0 verilirse satır silinir.</summary>
     Task<(HttpStatusCode, IResult)> SetQuantityAsync(Guid cartId, int itemId, int quantity, CancellationToken cancellationToken = default);
 

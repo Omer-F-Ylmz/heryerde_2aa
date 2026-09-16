@@ -47,6 +47,19 @@ public static class Seo
         ["sameAs"] = new[] { InstagramUrl }
     });
 
+    /// <summary>Ürün videosu: arama sonucunda kendi kartıyla çıkabilmesi için VideoObject.</summary>
+    public static string VideoJsonLd(string baseUrl, Product product, ProductVideo video) => Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "VideoObject",
+        ["name"] = product.Name + " tanıtım videosu",
+        ["description"] = product.Description,
+        ["thumbnailUrl"] = new[] { Absolute(baseUrl, video.PosterUrl) },
+        ["uploadDate"] = video.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture),
+        ["duration"] = $"PT{video.Duration}S",
+        ["contentUrl"] = Absolute(baseUrl, video.Url)
+    });
+
     /// <summary><paramref name="rating"/> yalnız onaylı yorum varsa verilir; yoksa aggregateRating yazılmaz.</summary>
     public static string ProductJsonLd(
         string baseUrl,

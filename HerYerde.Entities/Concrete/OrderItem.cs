@@ -14,4 +14,8 @@ public class OrderItem : IEntity
 
     /// <summary>Kampanya hediyesi satırı; birim fiyatı 0 ve tutara girmez.</summary>
     public bool IsGift { get; set; }
+
+    /// <summary>Çeyiz listesinden alınan satır. Sipariş kopyası olduğu için yabancı anahtar yok: liste sonradan silinse de
+    /// satır kalır. Kartta ödeme onayında alınan adet buradan listeye işlenir.</summary>
+    public int? GiftRegistryItemId { get; set; }
 }

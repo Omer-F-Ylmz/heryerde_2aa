@@ -14,4 +14,7 @@ public class CartItem : IEntity
 
     /// <summary>Sepete atıldığı andaki fiyat; kampanya aktifse kampanya fiyatı.</summary>
     public decimal UnitPrice { get; set; }
+
+    /// <summary>Çeyiz listesinden hediye olarak eklenen satır; aynı ürünün kendi alımıyla birleşmez.</summary>
+    public int? GiftRegistryItemId { get; set; }
 }

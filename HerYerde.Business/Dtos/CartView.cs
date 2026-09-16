@@ -14,7 +14,8 @@ public sealed record CartLine(
     int Quantity,
     decimal UnitPrice,
     int AvailableStock,
-    bool StockTracked)
+    bool StockTracked,
+    string? RegistryOwner = null)
 {
     public decimal LineTotal => UnitPrice * Quantity;
 

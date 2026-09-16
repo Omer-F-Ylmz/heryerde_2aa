@@ -122,6 +122,37 @@ public static class NotificationTemplates
         return ($"Ürününüz nasıl? · {order.OrderNo}", Page(body.ToString()));
     }
 
+    /// <summary>Yönetim bağlantısı listenin anahtarıdır: bağlantıyı bilen listeyi değiştirebilir.</summary>
+    public static (string Subject, string Body) GiftRegistryCreated(GiftRegistry registry, string manageUrl, string publicUrl)
+    {
+        var body = new StringBuilder();
+        body.Append(Heading("Çeyiz listeniz hazır", $"Merhaba {Encode(registry.OwnerName)}, listenizi açtık."));
+        body.Append(Paragraph("Ürün eklemek, adetleri değiştirmek ya da listeyi gizlemek için aşağıdaki yönetim bağlantısını "
+            + "kullanın. Bu bağlantı size özeldir, kimseyle paylaşmayın."));
+        body.Append(Button(manageUrl, "Listemi yönet"));
+        body.Append(Paragraph($"Yakınlarınızla paylaşacağınız adres: <a href=\"{Encode(publicUrl)}\" style=\"color:{Brand}\">{Encode(publicUrl)}</a>"));
+        return ("Çeyiz listeniz hazır", Page(body.ToString()));
+    }
+
+    /// <summary>Alanın adı sipariş formunda yazdığı addır; ürün satırları yalnız bu listeye ait olanlardır.</summary>
+    public static (string Subject, string Body) GiftRegistryPurchase(
+        GiftRegistry registry,
+        Order order,
+        IReadOnlyList<OrderItem> items,
+        string manageUrl)
+    {
+        var body = new StringBuilder();
+        body.Append(Heading("Listenize hediye geldi", $"{Encode(order.FullName)} çeyiz listenizden hediye aldı."));
+        foreach (var item in items)
+        {
+            body.Append(Row(Encode(item.ProductName), $"{item.Quantity} adet"));
+        }
+
+        body.Append(Paragraph("Listede kalan ürünleri yönetim sayfanızdan görebilirsiniz."));
+        body.Append(Button(manageUrl, "Listemi görüntüle"));
+        return ($"Çeyiz listenize hediye geldi · {order.OrderNo}", Page(body.ToString()));
+    }
+
     /// <summary>Faturanın indirme bağlantısı siparişin erişim anahtarını taşır; başka siparişin anahtarıyla açılmaz.</summary>
     public static (string Subject, string Body) InvoiceReady(Order order, string invoiceUrl)
     {

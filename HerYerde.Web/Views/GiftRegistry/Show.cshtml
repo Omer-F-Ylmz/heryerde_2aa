@@ -1,0 +1,49 @@
+@using HerYerde.Web.Models
+@model GiftRegistryPageVm
+@{
+    var registry = Model.View.Registry;
+    ViewData["Title"] = registry.OwnerName + " · çeyiz listesi";
+    ViewData["Description"] = registry.OwnerName + " için hazırlanan çeyiz listesi.";
+    // Paylaşılan bağlantıyla gelinir; arama motorunda görünmez.
+    ViewData["Robots"] = "noindex, nofollow";
+    var culture = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+}
+
+<div class="container section registry">
+    <header class="registry__head">
+        <div class="registry__intro">
+            <p class="eyebrow">@registry.EventDate.ToString("d MMMM yyyy", culture)</p>
+            <h1 class="display-2 h-mark">@registry.OwnerName çeyiz listesi</h1>
+            @if (registry.Message is { } message)
+            {
+                <p class="lead registry__message">@message</p>
+            }
+        </div>
+        <div class="registry__progress">
+            <p class="registry__total"><span class="registry__number">@Model.View.Received</span> / @Model.View.Desired hediye alındı</p>
+            <div class="registry-track registry-track--lg" role="progressbar" aria-valuenow="@Model.ProgressStep" aria-valuemin="0" aria-valuemax="100" aria-label="Listenin tamamlanma oranı">
+                <span class="registry-fill registry-fill--@Model.ProgressStep"></span>
+            </div>
+            <p class="field__hint">Hediye ettiğiniz ürün sepete eklenir; sipariş kesinleşince listede alındı olarak işaretlenir.</p>
+        </div>
+    </header>
+
+    @if (Model.Error is { } error)
+    {
+        <p class="form-alert" role="alert">@error</p>
+    }
+
+    @if (Model.View.Lines.Count == 0)
+    {
+        <p class="empty surface-elevated">Listeye henüz ürün eklenmedi.</p>
+    }
+    else
+    {
+        <ul class="registry__list surface-elevated">
+            @foreach (var line in Model.View.Lines)
+            {
+                <partial name="_Row" model="new RegistryRowVm(line, registry.Slug, null)" />
+            }
+        </ul>
+    }
+</div>

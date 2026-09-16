@@ -19,6 +19,7 @@ public sealed class ProductManagerTests : IAsyncLifetime
         new EfProductDal(context),
         new EfProductVariantDal(context),
         new EfProductImageDal(context),
+        new EfProductVideoDal(context),
         new EfCategoryDal(context),
         new EfSlugHistoryDal(context),
         new EfUnitOfWork(context));

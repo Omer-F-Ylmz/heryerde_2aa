@@ -107,6 +107,8 @@ public static class TestData
         new EfProductDal(context),
         new EfProductVariantDal(context),
         new EfProductImageDal(context),
+        new EfGiftRegistryDal(context),
+        new EfGiftRegistryItemDal(context),
         new EfUnitOfWork(context),
         NewCouponManager(context, clock),
         Options.Create(NewShopSettings(freeShippingOver)),
@@ -122,6 +124,7 @@ public static class TestData
         new EfProductDal(context),
         new EfProductVariantDal(context),
         new EfProductImageDal(context),
+        new EfProductVideoDal(context),
         new EfCategoryDal(context),
         new EfSlugHistoryDal(context),
         new EfUnitOfWork(context));
@@ -143,8 +146,20 @@ public static class TestData
         new EfReturnRequestDal(context),
         new EfOrderNoteDal(context),
         NewCouponManager(context, clock),
+        NewGiftRegistryManager(context, clock),
         Options.Create(NewShopSettings(freeShippingOver)),
         Options.Create(NewShippingSettings()),
+        clock ?? TestClock.Fixed);
+
+    public static GiftRegistryManager NewGiftRegistryManager(HerYerdeContext context, TimeProvider? clock = null) => new(
+        new EfGiftRegistryDal(context),
+        new EfGiftRegistryItemDal(context),
+        new EfCartItemDal(context),
+        new EfProductDal(context),
+        new EfProductVariantDal(context),
+        new EfProductImageDal(context),
+        NewNotificationManager(context, clock: clock),
+        new EfUnitOfWork(context),
         clock ?? TestClock.Fixed);
 
     public const string ReturnAddress = "HerYerde İade, Atatürk Cad. 5, Kadıköy/İstanbul";
@@ -160,6 +175,7 @@ public static class TestData
         new EfUnitOfWork(context),
         NewNotificationManager(context, clock: clock),
         provider,
+        NewGiftRegistryManager(context, clock),
         Options.Create(NewShopSettings()),
         clock ?? TestClock.Fixed);
 
@@ -287,6 +303,70 @@ public static class TestData
             IsPrimary = true
         });
         await new EfUnitOfWork(context).SaveChangesAsync();
+    }
+
+    /// <summary>Ürüne yüklenmiş gibi bir video satırı yazar; 720p adresini döner (poster/önizleme aynı addan türer).</summary>
+    public static async Task<string> AddVideoAsync(HerYerdeContext context, int productId, int duration = 3)
+    {
+        var name = Guid.NewGuid().ToString("n");
+        var url = $"/uploads/videos/{productId}/{name}-720.mp4";
+        await new EfProductVideoDal(context).AddAsync(new ProductVideo
+        {
+            ProductId = productId,
+            Url = url,
+            PosterUrl = $"/uploads/videos/{productId}/{name}-poster.jpg",
+            PreviewUrl = $"/uploads/videos/{productId}/{name}-onizleme.webm",
+            Duration = duration,
+            CreatedAt = TestClock.Fixed.GetUtcNow().UtcDateTime
+        });
+        await new EfUnitOfWork(context).SaveChangesAsync();
+        return url;
+    }
+
+    /// <summary>Çeyiz listesi; paylaşılan adres ve yönetim anahtarıyla döner.</summary>
+    public static async Task<(int Id, string Slug, Guid Token)> AddGiftRegistryAsync(
+        HerYerdeContext context,
+        string phone = "05321112233",
+        string? email = "zeynep@ornek.test",
+        bool isPublic = true,
+        DateTime? eventDate = null)
+    {
+        var registry = new GiftRegistry
+        {
+            Slug = Guid.NewGuid().ToString("n")[..10],
+            ManageToken = Guid.NewGuid(),
+            OwnerName = "Zeynep Kaya",
+            Phone = phone,
+            Email = email,
+            EventDate = eventDate ?? new DateTime(2026, 11, 14),
+            Message = "Yeni evimiz için küçük bir liste.",
+            IsPublic = isPublic,
+            CreatedAt = TestClock.Fixed.GetUtcNow().UtcDateTime
+        };
+        await new EfGiftRegistryDal(context).AddAsync(registry);
+        await new EfUnitOfWork(context).SaveChangesAsync();
+        return (registry.Id, registry.Slug, registry.ManageToken);
+    }
+
+    public static async Task<int> AddGiftRegistryItemAsync(
+        HerYerdeContext context,
+        int registryId,
+        int productId,
+        int desired = 3,
+        int received = 0,
+        int? variantId = null)
+    {
+        var item = new GiftRegistryItem
+        {
+            GiftRegistryId = registryId,
+            ProductId = productId,
+            VariantId = variantId,
+            DesiredQty = desired,
+            ReceivedQty = received
+        };
+        await new EfGiftRegistryItemDal(context).AddAsync(item);
+        await new EfUnitOfWork(context).SaveChangesAsync();
+        return item.Id;
     }
 
     public static async Task SetDescriptionAsync(HerYerdeContext context, int productId, string description)

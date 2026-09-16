@@ -45,3 +45,31 @@ Kontrast (hesaplanmış): `#2B2118` / krem ≈ 13:1 · `#6B5B4E` / krem ≈ 5.8:
 ## Metin [ÖNERİ]
 D1 vitrin metinleri (h1 "Şalvardan sofraya, evin her yeri.", alt metin, iki alan paneli) öneridir;
 onaylanmazsa değişir. Uydurma sayı, yorum veya müşteri logosu yok.
+
+## Ek — D15: çeyiz listesi sayfası ve filtre paneli
+Yön keşfi yok; palet, tipografi, ölçek yukarıdaki karardan miras. Yalnız bileşen kararı:
+
+**Çeyiz listesi (`/ceyizlistesi/{slug}`)** — "davetiye" hissi, mağaza vitrini değil.
+- Baş bandı asimetrik: solda Lora h1 (sahip adı + "çeyiz listesi"), tarih eyebrow (`#0A4C40`),
+  mesaj gövde metni en çok 65ch; sağda toplam ilerleme (alınan / istenen) tek sayı + çubuk.
+  Mobilde tek kolon, ilerleme başlığın altına iner.
+- Satır bileşeni `registry-row` (kart ızgarası değil, liste): 80px kare görsel · ad + varyant ·
+  "N / M alındı" + `freeship__track` deseninden türeyen çubuk (genişlik %10 adımlı sınıf, CSP) ·
+  sağda "Hediye et" (`btn--cta`). Tamamlanan satır: çubuk vurgu yeşili, düğme yerine
+  "Tamamlandı" etiketi (`tag`), satır sona dizilir.
+- Zemin `surface-base`; satırlar tek `surface-elevated` kart içinde `#E5DBCB` ayraçla.
+- Yönetim sayfası (tokenli) aynı satırı kullanır; "Hediye et" yerine adet alanı + sil.
+
+**Filtre paneli (listeleme + arama)**
+- 1440: solda 264px sabit kolon (ızgara 3 sütuna iner), `surface-elevated` değil düz — kartlarla
+  yarışmasın; grup başlığı Figtree 600 14px büyük harf değil, ayraç `#E5DBCB`.
+- 390: panel kapalı başlar; "Filtrele (N)" düğmesi `<details>` açar (JS'siz çalışır), açıkken
+  içerik akışın içinde (üst üste binen çekmece yok).
+- Gruplar: Marka · her özellik adı · "Stokta olanlar" · "Kampanyalı". Seçenek `checkbox` +
+  sayı (`#6B5B4E`); seçili süzgeçler listenin üstünde `chip` olarak kaldırılabilir.
+- Canlı sonuç sayısı `aria-live="polite"`; düğme metni "N ürünü göster".
+
+**Hareket**: yalnız çubuk dolumu (`transform: scaleX`, 240ms, ana easing) ve kart önizleme
+opaklığı; ikisi de `prefers-reduced-motion` ile kapalı.
+**Yasak**: çeyiz sayfasında konfeti/kalp ikonu, pembe ton, eşit kart ızgarası; filtrede
+kaydırma içinde kaydırma, yüzen "uygula" balonu.

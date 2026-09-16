@@ -63,4 +63,9 @@ public interface IProductService
     Task<(HttpStatusCode, IResult)> SetPrimaryImageAsync(int imageId, CancellationToken cancellationToken = default);
 
     Task<(HttpStatusCode, IResult)> DeleteImageAsync(int imageId, CancellationToken cancellationToken = default);
+
+    Task<(HttpStatusCode, IDataResult<List<ProductVideo>>)> GetVideosAsync(int productId, CancellationToken cancellationToken = default);
+
+    Task<(HttpStatusCode, IResult)> AddVideoAsync(ProductVideo video, CancellationToken cancellationToken = default);
+    Task<(HttpStatusCode, IResult)> DeleteVideoAsync(int videoId, CancellationToken cancellationToken = default);
 }

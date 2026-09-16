@@ -26,6 +26,7 @@ public class OrderManager : IOrderService
     private readonly IReturnRequestDal _returnDal;
     private readonly IOrderNoteDal _noteDal;
     private readonly ICouponService _coupons;
+    private readonly IGiftRegistryService _registries;
     private readonly ShopSettings _shop;
     private readonly ShippingSettings _shipping;
     private readonly TimeProvider _clock;
@@ -44,6 +45,7 @@ public class OrderManager : IOrderService
         IReturnRequestDal returnDal,
         IOrderNoteDal noteDal,
         ICouponService coupons,
+        IGiftRegistryService registries,
         IOptions<ShopSettings> shop,
         IOptions<ShippingSettings> shipping,
         TimeProvider clock)
@@ -61,6 +63,7 @@ public class OrderManager : IOrderService
         _returnDal = returnDal;
         _noteDal = noteDal;
         _coupons = coupons;
+        _registries = registries;
         _shop = shop.Value;
         _shipping = shipping.Value;
         _clock = clock;
@@ -85,6 +88,13 @@ public class OrderManager : IOrderService
         if (items.Count == 0)
         {
             return (HttpStatusCode.BadRequest, new ErrorDataResult<Order>("Sepetiniz boş."));
+        }
+
+        // Liste sahibi kendi listesinden alırsa "alındı" sayacı gerçek hediyeyi göstermez olur.
+        var registryItemIds = items.Where(i => i.GiftRegistryItemId is not null).Select(i => i.GiftRegistryItemId!.Value).Distinct().ToList();
+        if (await _registries.IsOwnerAsync(registryItemIds, phone, draft.Email, cancellationToken))
+        {
+            return (HttpStatusCode.Conflict, new ErrorDataResult<Order>("Kendi çeyiz listenizden hediye alamazsınız."));
         }
 
         var productIds = items.Select(i => i.ProductId).Distinct().ToList();
@@ -190,7 +200,8 @@ public class OrderManager : IOrderService
                         ProductName = product?.Name ?? "Ürün",
                         Sku = variant?.Sku ?? product?.Slug ?? string.Empty,
                         Quantity = item.Quantity,
-                        UnitPrice = item.UnitPrice
+                        UnitPrice = item.UnitPrice,
+                        GiftRegistryItemId = item.GiftRegistryItemId
                     };
                     placedItems.Add(line);
                     await _orderItemDal.AddAsync(line, cancellationToken);
@@ -219,6 +230,12 @@ public class OrderManager : IOrderService
 
                 // Bildirim siparişle aynı işlemde kuyruğa girer: sipariş yazıldıysa postası da kesin kuyruktadır.
                 await _notifications.QueueOrderPlacedAsync(order, placedItems, customer: !byCard, cancellationToken: cancellationToken);
+
+                // Kartta liste, stok gibi ödeme onayında işlenir.
+                if (!byCard)
+                {
+                    await _registries.RecordPurchaseAsync(order, placedItems, cancellationToken);
+                }
 
                 if (byCard)
                 {

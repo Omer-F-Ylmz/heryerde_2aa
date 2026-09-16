@@ -9,18 +9,32 @@
     ViewData["Canonical"] = "/urun/" + product.Slug;
     ViewData["OgType"] = "product";
     ViewData["OgImage"] = Model.Images.Count > 0 ? Model.Images[0].Url : null;
-    ViewData["JsonLd"] = new[]
+    var jsonLd = new List<string>
     {
         Seo.ProductJsonLd(Shop.Value.BaseUrl, product, price, Model.SoldOut, Model.Images.Select(i => i.Url), Model.Reviews.Summary),
         Seo.ProductBreadcrumbJsonLd(Shop.Value.BaseUrl, Model)
     };
+    if (Model.Video is { } markup)
+    {
+        jsonLd.Add(Seo.VideoJsonLd(Shop.Value.BaseUrl, product, markup));
+    }
+
+    ViewData["JsonLd"] = jsonLd.ToArray();
 }
 
 <div class="container section product-page">
     <div class="product">
         <div class="gallery">
             <figure class="gallery__main">
-                @if (Model.Images.Count == 0)
+                @if (Model.Video is { } video)
+                {
+                    @* Kendiliğinden oynamaz: ses ve veri ziyaretçinin kararı, poster ilk kare yerine geçer. *@
+                    <video class="gallery__video" controls preload="none" playsinline poster="@video.PosterUrl" width="600" height="600">
+                        <source src="@video.Url" type="video/mp4" />
+                        Tarayıcınız videoyu oynatamıyor.
+                    </video>
+                }
+                else if (Model.Images.Count == 0)
                 {
                     <span class="ph@(Model.PlaceholderIcon is null ? "" : " ph--" + Model.PlaceholderIcon)"></span>
                 }
@@ -30,10 +44,14 @@
                     <img src="@Model.Images[0].Url" srcset="@mainSrcset" sizes="@(mainSrcset is null ? null : ProductImages.GallerySizes)" alt="@Model.Images[0].Alt" width="600" height="600" />
                 }
             </figure>
-            @if (Model.Images.Count > 1)
+            @{
+                // Video varsa oynatıcı ilk sıraya geçer, görsellerin hepsi küçük kareler şeridine düşer.
+                var thumbs = Model.Video is null ? Model.Images.Skip(1).ToList() : Model.Images.ToList();
+            }
+            @if (thumbs.Count > 0)
             {
                 <ul class="gallery__thumbs">
-                    @foreach (var image in Model.Images.Skip(1))
+                    @foreach (var image in thumbs)
                     {
                         var thumbSrcset = ProductImages.Srcset(image.Url);
                         <li><img class="thumb" src="@image.Url" srcset="@thumbSrcset" sizes="@(thumbSrcset is null ? null : ProductImages.ThumbSizes)" alt="@image.Alt" width="80" height="80" loading="lazy" /></li>

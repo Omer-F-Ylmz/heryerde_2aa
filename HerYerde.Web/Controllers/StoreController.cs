@@ -318,10 +318,11 @@ public class StoreController(
             },
             cancellationToken);
 
-        // Ürünün ve benzerlerinin görselleri tek sorguda.
+        // Ürünün ve benzerlerinin görselleri tek sorguda; benzerlerin önizlemesi listeleme sorgusundan gelir.
         var (_, images) = await productService.GetImagesForAsync(
             similar.Data!.Items.Select(i => i.Product.Id).Append(product.Id).ToList(),
             cancellationToken);
+        var (_, videos) = await productService.GetVideosAsync(product.Id, cancellationToken);
 
         // Varyant her iki alanda da olabilir (D10): varyantlıda stok varyantta, varyantsızda ürünün kendi stoğunda.
         var variants = detail.Variants;
@@ -351,6 +352,7 @@ public class StoreController(
             isClothing,
             soldOut,
             images.Data!.Where(i => i.ProductId == product.Id).OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).ToList(),
+            videos.Data!.OrderBy(v => v.SortOrder).FirstOrDefault(),
             variants.Count > 0 ? StoreCatalog.Picker(variants, product) : new VariantPickerVm([], []),
             StoreCatalog.IsCampaignActive(product, now),
             StoreCatalog.WhatsAppUrl(WhatsAppBase, product.Name),
@@ -364,7 +366,7 @@ public class StoreController(
 
     private static List<ProductCardVm> Cards(IReadOnlyList<ProductListItem> items, List<ProductImage> images, DateTime now)
         => items
-            .Select((i, index) => StoreCatalog.Card(i.Product, images, now, lazy: index >= 4, categorySlug: i.CategorySlug, soldOut: i.SoldOut))
+            .Select((i, index) => StoreCatalog.Card(i.Product, images, now, lazy: index >= 4, categorySlug: i.CategorySlug, soldOut: i.SoldOut, previewUrl: i.PreviewUrl))
             .ToList();
 
     private static SortTabsVm Sort(string path, bool byPrice, string? term, decimal? low, decimal? high)

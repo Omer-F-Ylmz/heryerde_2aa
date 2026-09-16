@@ -4,7 +4,8 @@ using HerYerde.Entities.Concrete;
 namespace HerYerde.DataAccess.Abstract;
 
 /// <summary>Vitrin satırı: ürün, kendi kategorisinin slug'ı ve stok bitti mi.</summary>
-public readonly record struct ProductRow(Product Product, string CategorySlug, bool SoldOut);
+/// <summary>PreviewUrl: ürünün ilk videosunun kart önizlemesi; aynı sorguda alt sorguyla gelir.</summary>
+public readonly record struct ProductRow(Product Product, string CategorySlug, bool SoldOut, string? PreviewUrl = null);
 
 /// <summary>Sipariş satırının stok kodundan yayındaki ürüne köprü: kod varyant SKU'su ya da ürünün slug'ı olabilir.</summary>
 public readonly record struct ProductSkuRow(string Sku, string Slug, string Name);

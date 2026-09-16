@@ -13,6 +13,7 @@ public class HerYerdeContext : DbContext
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+    public DbSet<ProductVideo> ProductVideos => Set<ProductVideo>();
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
@@ -31,6 +32,8 @@ public class HerYerdeContext : DbContext
     public DbSet<OrderNote> OrderNotes => Set<OrderNote>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<Coupon> Coupons => Set<Coupon>();
+    public DbSet<GiftRegistry> GiftRegistries => Set<GiftRegistry>();
+    public DbSet<GiftRegistryItem> GiftRegistryItems => Set<GiftRegistryItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -127,6 +130,22 @@ public class HerYerdeContext : DbContext
             e.HasOne<Product>().WithMany().HasForeignKey(i => i.ProductId).OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<ProductVideo>(e =>
+        {
+            e.ToTable("product_video", t => t.HasCheckConstraint("ck_product_video_duration", "[duration] BETWEEN 1 AND 90"));
+            e.HasKey(v => v.Id);
+            e.Property(v => v.Id).HasColumnName("id");
+            e.Property(v => v.ProductId).HasColumnName("product_id");
+            e.Property(v => v.Url).HasColumnName("url").HasMaxLength(500).IsRequired();
+            e.Property(v => v.PosterUrl).HasColumnName("poster_url").HasMaxLength(500).IsRequired();
+            e.Property(v => v.PreviewUrl).HasColumnName("preview_url").HasMaxLength(500).IsRequired();
+            e.Property(v => v.Duration).HasColumnName("duration");
+            e.Property(v => v.SortOrder).HasColumnName("sort_order");
+            e.Property(v => v.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(v => v.ProductId).HasDatabaseName("ix_product_video_product_id");
+            e.HasOne<Product>().WithMany().HasForeignKey(v => v.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<AdminUser>(e =>
         {
             e.ToTable("admin_user");
@@ -166,7 +185,10 @@ public class HerYerdeContext : DbContext
             e.Property(i => i.VariantId).HasColumnName("variant_id");
             e.Property(i => i.Quantity).HasColumnName("quantity");
             e.Property(i => i.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2);
+            e.Property(i => i.GiftRegistryItemId).HasColumnName("gift_registry_item_id");
             e.HasOne<Cart>().WithMany().HasForeignKey(i => i.CartId).OnDelete(DeleteBehavior.Cascade);
+            // Liste kalemi silinirken sepet satırlarını yönetici önce siler; basamaklı yol ürün silmesiyle çakışırdı.
+            e.HasOne<GiftRegistryItem>().WithMany().HasForeignKey(i => i.GiftRegistryItemId).OnDelete(DeleteBehavior.NoAction);
             e.HasOne<Product>().WithMany().HasForeignKey(i => i.ProductId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<ProductVariant>().WithMany().HasForeignKey(i => i.VariantId).OnDelete(DeleteBehavior.NoAction);
         });
@@ -231,6 +253,7 @@ public class HerYerdeContext : DbContext
             e.Property(i => i.Quantity).HasColumnName("quantity");
             e.Property(i => i.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2);
             e.Property(i => i.IsGift).HasColumnName("is_gift");
+            e.Property(i => i.GiftRegistryItemId).HasColumnName("gift_registry_item_id");
             e.HasOne<Order>().WithMany().HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -351,6 +374,48 @@ public class HerYerdeContext : DbContext
             e.Property(c => c.IsActive).HasColumnName("is_active");
             e.Property(c => c.CreatedAt).HasColumnName("created_at");
             e.HasIndex(c => c.Code).IsUnique().HasDatabaseName("ux_coupon_code");
+        });
+
+        modelBuilder.Entity<GiftRegistry>(e =>
+        {
+            e.ToTable("gift_registry");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id");
+            e.Property(r => r.Slug).HasColumnName("slug").HasMaxLength(10).IsRequired();
+            e.Property(r => r.ManageToken).HasColumnName("manage_token");
+            e.Property(r => r.OwnerName).HasColumnName("owner_name").HasMaxLength(60).IsRequired();
+            e.Property(r => r.Phone).HasColumnName("phone").HasMaxLength(11).IsRequired();
+            e.Property(r => r.Email).HasColumnName("email").HasMaxLength(200);
+            e.Property(r => r.EventDate).HasColumnName("event_date").HasColumnType("date");
+            e.Property(r => r.Message).HasColumnName("message").HasMaxLength(500);
+            e.Property(r => r.IsPublic).HasColumnName("is_public");
+            e.Property(r => r.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(r => r.Slug).IsUnique().HasDatabaseName("ux_gift_registry_slug");
+            e.HasIndex(r => r.ManageToken).IsUnique().HasDatabaseName("ux_gift_registry_manage_token");
+            // Gecelik saklama süresi taraması etkinlik tarihine bakar.
+            e.HasIndex(r => r.EventDate).HasDatabaseName("ix_gift_registry_event_date");
+        });
+
+        modelBuilder.Entity<GiftRegistryItem>(e =>
+        {
+            e.ToTable("gift_registry_item", t =>
+            {
+                t.HasCheckConstraint("ck_gift_registry_item_desired_qty", "[desired_qty] BETWEEN 1 AND 99");
+                t.HasCheckConstraint("ck_gift_registry_item_received_qty", "[received_qty] >= 0");
+            });
+            e.HasKey(i => i.Id);
+            e.Property(i => i.Id).HasColumnName("id");
+            e.Property(i => i.GiftRegistryId).HasColumnName("gift_registry_id");
+            e.Property(i => i.ProductId).HasColumnName("product_id");
+            e.Property(i => i.VariantId).HasColumnName("variant_id");
+            e.Property(i => i.DesiredQty).HasColumnName("desired_qty");
+            e.Property(i => i.ReceivedQty).HasColumnName("received_qty");
+            // Aynı ürün-varyant listede bir kez; adet satırın kendisinde artar.
+            e.HasIndex(i => new { i.GiftRegistryId, i.ProductId, i.VariantId }).IsUnique()
+                .HasDatabaseName("ux_gift_registry_item_gift_registry_id_product_id_variant_id");
+            e.HasOne<GiftRegistry>().WithMany().HasForeignKey(i => i.GiftRegistryId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Product>().WithMany().HasForeignKey(i => i.ProductId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne<ProductVariant>().WithMany().HasForeignKey(i => i.VariantId).OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<Announcement>(e =>

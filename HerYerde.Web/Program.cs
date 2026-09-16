@@ -148,6 +148,12 @@ builder.Services.AddSingleton<IProductImageStorage>(services => new ProductImage
     builder.Configuration["Uploads:Root"] is { Length: > 0 } uploadsRoot
         ? uploadsRoot
         : services.GetRequiredService<IWebHostEnvironment>().WebRootPath));
+// Video yüklenince sunucuda 720p mp4 + poster + önizleme üretilir; ffmpeg PATH'te değilse Media:FfmpegPath verilir.
+builder.Services.AddSingleton<IProductVideoStorage>(services => new FfmpegVideoStorage(
+    builder.Configuration["Uploads:Root"] is { Length: > 0 } videoRoot
+        ? videoRoot
+        : services.GetRequiredService<IWebHostEnvironment>().WebRootPath,
+    builder.Configuration["Media:FfmpegPath"]));
 // Fatura ve dekontlar wwwroot dışında: statik dosya ara katmanı onlara hiç ulaşmaz.
 builder.Services.AddSingleton<IPrivateFileStorage>(services => new PrivateFileStorage(
     builder.Configuration["PrivateFiles:Root"] is { Length: > 0 } privateRoot

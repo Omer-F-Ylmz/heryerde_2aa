@@ -26,6 +26,11 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+# Ürün videosu yüklenince sunucuda 720p H.264 mp4 + poster + önizleme üretilir; ffmpeg/ffprobe bunun için
+# zorunlu (D15 A1). Öneriler kurulmaz: imajı gereksiz büyütür.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app .
 # --ithal varsayılan tabloyu depo köküne göre arar; imajda depo kökü /app.
 COPY docs/ithal-1.md docs/ithal-2.md ./docs/

@@ -17,6 +17,7 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfProductDal>().As<IProductDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductVariantDal>().As<IProductVariantDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfProductImageDal>().As<IProductImageDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfProductVideoDal>().As<IProductVideoDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfAdminUserDal>().As<IAdminUserDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfCartDal>().As<ICartDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfCartItemDal>().As<ICartItemDal>().InstancePerLifetimeScope();
@@ -35,6 +36,8 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<EfOrderNoteDal>().As<IOrderNoteDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfAnnouncementDal>().As<IAnnouncementDal>().InstancePerLifetimeScope();
         builder.RegisterType<EfCouponDal>().As<ICouponDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfGiftRegistryDal>().As<IGiftRegistryDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfGiftRegistryItemDal>().As<IGiftRegistryItemDal>().InstancePerLifetimeScope();
 
         builder.RegisterType<AdminAuthManager>().As<IAdminAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<CategoryManager>().As<ICategoryService>().InstancePerLifetimeScope();
@@ -55,6 +58,7 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<InstallmentManager>().As<IInstallmentService>().InstancePerLifetimeScope();
         builder.RegisterType<AnnouncementManager>().As<IAnnouncementService>().InstancePerLifetimeScope();
         builder.RegisterType<CouponManager>().As<ICouponService>().InstancePerLifetimeScope();
+        builder.RegisterType<GiftRegistryManager>().As<IGiftRegistryService>().InstancePerLifetimeScope();
         // Taksit önbelleği istekler arası yaşamalı; yöneticinin kendisi istek kapsamında kalır.
         builder.RegisterType<InstallmentCache>().AsSelf().SingleInstance();
     }

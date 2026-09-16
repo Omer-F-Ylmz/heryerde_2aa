@@ -5,6 +5,12 @@
     var secondSrcset = ProductImages.Srcset(Model.SecondImageUrl);
 }
 <article class="card">
+    @* Önizleme adresi yalnız veri: oynatıcıyı site.js kurar, azaltılmış harekette hiç kurmaz. Razor data-* özniteliğini
+       değer null olsa da yazar; videosuz kartta boş öznitelik kalmasın diye işaret ayrı ve koşullu. *@
+    @if (Model.PreviewUrl is not null)
+    {
+        <template data-onizleme="@Model.PreviewUrl"></template>
+    }
     <a class="card__media" href="@Model.Url" tabindex="-1" aria-hidden="true">
         @if (Model.ImageUrl is null)
         {

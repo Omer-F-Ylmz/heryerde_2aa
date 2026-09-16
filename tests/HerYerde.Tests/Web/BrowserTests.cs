@@ -128,4 +128,34 @@ public sealed class BrowserTests : IAsyncLifetime
             "[...document.querySelector('.checkout__form').elements].filter(e => e.type === 'submit' && !e.disabled)[0].textContent.trim()");
         Assert.Equal("Siparişi tamamla", defaultButton);
     }
+
+    /// <summary>D15 A1: videolu ürünün kartında üzerine gelince sessiz önizleme kurulur; azaltılmış hareket tercihinde
+    /// oynatıcı hiç oluşmaz.</summary>
+    [Fact]
+    public async Task Kart_onizlemesi_ustune_gelince_kurulur_azaltilmis_harekette_kurulmaz()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            var productId = await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere");
+            await TestData.AddVideoAsync(context, productId);
+        }
+
+        const string preview = "!!document.querySelector('.card__media .card__preview')";
+
+        await using var motion = await _browser.NewPageAsync();
+        await motion.SetViewportAsync(new ViewPortOptions { Width = 1440, Height = 900 });
+        // Başsız Chrome varsayılan olarak "reduce" bildiriyor: iki tercih de açıkça verilir.
+        await motion.EmulateMediaFeaturesAsync([new MediaFeatureValue { MediaFeature = MediaFeature.PrefersReducedMotion, Value = "no-preference" }]);
+        await motion.GoToAsync(_baseUrl + "/ev", WaitUntilNavigation.Networkidle0);
+        // Gerçek imleç: kartın üstünü başlık bağlantısının ::after katmanı kaplar, olay medyaya değil karta düşer.
+        await motion.HoverAsync(".card:has([data-onizleme]) .card__media");
+        Assert.True(await motion.EvaluateExpressionAsync<bool>(preview));
+
+        await using var still = await _browser.NewPageAsync();
+        await still.SetViewportAsync(new ViewPortOptions { Width = 1440, Height = 900 });
+        await still.EmulateMediaFeaturesAsync([new MediaFeatureValue { MediaFeature = MediaFeature.PrefersReducedMotion, Value = "reduce" }]);
+        await still.GoToAsync(_baseUrl + "/ev", WaitUntilNavigation.Networkidle0);
+        await still.HoverAsync(".card:has([data-onizleme]) .card__media");
+        Assert.False(await still.EvaluateExpressionAsync<bool>(preview));
+    }
 }

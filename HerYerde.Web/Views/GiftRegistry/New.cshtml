@@ -1,0 +1,61 @@
+@using HerYerde.Web.Models
+@model GiftRegistryNewVm
+@{
+    ViewData["Title"] = "Çeyiz listesi oluştur";
+    ViewData["Description"] = "Çeyiz listenizi oluşturun, yakınlarınız listeden hediye alsın.";
+    ViewData["Robots"] = "noindex, follow";
+    var form = Model.Form;
+}
+
+<div class="container section registry-new">
+    <header class="registry-new__head">
+        <p class="eyebrow">Çeyiz listesi</p>
+        <h1 class="display-2 h-mark">Listenizi hazırlayın, hediyeler karışmasın.</h1>
+        <p class="lead">Üyelik gerekmez. Size özel bir yönetim bağlantısı verilir; ürünleri oradan eklersiniz. Yakınlarınız paylaştığınız adresten kalanları görüp hediye alır.</p>
+    </header>
+
+    <section class="form-card surface-elevated" aria-labelledby="registry-form-title">
+        <h2 id="registry-form-title" class="heading-3">Liste bilgileri</h2>
+        @if (Model.Error is { } error)
+        {
+            <p class="form-alert" role="alert">@error</p>
+        }
+        <form method="post" action="/ceyizlistesi/yeni">
+            @Html.AntiForgeryToken()
+            <div class="field">
+                <label class="field__label" for="OwnerName">Adınız</label>
+                <input class="field__input" id="OwnerName" name="OwnerName" value="@form.OwnerName" maxlength="60" autocomplete="name" required
+                       aria-describedby="OwnerName-error" aria-invalid="@(ViewData.ModelState["OwnerName"]?.Errors.Count > 0 ? "true" : null)" />
+                <span class="field__error" id="OwnerName-error">@ViewData.ModelState["OwnerName"]?.Errors.FirstOrDefault()?.ErrorMessage</span>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label class="field__label" for="Phone">Cep telefonu</label>
+                    <input class="field__input" id="Phone" name="Phone" value="@form.Phone" type="tel" inputmode="tel" autocomplete="tel" required
+                           aria-describedby="Phone-hint Phone-error" aria-invalid="@(ViewData.ModelState["Phone"]?.Errors.Count > 0 ? "true" : null)" />
+                    <span class="field__hint" id="Phone-hint">Listede görünmez; kendi listenizden sipariş verilmesini önlemek için tutulur.</span>
+                    <span class="field__error" id="Phone-error">@ViewData.ModelState["Phone"]?.Errors.FirstOrDefault()?.ErrorMessage</span>
+                </div>
+                <div class="field">
+                    <label class="field__label" for="Email">E-posta (isteğe bağlı)</label>
+                    <input class="field__input" id="Email" name="Email" value="@form.Email" type="email" autocomplete="email" maxlength="200"
+                           aria-describedby="Email-hint Email-error" aria-invalid="@(ViewData.ModelState["Email"]?.Errors.Count > 0 ? "true" : null)" />
+                    <span class="field__hint" id="Email-hint">Yönetim bağlantısı ve "hediye alındı" haberi buraya gelir.</span>
+                    <span class="field__error" id="Email-error">@ViewData.ModelState["Email"]?.Errors.FirstOrDefault()?.ErrorMessage</span>
+                </div>
+            </div>
+            <div class="field">
+                <label class="field__label" for="EventDate">Düğün / taşınma tarihi</label>
+                <input class="field__input" id="EventDate" name="EventDate" type="date" value="@form.EventDate?.ToString("yyyy-MM-dd")" required
+                       aria-describedby="EventDate-error" aria-invalid="@(ViewData.ModelState["EventDate"]?.Errors.Count > 0 ? "true" : null)" />
+                <span class="field__error" id="EventDate-error">@ViewData.ModelState["EventDate"]?.Errors.FirstOrDefault()?.ErrorMessage</span>
+            </div>
+            <div class="field">
+                <label class="field__label" for="Message">Ziyaretçilere not (isteğe bağlı)</label>
+                <textarea class="field__input" id="Message" name="Message" rows="3" maxlength="500">@form.Message</textarea>
+            </div>
+            <p class="field__hint">Liste bilgileri etkinlik tarihinden bir yıl sonra silinir. Ayrıntı: <a href="/yasal/kvkk-aydinlatma">KVKK aydınlatma metni</a>.</p>
+            <button class="btn btn--cta btn--lg" type="submit">Listemi oluştur</button>
+        </form>
+    </section>
+</div>

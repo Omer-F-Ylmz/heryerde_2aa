@@ -22,17 +22,23 @@ public class ProductsController : Controller
     private readonly ICategoryService _categoryService;
     private readonly IAdminAuditService _auditService;
     private readonly IProductImageStorage _imageStorage;
+    private readonly IProductVideoStorage _videoStorage;
+    private readonly TimeProvider _clock;
 
     public ProductsController(
         IProductService productService,
         ICategoryService categoryService,
         IAdminAuditService auditService,
-        IProductImageStorage imageStorage)
+        IProductImageStorage imageStorage,
+        IProductVideoStorage videoStorage,
+        TimeProvider clock)
     {
         _productService = productService;
         _categoryService = categoryService;
         _auditService = auditService;
         _imageStorage = imageStorage;
+        _videoStorage = videoStorage;
+        _clock = clock;
     }
 
     [HttpGet]
@@ -218,6 +224,65 @@ public class ProductsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequestSizeLimit(VideoFile.MaxBytes + 64_000)]
+    public async Task<IActionResult> AddVideo(VideoFormViewModel model, CancellationToken cancellationToken)
+    {
+        if (model.Video is not { } file)
+        {
+            return await FormWithErrorAsync(model.ProductId, "Video dosyası seçin.", cancellationToken);
+        }
+
+        if (await VideoFile.ProblemAsync(file, cancellationToken) is { } problem)
+        {
+            return await FormWithErrorAsync(model.ProductId, problem, cancellationToken);
+        }
+
+        await using var content = file.OpenReadStream();
+        // Süre ancak çözülerek anlaşılır: sığmayan kaynak diske hiçbir şey yazmadan geri döner.
+        if (await _videoStorage.SaveAsync(model.ProductId, content, cancellationToken) is not { } assets)
+        {
+            return await FormWithErrorAsync(model.ProductId, "Video 90 saniyeden uzun olamaz.", cancellationToken);
+        }
+
+        var added = await _productService.AddVideoAsync(new ProductVideo
+        {
+            ProductId = model.ProductId,
+            Url = assets.Url,
+            PosterUrl = assets.PosterUrl,
+            PreviewUrl = assets.PreviewUrl,
+            Duration = assets.Duration,
+            CreatedAt = _clock.GetUtcNow().UtcDateTime
+        }, cancellationToken);
+
+        if (added.Item1 != HttpStatusCode.Created)
+        {
+            _videoStorage.Delete(assets.Url);
+            return await FormWithErrorAsync(model.ProductId, added.Item2.Message, cancellationToken);
+        }
+
+        await AuditIfDoneAsync(added, "video ekle", model.ProductId);
+        return RedirectToAction(nameof(Edit), new { id = model.ProductId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteVideo(int productId, int videoId, CancellationToken cancellationToken)
+    {
+        var (_, videos) = await _productService.GetVideosAsync(productId, cancellationToken);
+        var url = videos.Data!.FirstOrDefault(v => v.Id == videoId)?.Url;
+
+        var outcome = await _productService.DeleteVideoAsync(videoId, cancellationToken);
+        if (outcome.Item1 == HttpStatusCode.OK && url is not null)
+        {
+            _videoStorage.Delete(url);
+        }
+
+        await AuditIfDoneAsync(outcome, "video sil", productId);
+        return RedirectToAction(nameof(Edit), new { id = productId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateImageSort(int productId, int imageId, int sortOrder, CancellationToken cancellationToken)
     {
         await AuditIfDoneAsync(await _productService.UpdateImageSortAsync(imageId, sortOrder, cancellationToken), "görsel sırası", productId);
@@ -337,11 +402,13 @@ public class ProductsController : Controller
     {
         var (_, variants) = await _productService.GetVariantsAsync(model.Id, cancellationToken);
         var (_, images) = await _productService.GetImagesAsync(model.Id, cancellationToken);
+        var (_, videos) = await _productService.GetVideosAsync(model.Id, cancellationToken);
 
         model.Categories = await CategoriesAsync(cancellationToken);
         model.GiftProducts = await GiftProductsAsync(model.Id, cancellationToken);
         model.Variants = variants.Data!.OrderBy(v => v.Size).ThenBy(v => v.Color).ThenBy(v => v.Sku).ToList();
         model.Images = images.Data!.OrderBy(i => i.SortOrder).ToList();
+        model.Videos = videos.Data!.OrderBy(v => v.SortOrder).ToList();
         model.RequiresVariants = await RequiresVariantsAsync(model.CategoryId, cancellationToken);
     }
 

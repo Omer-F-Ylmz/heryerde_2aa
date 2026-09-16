@@ -19,9 +19,10 @@ env:
         - "http://localhost:8080/admin/kvkk/basvuru/[0-9]+/tamamla.*"
         - "http://localhost:8080/admin/orders/[0-9]+/geri-odendi.*"
         - "http://localhost:8080/admin/iadeler/[0-9]+/(onayla|reddet|teslim-al|geri-odendi).*"
-        # D14: silme uçları Türkçe ("sil"), yukarıdaki [Dd]elete kalıbına girmiyor.
+        # D14/D15: silme uçları Türkçe ("sil"), yukarıdaki [Dd]elete kalıbına girmiyor.
         - "http://localhost:8080/admin/duyurular/[0-9]+/sil.*"
         - "http://localhost:8080/admin/kuponlar/[0-9]+/sil.*"
+        - "http://localhost:8080/admin/ceyizlistesi/[0-9]+/sil.*"
   parameters:
     failOnError: true
     failOnWarning: false

@@ -17,6 +17,7 @@ public class ProductManager : IProductService
     private readonly IProductDal _productDal;
     private readonly IProductVariantDal _variantDal;
     private readonly IProductImageDal _imageDal;
+    private readonly IProductVideoDal _videoDal;
     private readonly ICategoryDal _categoryDal;
     private readonly ISlugHistoryDal _slugHistoryDal;
     private readonly IUnitOfWork _unitOfWork;
@@ -25,6 +26,7 @@ public class ProductManager : IProductService
         IProductDal productDal,
         IProductVariantDal variantDal,
         IProductImageDal imageDal,
+        IProductVideoDal videoDal,
         ICategoryDal categoryDal,
         ISlugHistoryDal slugHistoryDal,
         IUnitOfWork unitOfWork)
@@ -32,6 +34,7 @@ public class ProductManager : IProductService
         _productDal = productDal;
         _variantDal = variantDal;
         _imageDal = imageDal;
+        _videoDal = videoDal;
         _categoryDal = categoryDal;
         _slugHistoryDal = slugHistoryDal;
         _unitOfWork = unitOfWork;
@@ -46,7 +49,7 @@ public class ProductManager : IProductService
     public async Task<(HttpStatusCode, IDataResult<ProductPage>)> GetActiveAsync(ProductQuery query, CancellationToken cancellationToken = default)
     {
         var (rows, total) = await _productDal.GetActiveAsync(query, cancellationToken);
-        var items = rows.Select(r => new ProductListItem(r.Product, r.CategorySlug, r.SoldOut)).ToList();
+        var items = rows.Select(r => new ProductListItem(r.Product, r.CategorySlug, r.SoldOut, r.PreviewUrl)).ToList();
         return (HttpStatusCode.OK, new SuccessDataResult<ProductPage>(new ProductPage(items, total)));
     }
 
@@ -372,6 +375,39 @@ public class ProductManager : IProductService
         _imageDal.Delete(image);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return (HttpStatusCode.OK, new SuccessResult("Görsel silindi."));
+    }
+
+    public async Task<(HttpStatusCode, IDataResult<List<ProductVideo>>)> GetVideosAsync(int productId, CancellationToken cancellationToken = default)
+    {
+        var videos = await _videoDal.GetListAsync(v => v.ProductId == productId, cancellationToken);
+        return (HttpStatusCode.OK, new SuccessDataResult<List<ProductVideo>>(videos));
+    }
+
+    public async Task<(HttpStatusCode, IResult)> AddVideoAsync(ProductVideo video, CancellationToken cancellationToken = default)
+    {
+        if (await _productDal.GetAsync(p => p.Id == video.ProductId, cancellationToken) is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Ürün bulunamadı."));
+        }
+
+        var existing = await _videoDal.GetListAsync(v => v.ProductId == video.ProductId, cancellationToken);
+        video.SortOrder = existing.Count == 0 ? 0 : existing.Max(v => v.SortOrder) + 1;
+        await _videoDal.AddAsync(video, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (HttpStatusCode.Created, new SuccessResult("Video eklendi."));
+    }
+
+    public async Task<(HttpStatusCode, IResult)> DeleteVideoAsync(int videoId, CancellationToken cancellationToken = default)
+    {
+        var video = await _videoDal.GetTrackedAsync(v => v.Id == videoId, cancellationToken);
+        if (video is null)
+        {
+            return (HttpStatusCode.NotFound, new ErrorResult("Video bulunamadı."));
+        }
+
+        _videoDal.Delete(video);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (HttpStatusCode.OK, new SuccessResult("Video silindi."));
     }
 
     private const string VariantRequiredMessage = "Giyim ürünü en az bir varyant olmadan yayına alınamaz.";

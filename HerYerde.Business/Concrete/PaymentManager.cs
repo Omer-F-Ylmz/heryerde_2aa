@@ -32,6 +32,7 @@ public class PaymentManager : IPaymentService
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notifications;
     private readonly IPaymentProvider _provider;
+    private readonly IGiftRegistryService _registries;
     private readonly ShopSettings _shop;
     private readonly TimeProvider _clock;
 
@@ -45,6 +46,7 @@ public class PaymentManager : IPaymentService
         IUnitOfWork unitOfWork,
         INotificationService notifications,
         IPaymentProvider provider,
+        IGiftRegistryService registries,
         IOptions<ShopSettings> shop,
         TimeProvider clock)
     {
@@ -57,6 +59,7 @@ public class PaymentManager : IPaymentService
         _unitOfWork = unitOfWork;
         _notifications = notifications;
         _provider = provider;
+        _registries = registries;
         _shop = shop.Value;
         _clock = clock;
     }
@@ -302,6 +305,7 @@ public class PaymentManager : IPaymentService
 
         var placed = items.Where(i => !missingGifts.Contains(i)).ToList();
         await _notifications.QueueOrderPlacedAsync(order, placed, store: false, cancellationToken: cancellationToken);
+        await _registries.RecordPurchaseAsync(order, placed, cancellationToken);
         return await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 

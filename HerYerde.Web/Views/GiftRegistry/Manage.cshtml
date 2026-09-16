@@ -1,0 +1,151 @@
+@using HerYerde.Business.Rules
+@using HerYerde.Web.Models
+@model GiftRegistryManageVm
+@{
+    var registry = Model.View.Registry;
+    ViewData["Title"] = "Çeyiz listemi yönet";
+    // Adres listenin anahtarıdır: indekslenmez, önbelleğe alınmaz.
+    ViewData["Robots"] = "noindex, nofollow";
+    var token = registry.ManageToken;
+}
+
+<div class="container section registry">
+    <header class="registry__head">
+        <div class="registry__intro">
+            <p class="eyebrow">Yönetim sayfası · yalnız size özel</p>
+            <h1 class="display-2 h-mark">@registry.OwnerName çeyiz listesi</h1>
+            <p class="lead registry__message">Bu sayfanın adresi listenizin anahtarıdır; kimseyle paylaşmayın. Yakınlarınıza aşağıdaki paylaşım adresini gönderin.</p>
+        </div>
+        <div class="registry__progress">
+            <p class="registry__total"><span class="registry__number">@Model.View.Received</span> / @Model.View.Desired hediye alındı</p>
+            <div class="registry-track registry-track--lg" role="progressbar" aria-valuenow="@Model.ProgressStep" aria-valuemin="0" aria-valuemax="100" aria-label="Listenin tamamlanma oranı">
+                <span class="registry-fill registry-fill--@Model.ProgressStep"></span>
+            </div>
+            <p class="registry__share">
+                <span class="field__label">Paylaşım adresi</span>
+                <a class="registry__url cell-mono" href="@Model.PublicUrl">@Model.PublicUrl</a>
+            </p>
+            <div class="registry__share-actions">
+                <a class="btn btn--cta btn--sm" href="@Model.ShareUrl" rel="noopener">Listeyi WhatsApp'ta paylaş</a>
+                <a class="btn btn--outline btn--sm" href="@Model.SelfNoteUrl" rel="noopener">Yönetim bağlantısını kendime gönder</a>
+            </div>
+        </div>
+    </header>
+
+    @if (Model.Notice is { } notice)
+    {
+        <p class="form-alert form-alert--notice" role="status">@notice</p>
+    }
+    @if (Model.Error is { } error)
+    {
+        <p class="form-alert" role="alert">@error</p>
+    }
+
+    <div class="registry__manage">
+        <section class="registry__items" aria-labelledby="items-title">
+            <h2 id="items-title" class="heading-3">Listedeki ürünler</h2>
+            @if (Model.View.Lines.Count == 0)
+            {
+                <p class="empty surface-elevated">Henüz ürün yok. Sağdaki aramadan ekleyin.</p>
+            }
+            else
+            {
+                <ul class="registry__list surface-elevated">
+                    @foreach (var line in Model.View.Lines)
+                    {
+                        <partial name="_Row" model="new RegistryRowVm(line, null, token)" />
+                    }
+                </ul>
+            }
+        </section>
+
+        <aside class="registry__side">
+            <section class="side-card surface-elevated" aria-labelledby="search-title">
+                <h2 id="search-title" class="heading-3">Ürün ekle</h2>
+                <form class="registry__search" method="get" action="/ceyizlistesi/yonet" role="search">
+                    <input type="hidden" name="t" value="@token" />
+                    <label class="field__label" for="registry-q">Ürün adı</label>
+                    <div class="registry__search-row">
+                        <input class="field__input" id="registry-q" name="ara" type="search" value="@Model.Query" placeholder="ör. tencere seti" />
+                        <button class="btn btn--secondary" type="submit">Ara</button>
+                    </div>
+                </form>
+
+                @if (Model.Query is { Length: > 0 } && Model.Results.Count == 0)
+                {
+                    <p class="side-card__empty">"@Model.Query" için ürün bulunamadı.</p>
+                }
+                @if (Model.Results.Count > 0)
+                {
+                    <ul class="stack">
+                        @foreach (var result in Model.Results)
+                        {
+                            <li class="stack__row registry-result">
+                                <span class="registry-result__media">
+                                    @if (result.ImageUrl is { } image)
+                                    {
+                                        <img src="@image" alt="" width="56" height="56" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <span class="ph"></span>
+                                    }
+                                </span>
+                                <form class="registry-result__form" method="post" action="/ceyizlistesi/yonet/ekle">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="t" value="@token" />
+                                    <input type="hidden" name="productId" value="@result.Product.Id" />
+                                    <span class="registry-result__name">@result.Product.Name</span>
+                                    @if (result.Variants.Count > 0)
+                                    {
+                                        <label class="visually-hidden" for="variant-@result.Product.Id">@result.Product.Name seçeneği</label>
+                                        <select class="field__input" id="variant-@result.Product.Id" name="variantId" required>
+                                            @foreach (var variant in result.Variants)
+                                            {
+                                                <option value="@variant.Id">@string.Join(" · ", new[] { variant.Size, variant.Color }.Where(v => !string.IsNullOrWhiteSpace(v)))</option>
+                                            }
+                                        </select>
+                                    }
+                                    <div class="registry-result__row">
+                                        <label class="visually-hidden" for="desired-@result.Product.Id">@result.Product.Name adet</label>
+                                        <input class="field__input field__input--tiny" id="desired-@result.Product.Id" name="desiredQty" type="number" min="1" max="99" value="1" />
+                                        <button class="btn btn--secondary btn--sm" type="submit">Listeye ekle</button>
+                                    </div>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            <section class="side-card surface-elevated" aria-labelledby="settings-title">
+                <h2 id="settings-title" class="heading-3">Liste bilgileri</h2>
+                <form method="post" action="/ceyizlistesi/yonet">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="t" value="@token" />
+                    <div class="field">
+                        <label class="field__label" for="OwnerName">Adınız</label>
+                        <input class="field__input" id="OwnerName" name="OwnerName" value="@registry.OwnerName" maxlength="60" required />
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="EventDate">Düğün / taşınma tarihi</label>
+                        <input class="field__input" id="EventDate" name="EventDate" type="date" value="@registry.EventDate.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="Message">Ziyaretçilere not</label>
+                        <textarea class="field__input" id="Message" name="Message" rows="3" maxlength="500">@registry.Message</textarea>
+                    </div>
+                    <div class="field">
+                        <label class="switch">
+                            <input type="checkbox" name="IsPublic" value="true" checked="@registry.IsPublic" />
+                            <span>Paylaşım adresi açık (kapalıyken kimse listeyi göremez)</span>
+                        </label>
+                        @* İşaretsiz kutu hiç gönderilmez; ilk değer kazandığı için gizli alan kutudan sonra gelir. *@
+                        <input type="hidden" name="IsPublic" value="false" />
+                    </div>
+                    <button class="btn btn--secondary btn--block" type="submit">Kaydet</button>
+                </form>
+            </section>
+        </aside>
+    </div>
+</div>

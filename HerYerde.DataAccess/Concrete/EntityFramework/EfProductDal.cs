@@ -112,11 +112,17 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
                           || (r.Product.Stock == null
                               && Context.ProductVariants.Any(v => v.ProductId == r.Product.Id)
                               && !Context.ProductVariants.Any(v => v.ProductId == r.Product.Id && v.Stock > 0)),
+                // Kart önizlemesi ayrı gidiş-dönüş olmasın: videosu olan üründe ilk videonun webm'i.
+                PreviewUrl = Context.ProductVideos
+                    .Where(v => v.ProductId == r.Product.Id)
+                    .OrderBy(v => v.SortOrder)
+                    .Select(v => v.PreviewUrl)
+                    .FirstOrDefault(),
                 Total = source.Count()
             })
             .ToListAsync(cancellationToken);
 
-        var items = rows.Select(r => new ProductRow(r.Product, r.Slug, r.SoldOut)).ToList();
+        var items = rows.Select(r => new ProductRow(r.Product, r.Slug, r.SoldOut, r.PreviewUrl)).ToList();
         return (items, rows.Count == 0 ? 0 : rows[0].Total);
     }
 

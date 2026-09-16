@@ -222,6 +222,7 @@ public sealed class ProductFormViewModel
     public List<Product> GiftProducts { get; set; } = [];
     public List<ProductVariant> Variants { get; set; } = [];
     public List<ProductImage> Images { get; set; } = [];
+    public List<ProductVideo> Videos { get; set; } = [];
     public string? ErrorMessage { get; set; }
 }
 
@@ -553,3 +554,11 @@ public sealed record KvkkPageViewModel(
     IReadOnlyList<KvkkRequestRow> Requests,
     string? ErrorMessage,
     string? Notice);
+
+public sealed class VideoFormViewModel
+{
+    public int ProductId { get; set; }
+
+    /// <summary>Yüklenen kaynak; adres kullanıcıdan alınmaz, sunucu yeniden kodlayıp üretir.</summary>
+    public IFormFile? Video { get; set; }
+}

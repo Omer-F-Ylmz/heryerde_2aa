@@ -174,5 +174,47 @@
                 </button>
             </form>
         </section>
+
+        <section class="side-card surface-elevated" aria-labelledby="videos-heading">
+            <h2 class="heading-3" id="videos-heading">Video</h2>
+            <p class="side-card__note">mp4 ya da mov yükleyin (en çok 80 MB, 90 saniye). Sunucu 720p'ye indirir, kapak karesini ve kartlarda oynayan kısa önizlemeyi kendisi üretir.</p>
+
+            @if (Model.Videos.Count == 0)
+            {
+                <p class="side-card__empty">Video yok.</p>
+            }
+            else
+            {
+                <ul class="stack">
+                    @foreach (var video in Model.Videos)
+                    {
+                        <li class="stack__row stack__row--image">
+                            <img class="thumb" src="@video.PosterUrl" alt="" width="56" height="56" loading="lazy" />
+                            <div class="stack__label">
+                                <span>@video.Duration saniye</span>
+                                <span class="stack__meta cell-mono" title="@video.Url">@System.IO.Path.GetFileName(video.Url)</span>
+                            </div>
+                            <form asp-area="Admin" asp-controller="Products" asp-action="DeleteVideo" method="post">
+                                <input type="hidden" name="productId" value="@Model.Id" />
+                                <input type="hidden" name="videoId" value="@video.Id" />
+                                <button class="btn btn--danger btn--sm" type="submit">Sil</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <form class="side-card__form" asp-area="Admin" asp-controller="Products" asp-action="AddVideo" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="ProductId" value="@Model.Id" />
+                <div class="field">
+                    <label class="field__label" for="product-video">Video dosyası</label>
+                    <input class="field__input field__input--file" id="product-video" name="Video" type="file" accept="video/mp4,video/quicktime" required />
+                </div>
+                <button class="btn btn--secondary btn--block" type="submit">
+                    <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span>Video yükle</span>
+                </button>
+            </form>
+        </section>
     </div>
 </div>

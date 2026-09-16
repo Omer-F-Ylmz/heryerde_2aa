@@ -104,7 +104,8 @@ public static class StoreCatalog
         DateTime now,
         bool lazy = true,
         string? categorySlug = null,
-        bool soldOut = false)
+        bool soldOut = false,
+        string? previewUrl = null)
     {
         var ordered = images.Where(i => i.ProductId == product.Id).OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).ToList();
         var active = IsCampaignActive(product, now);
@@ -118,6 +119,7 @@ public static class StoreCatalog
             ImageUrl = ordered.ElementAtOrDefault(0)?.Url,
             SecondImageUrl = ordered.ElementAtOrDefault(1)?.Url,
             ImageAlt = ordered.ElementAtOrDefault(0)?.Alt ?? product.Name,
+            PreviewUrl = previewUrl,
             PlaceholderIcon = PlaceholderIcon(categorySlug),
             Lazy = lazy
         };
@@ -239,6 +241,7 @@ public sealed record ProductPageVm(
     bool IsClothing,
     bool SoldOut,
     IReadOnlyList<ProductImage> Images,
+    ProductVideo? Video,
     VariantPickerVm Picker,
     bool CampaignActive,
     string WhatsAppUrl,

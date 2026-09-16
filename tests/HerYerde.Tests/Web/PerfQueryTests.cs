@@ -38,9 +38,11 @@ public sealed class PerfQueryTests : IAsyncLifetime
     public async Task Alt_kategori_en_cok_dort_sorgu_atar()
         => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/ev/tencere-tava"), 1, 4);
 
+    /// <summary>(D15) Ürünün videosu galerinin ilk öğesi olduğu için bir sorgu ekler; benzer ürünlerin kart önizlemesi
+    /// listeleme sorgusunun içinde gelir, ayrıca sorulmaz.</summary>
     [Fact]
-    public async Task Urun_sayfasi_en_cok_alti_sorgu_atar()
-        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/urun/granit-dokum-tencere-seti"), 1, 6);
+    public async Task Urun_sayfasi_en_cok_yedi_sorgu_atar()
+        => Assert.InRange(await _factory.QueryCountAsync(_factory.CreateClient(), "/urun/granit-dokum-tencere-seti"), 1, 7);
 
     /// <summary>Üç liste sorgusu + G12 parola damgası kontrolü + D6 okunmamış sipariş sayacı + D10 düşük stok sayacı (tek SQL).</summary>
     [Fact]

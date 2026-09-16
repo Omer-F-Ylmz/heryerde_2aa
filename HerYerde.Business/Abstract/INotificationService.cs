@@ -34,6 +34,13 @@ public interface INotificationService
     /// Kaydeder.</summary>
     Task<int> QueueDueReviewInvitesAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>Çeyiz listesi açıldı: sahibine (e-postası varsa) yönetim ve paylaşım bağlantısı. Kaydetmez.</summary>
+    Task QueueGiftRegistryCreatedAsync(GiftRegistry registry, CancellationToken cancellationToken = default);
+
+    /// <summary>Listeden hediye alındı: sahibine (e-postası varsa) alanın adı ve ürünler. Konu sipariş numarasıyla biter:
+    /// sipariş anonimleştirilince bu posta da silinir. Kaydetmez.</summary>
+    Task QueueGiftRegistryPurchaseAsync(GiftRegistry registry, Order order, IReadOnlyList<OrderItem> items, CancellationToken cancellationToken = default);
+
     /// <summary>Yönetici parola sıfırlama bağlantısı; anahtar yalnız postada açık, veritabanında özeti durur. Kaydetmez.</summary>
     Task QueueAdminPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default);
 

@@ -19,6 +19,9 @@ public sealed class RateLimitSettings
     /// <summary>Görsel yükleme sunucuda işleme (yeniden boyutlama) demek; ayrı ve dar tutulur.</summary>
     public int UploadPerMinute { get; set; } = 20;
 
+    /// <summary>Video yükleme yeniden kodlama demek: görselden çok daha pahalı, ayrı ve dar kova.</summary>
+    public int VideoUploadPerMinute { get; set; } = 5;
+
     /// <summary>İletişim formu gönderimi.</summary>
     public int ContactPerMinute { get; set; } = 5;
 
@@ -62,7 +65,9 @@ public static class RateLimitPolicy
                                              || path.StartsWithSegments("/admin/auth/sifremi-unuttum")
                                              || path.StartsWithSegments("/admin/auth/sifre-sifirla"))
             ? ("admin-giris", settings.AdminLoginPerMinute)
-            : isPost && (path.StartsWithSegments("/admin/products/addimage") || path.StartsWithSegments("/admin/products/import"))
+            : isPost && path.StartsWithSegments("/admin/products/addvideo")
+                ? ("video", settings.VideoUploadPerMinute)
+                : isPost && (path.StartsWithSegments("/admin/products/addimage") || path.StartsWithSegments("/admin/products/import"))
                 ? ("yukleme", settings.UploadPerMinute)
                 : isPost && path.StartsWithSegments("/sepet")
                     ? ("sepet", settings.CartPerMinute)
@@ -76,6 +81,8 @@ public static class RateLimitPolicy
                                     ? ("yorum", settings.ReviewPerDay)
                                     : isPost && path.StartsWithSegments("/siparis-sorgula")
                                         ? ("siparis-sorgula", settings.OrderLookupPerMinute)
+                                        : isPost && path.StartsWithSegments("/ceyizlistesi/yeni")
+                                        ? ("ceyiz-olustur", settings.ContactPerMinute)
                                         : isPost && path.StartsWithSegments("/siparis") && IsOrderActionPost(path)
                                             ? ("odeme-bildir", settings.PaymentNoticePerMinute)
                                             : ("genel", settings.GeneralPerMinute);

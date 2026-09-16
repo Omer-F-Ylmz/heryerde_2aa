@@ -35,7 +35,10 @@ public static class TestDb
         await context.Orders.ExecuteDeleteAsync();
         await context.CartItems.ExecuteDeleteAsync();
         await context.Carts.ExecuteDeleteAsync();
+        await context.GiftRegistryItems.ExecuteDeleteAsync();
+        await context.GiftRegistries.ExecuteDeleteAsync();
         await context.ProductImages.ExecuteDeleteAsync();
+        await context.ProductVideos.ExecuteDeleteAsync();
         await context.ProductVariants.ExecuteDeleteAsync();
         await context.Products.IgnoreQueryFilters().ExecuteDeleteAsync();
         await context.Categories.ExecuteDeleteAsync();

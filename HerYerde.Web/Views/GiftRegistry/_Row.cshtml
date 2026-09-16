@@ -1,0 +1,65 @@
+@using HerYerde.Web.Models
+@model RegistryRowVm
+@{
+    var line = Model.Line;
+    var variant = string.Join(" · ", new[] { line.Size, line.Color }.Where(v => !string.IsNullOrWhiteSpace(v)));
+    var step = RegistryProgress.Step(line.ReceivedQty, line.DesiredQty);
+}
+<li class="registry-row@(line.Completed ? " registry-row--done" : "")">
+    <a class="registry-row__media" href="/urun/@line.Slug" tabindex="-1" aria-hidden="true">
+        @if (line.ImageUrl is null)
+        {
+            <span class="ph"></span>
+        }
+        else
+        {
+            <img src="@line.ImageUrl" alt="" width="80" height="80" loading="lazy" />
+        }
+    </a>
+    <div class="registry-row__body">
+        <h3 class="registry-row__title"><a href="/urun/@line.Slug">@line.ProductName</a></h3>
+        @if (variant.Length > 0)
+        {
+            <p class="registry-row__meta">@variant</p>
+        }
+        <p class="registry-row__count">@Math.Min(line.ReceivedQty, line.DesiredQty) / @line.DesiredQty alındı</p>
+        <div class="registry-track" role="progressbar" aria-valuenow="@step" aria-valuemin="0" aria-valuemax="100" aria-label="@line.ProductName için alınan">
+            <span class="registry-fill registry-fill--@step"></span>
+        </div>
+    </div>
+    <div class="registry-row__action">
+        @if (Model.Token is { } token)
+        {
+            <form class="registry-row__qty" method="post" action="/ceyizlistesi/yonet/adet">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="t" value="@token" />
+                <input type="hidden" name="itemId" value="@line.ItemId" />
+                <label class="visually-hidden" for="qty-@line.ItemId">@line.ProductName istenen adet</label>
+                <input class="field__input field__input--tiny" id="qty-@line.ItemId" name="desiredQty" type="number" min="1" max="99" value="@line.DesiredQty" />
+                <button class="btn btn--ghost btn--sm" type="submit">Kaydet</button>
+            </form>
+            <form method="post" action="/ceyizlistesi/yonet/sil">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="t" value="@token" />
+                <input type="hidden" name="itemId" value="@line.ItemId" />
+                <button class="btn btn--danger btn--sm" type="submit">Çıkar</button>
+            </form>
+        }
+        else if (line.Completed)
+        {
+            <span class="tag tag--live">Tamamlandı</span>
+        }
+        else if (!line.Available)
+        {
+            <span class="tag tag--soldout">Şu an satışta değil</span>
+        }
+        else
+        {
+            <form method="post" action="/ceyizlistesi/@Model.Slug/hediye">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="itemId" value="@line.ItemId" />
+                <button class="btn btn--cta btn--sm" type="submit">Hediye et</button>
+            </form>
+        }
+    </div>
+</li>

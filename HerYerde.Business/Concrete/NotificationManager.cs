@@ -287,6 +287,35 @@ public class NotificationManager : INotificationService
             ? _clock.GetUtcNow().UtcDateTime - createdAt
             : null;
 
+    public async Task QueueGiftRegistryCreatedAsync(GiftRegistry registry, CancellationToken cancellationToken = default)
+    {
+        if (registry.Email is not { Length: > 0 } email)
+        {
+            return;
+        }
+
+        var (subject, body) = NotificationTemplates.GiftRegistryCreated(
+            registry,
+            $"{_shop.BaseUrl}/ceyizlistesi/yonet?t={registry.ManageToken}",
+            $"{_shop.BaseUrl}/ceyizlistesi/{registry.Slug}");
+        await QueueAsync(OutboxType.GiftRegistryCreated, email, subject, body, cancellationToken);
+    }
+
+    public async Task QueueGiftRegistryPurchaseAsync(GiftRegistry registry, Order order, IReadOnlyList<OrderItem> items, CancellationToken cancellationToken = default)
+    {
+        if (registry.Email is not { Length: > 0 } email)
+        {
+            return;
+        }
+
+        var (subject, body) = NotificationTemplates.GiftRegistryPurchase(
+            registry,
+            order,
+            items,
+            $"{_shop.BaseUrl}/ceyizlistesi/yonet?t={registry.ManageToken}");
+        await QueueAsync(OutboxType.GiftRegistryPurchase, email, subject, body, cancellationToken);
+    }
+
     private Task QueueAsync(string type, string to, string subject, string body, CancellationToken cancellationToken, string? attachment = null)
         => _outboxDal.AddAsync(
             new OutboxMessage
