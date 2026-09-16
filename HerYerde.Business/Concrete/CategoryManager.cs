@@ -109,7 +109,21 @@ public class CategoryManager : ICategoryService
         }
 
         _categoryDal.Delete(category);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Denetimle silme arasında eşzamanlı istek kategoriye ürün koyduysa yabancı anahtar yakalar: 500 yerine 409.
+            if (await _productDal.GetAsync(p => p.CategoryId == id, cancellationToken) is null)
+            {
+                throw;
+            }
+
+            return (HttpStatusCode.Conflict, new ErrorResult("Kategoride ürün var; önce ürünleri başka kategoriye taşıyın."));
+        }
+
         return (HttpStatusCode.OK, new SuccessResult("Kategori silindi."));
     }
 

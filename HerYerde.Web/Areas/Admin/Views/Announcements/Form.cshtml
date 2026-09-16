@@ -6,9 +6,14 @@
     ViewData["Title"] = isNew ? "Yeni duyuru" : "Duyuruyu düzenle";
 }
 
-<div class="admin-head">
-    <h1 class="display-2 h-mark">@ViewData["Title"]</h1>
-    <a class="btn btn--ghost" href="/admin/duyurular">Listeye dön</a>
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Vitrin</p>
+        <h1 class="display-2">@ViewData["Title"]</h1>
+    </div>
+    <div class="page-head__actions">
+        <a class="btn btn--ghost" href="/admin/duyurular">Listeye dön</a>
+    </div>
 </div>
 
 @if (Model.ErrorMessage is not null)
@@ -16,7 +21,7 @@
     <p class="form-alert" role="alert">@Model.ErrorMessage</p>
 }
 
-<form class="form-card" method="post" action="@(isNew ? "/admin/duyurular/yeni" : $"/admin/duyurular/{Model.Id}")">
+<form class="form-card surface-elevated" method="post" action="@(isNew ? "/admin/duyurular/yeni" : $"/admin/duyurular/{Model.Id}")">
     @Html.AntiForgeryToken()
 
     <div class="field">

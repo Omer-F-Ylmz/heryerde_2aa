@@ -224,4 +224,78 @@ public sealed class BrowserTests : IAsyncLifetime
         Assert.False(await page.EvaluateExpressionAsync<bool>("document.querySelector('.suggest').checkVisibility()"));
         Assert.Equal("false", await page.EvaluateExpressionAsync<string>("document.querySelector('#site-search').getAttribute('aria-expanded')"));
     }
+
+    /// <summary>D16 A2: service worker vitrin sayfalarını ve statik varlıkları önbelleğe alır, sepet/ödeme/yönetimi almaz;
+    /// çevrimdışıyken önbellekteki sayfa açılır, olmayan sayfada markalı çevrimdışı sayfası gelir; site kurulabilir (CDP).</summary>
+    [Fact]
+    public async Task Service_worker_ozel_yollari_onbelleklemez_cevrimdisi_sayfa_gosterir_site_kurulabilir()
+    {
+        await using (var context = TestDb.NewContext())
+        {
+            await TestData.AddHomeProductAsync(context, "Çelik Tencere", "celik-tencere");
+        }
+
+        await using var page = await _browser.NewPageAsync();
+        await page.SetViewportAsync(new ViewPortOptions { Width = 390, Height = 900 });
+        await page.GoToAsync(_baseUrl + "/", WaitUntilNavigation.Networkidle0);
+        await page.EvaluateExpressionAsync("navigator.serviceWorker.ready.then(() => true)");
+        await page.WaitForExpressionAsync("navigator.serviceWorker.controller !== null", new WaitForFunctionOptions { Timeout = 10000 });
+
+        foreach (var path in new[] { "/ev", "/urun/celik-tencere", "/sepet", "/odeme", "/admin/auth/login" })
+        {
+            await page.GoToAsync(_baseUrl + path, WaitUntilNavigation.Networkidle0);
+        }
+
+        var cached = await page.EvaluateExpressionAsync<string[]>(
+            "(async () => { const out = []; for (const key of await caches.keys()) { const cache = await caches.open(key); for (const r of await cache.keys()) { out.push(new URL(r.url).pathname); } } return out; })()");
+        Assert.Contains("/ev", cached);
+        Assert.Contains("/urun/celik-tencere", cached);
+        Assert.Contains("/cevrimdisi", cached);
+        Assert.Contains(cached, p => p.StartsWith("/css/site.css", StringComparison.Ordinal));
+        Assert.DoesNotContain(cached, p => p.StartsWith("/sepet", StringComparison.Ordinal) || p.StartsWith("/odeme", StringComparison.Ordinal) || p.StartsWith("/admin", StringComparison.Ordinal));
+
+        var installability = await page.Client.SendAsync<System.Text.Json.JsonElement>("Page.getInstallabilityErrors");
+        Assert.Equal(0, installability.GetProperty("installabilityErrors").GetArrayLength());
+
+        // Çevrimdışı öykünmesi sayfa hedefine uygulanır; service worker'ın kendi istekleri için onun hedefi de kapatılır.
+        await page.SetOfflineModeAsync(true);
+        var worker = _browser.Targets().First(t => t.Type == TargetType.ServiceWorker);
+        var workerSession = await worker.CreateCDPSessionAsync();
+        await workerSession.SendAsync("Network.enable");
+        await workerSession.SendAsync("Network.emulateNetworkConditions", new { offline = true, latency = 0, downloadThroughput = -1, uploadThroughput = -1 });
+        await page.GoToAsync(_baseUrl + "/ev", WaitUntilNavigation.Load);
+        Assert.Equal("Ev", await page.EvaluateExpressionAsync<string>("document.querySelector('h1').textContent.trim()"));
+        await page.GoToAsync(_baseUrl + "/marka/hic-acilmamis", WaitUntilNavigation.Load);
+        Assert.Contains("Şu an çevrimdışısınız", await page.EvaluateExpressionAsync<string>("document.body.textContent"));
+    }
+
+    /// <summary>D16 A2: "ana ekrana ekle" ipucu ilk ziyarette çıkmaz, ikinci ziyarette çıkar (iOS'ta yönerge); kapatılınca bir yıl
+    /// görünmez (localStorage).</summary>
+    [Fact]
+    public async Task Ana_ekrana_ekle_ipucu_ikinci_ziyarette_cikar_kapatilinca_gorunmez()
+    {
+        const string IPhone = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+        const string hint = "document.querySelector('[data-install-hint]').checkVisibility()";
+
+        async Task<IPage> VisitAsync()
+        {
+            var page = await _browser.NewPageAsync();
+            await page.SetUserAgentAsync(IPhone);
+            await page.SetViewportAsync(new ViewPortOptions { Width = 390, Height = 900 });
+            await page.GoToAsync(_baseUrl + "/", WaitUntilNavigation.Networkidle0);
+            return page;
+        }
+
+        await using var first = await VisitAsync();
+        Assert.False(await first.EvaluateExpressionAsync<bool>(hint));
+
+        await using var second = await VisitAsync();
+        Assert.True(await second.EvaluateExpressionAsync<bool>(hint));
+        Assert.Contains("Ana Ekrana Ekle", await second.EvaluateExpressionAsync<string>("document.querySelector('[data-install-hint]').textContent"));
+        await second.ClickAsync("[data-install-dismiss]");
+        Assert.False(await second.EvaluateExpressionAsync<bool>(hint));
+
+        await using var third = await VisitAsync();
+        Assert.False(await third.EvaluateExpressionAsync<bool>(hint));
+    }
 }

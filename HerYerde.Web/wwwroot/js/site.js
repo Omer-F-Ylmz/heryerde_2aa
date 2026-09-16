@@ -360,3 +360,63 @@ document.querySelectorAll("[data-iban-copy]").forEach(function (button) {
     if (!form.contains(event.relatedTarget)) { show(false); }
   });
 })();
+
+// Çerezsiz analitik: data-event taşıyan bağlantıya (WhatsApp, Instagram) tıklanınca olay sunucuya beacon ile gider;
+// sayfa geçişini beklemez, yanıt okunmaz.
+document.addEventListener("click", function (event) {
+  var link = event.target.closest && event.target.closest("[data-event]");
+  if (!link || !navigator.sendBeacon) { return; }
+  navigator.sendBeacon("/olay", new URLSearchParams({ ad: link.getAttribute("data-event"), yol: location.pathname }));
+});
+
+// PWA: service worker yalnız destekleyen tarayıcıda, sayfa yüklendikten sonra kaydedilir (ilk boyamayı geciktirmez).
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("/sw.js").catch(function () {});
+  });
+}
+
+// "Ana ekrana ekle" ipucu: ikinci ziyaretten itibaren, uygulama olarak açılmamışsa; kapatılınca bir yıl gösterilmez.
+// localStorage yalnız ziyaret sayacı ve kapatma tarihi için (çerez politikasındaki istisna); erişilemezse ipucu hiç çıkmaz.
+(function () {
+  var hint = document.querySelector("[data-install-hint]");
+  if (!hint) { return; }
+
+  var visits;
+  var dismissedAt;
+  try {
+    if (!window.sessionStorage.getItem("heryerde.oturum")) {
+      window.sessionStorage.setItem("heryerde.oturum", "1");
+      window.localStorage.setItem("heryerde.ziyaret", String((parseInt(window.localStorage.getItem("heryerde.ziyaret"), 10) || 0) + 1));
+    }
+    visits = parseInt(window.localStorage.getItem("heryerde.ziyaret"), 10) || 0;
+    dismissedAt = parseInt(window.localStorage.getItem("heryerde.ipucu-kapatildi"), 10) || 0;
+  } catch (e) {
+    return;
+  }
+
+  var standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  if (standalone || visits < 2 || Date.now() - dismissedAt < 365 * 24 * 60 * 60 * 1000) { return; }
+
+  var accept = hint.querySelector("[data-install-accept]");
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    hint.querySelector("[data-install-ios]").hidden = false;
+    hint.hidden = false;
+  }
+
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    hint.querySelector("[data-install-android]").hidden = false;
+    accept.hidden = false;
+    accept.onclick = function () {
+      hint.hidden = true;
+      event.prompt();
+    };
+    hint.hidden = false;
+  });
+
+  hint.querySelector("[data-install-dismiss]").addEventListener("click", function () {
+    hint.hidden = true;
+    try { window.localStorage.setItem("heryerde.ipucu-kapatildi", String(Date.now())); } catch (e) { /* yok sayılır */ }
+  });
+})();

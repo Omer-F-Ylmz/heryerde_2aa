@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace HerYerde.Tests.Web;
 
@@ -47,6 +48,12 @@ public class AdminWebFactory : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton(TestClock.Fixed);
+            // Analitik yazımı testte gerçek saatle 30 sn'de bir çalışıp başka testin veritabanına kayıt taşımasın: testler AnalyticsWriter'ı elle boşaltır.
+            foreach (var hosted in services.Where(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(HerYerde.Web.Infrastructure.AnalyticsHostedService)).ToList())
+            {
+                services.Remove(hosted);
+            }
+
             ConfigureServices(services);
         });
     }

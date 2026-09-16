@@ -6,6 +6,7 @@ using HerYerde.Web.Areas.Admin.Models;
 using HerYerde.Web.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace HerYerde.Web.Areas.Admin.Controllers;
 
@@ -26,6 +27,7 @@ public class ProductsController : Controller
     private readonly IBrandService _brandService;
     private readonly IAttributeService _attributeService;
     private readonly TimeProvider _clock;
+    private readonly string[] _acronyms;
 
     public ProductsController(
         IProductService productService,
@@ -35,7 +37,8 @@ public class ProductsController : Controller
         IProductVideoStorage videoStorage,
         IBrandService brandService,
         IAttributeService attributeService,
-        TimeProvider clock)
+        TimeProvider clock,
+        IOptions<HerYerde.Business.ShopSettings> shop)
     {
         _productService = productService;
         _categoryService = categoryService;
@@ -45,6 +48,7 @@ public class ProductsController : Controller
         _brandService = brandService;
         _attributeService = attributeService;
         _clock = clock;
+        _acronyms = shop.Value.Acronyms;
     }
 
     [HttpGet]
@@ -75,6 +79,7 @@ public class ProductsController : Controller
         {
             Categories = await CategoriesAsync(cancellationToken),
             Brands = await _brandService.GetAllAsync(cancellationToken),
+            Acronyms = _acronyms,
             GiftProducts = await GiftProductsAsync(0, cancellationToken)
         });
 
@@ -435,6 +440,7 @@ public class ProductsController : Controller
 
         model.Categories = await CategoriesAsync(cancellationToken);
         model.Brands = await _brandService.GetAllAsync(cancellationToken);
+        model.Acronyms = _acronyms;
         model.GiftProducts = await GiftProductsAsync(model.Id, cancellationToken);
         model.Variants = variants.Data!.OrderBy(v => v.Size).ThenBy(v => v.Color).ThenBy(v => v.Sku).ToList();
         model.Images = images.Data!.OrderBy(i => i.SortOrder).ToList();

@@ -879,6 +879,11 @@
     white-space: nowrap;
   }
 
+  /* Tarih aralığı tek satır: dar ekranda sütun harf harf kırılmasın, tablo .table-wrap içinde kayar */
+  .table__date {
+    white-space: nowrap;
+  }
+
   .table__actions {
     display: flex;
     gap: 8px;
@@ -2337,6 +2342,8 @@
 
   .legal {
     display: grid;
+    /* minmax(0, 1fr): tablo ve uzun çerez adları sütunu genişletmesin, yatay kaydırma .table-wrap içinde kalsın */
+    grid-template-columns: minmax(0, 1fr);
     gap: 32px;
     margin-top: 32px;
   }
@@ -2474,6 +2481,129 @@
 
   .oops .lead {
     margin-bottom: 32px;
+  }
+
+  /* "Ana ekrana ekle" ipucu (D16): altta yüzen tek satır; içeriği kapatmasın diye kapatılabilir, 768+ sağ altta dar */
+  .install-hint {
+    position: fixed;
+    inset-inline: 16px;
+    bottom: 16px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--c-neutral-200);
+    border-radius: 12px;
+    background: var(--c-neutral-50);
+    box-shadow: var(--shadow-floating);
+  }
+
+  .install-hint[hidden] {
+    display: none;
+  }
+
+  .install-hint__icon {
+    flex: none;
+    border-radius: 12px;
+  }
+
+  .install-hint__text {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .install-hint__text strong {
+    display: block;
+    color: var(--c-brand-900);
+  }
+
+  .install-hint__close {
+    flex: none;
+  }
+
+  @media (min-width: 768px) {
+    .install-hint {
+      inset-inline: auto 32px;
+      bottom: 32px;
+      max-width: 440px;
+    }
+  }
+
+  /* Yönetim analitik (D16): günlük çubuklar ve huni SVG öznitelikleriyle çizilir (CSP: satır içi stil yok) */
+  .analytics-chart {
+    display: block;
+    width: 100%;
+    height: 160px;
+    margin-bottom: 16px;
+  }
+
+  .analytics-chart__bar {
+    fill: var(--c-brand);
+  }
+
+  .analytics-chart__bar:hover {
+    fill: var(--c-brand-700);
+  }
+
+  /* Gün tablosu ikincil ve sık satırlı: 390'da üç sütun yatay kaydırmasız sığsın diye yatay iç boşluk 8px */
+  .analytics-days .table th,
+  .analytics-days .table td {
+    padding-inline: 8px;
+  }
+
+  .analytics-days summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--c-accent-deep);
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .funnel {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .funnel__step {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 16px;
+  }
+
+  .funnel__label {
+    font-weight: 600;
+  }
+
+  .funnel__count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--c-brand-900);
+  }
+
+  .funnel__track {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--c-neutral-200);
+  }
+
+  .funnel__fill {
+    fill: var(--c-accent);
+  }
+
+  .funnel__rate {
+    grid-column: 1 / -1;
+    font-size: 14px;
+    color: var(--c-neutral-700);
   }
 
   /* Stil rehberi */

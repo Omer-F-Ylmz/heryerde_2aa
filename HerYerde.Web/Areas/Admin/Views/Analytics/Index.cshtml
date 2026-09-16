@@ -1,0 +1,201 @@
+@using System.Globalization
+@using HerYerde.Business.Dtos
+@using HerYerde.Web.Areas.Admin.Models
+@model AnalyticsPageViewModel
+@{
+    ViewData["Title"] = "Analitik";
+    var report = Model.Report;
+    var turkish = CultureInfo.GetCultureInfo("tr-TR");
+    var days = Model.AllDays;
+    var maxViews = days.Count == 0 ? 0 : days.Max(d => d.Views);
+    // Çubuk genişliği gün sayısına göre: 30 gün ≈ 24 birim; SVG viewBox ölçeklenir, CSP için satır içi stil yok.
+    const int barStep = 24;
+    const int barWidth = 16;
+    var chartWidth = Math.Max(days.Count * barStep, barStep);
+    var funnel = new (string Label, int Count, int Previous)[]
+    {
+        ("Ürün sayfası görüntülenmesi", report.Funnel.ProductViews, 0),
+        ("Sepete ekleme", report.Funnel.AddToCart, report.Funnel.ProductViews),
+        ("Ödeme adımı", report.Funnel.Checkout, report.Funnel.AddToCart),
+        ("Sipariş", report.Funnel.Orders, report.Funnel.Checkout)
+    };
+    var funnelMax = Math.Max(report.Funnel.ProductViews, 1);
+}
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Vitrin</p>
+        <h1 class="display-2">Analitik</h1>
+        <p class="page-head__note">Çerezsiz sayım: IP, tarayıcı kimliği ve oturum tutulmaz. Ziyaret yaklaşıktır — aynı sayfaya aynı kaynaktan yarım saat içinde gelinmesi bir ziyaret sayılır. Ham kayıt 90 gün, sonrası günlük özet olarak kalır.</p>
+    </div>
+</div>
+
+<form class="filters" method="get" action="/admin/analitik">
+    <div class="field">
+        <label class="field__label" for="baslangic">Başlangıç</label>
+        <input class="field__input" id="baslangic" name="baslangic" type="date" value="@report.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" />
+    </div>
+    <div class="field">
+        <label class="field__label" for="bitis">Bitiş (dahil)</label>
+        <input class="field__input" id="bitis" name="bitis" type="date" value="@report.To.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" />
+    </div>
+    <button class="btn btn--secondary" type="submit">Göster</button>
+</form>
+
+<section class="report__kpis" aria-label="Özet">
+    <div class="surface-elevated report__kpi report__kpi--lead">
+        <p class="report__kpi-label">Görüntülenme</p>
+        <p class="report__kpi-value">@report.TotalViews.ToString("N0", turkish)</p>
+        <p class="report__kpi-note">@report.TotalVisits.ToString("N0", turkish) yaklaşık ziyaret</p>
+    </div>
+    <div class="surface-elevated report__kpi">
+        <p class="report__kpi-label">Sipariş</p>
+        <p class="report__kpi-value">@report.Funnel.Orders</p>
+    </div>
+    <div class="surface-elevated report__kpi">
+        <p class="report__kpi-label">Arama</p>
+        <p class="report__kpi-value">@report.Searches</p>
+    </div>
+    <div class="surface-elevated report__kpi">
+        <p class="report__kpi-label">WhatsApp tıklaması</p>
+        <p class="report__kpi-value">@report.WhatsAppClicks</p>
+    </div>
+</section>
+
+<div class="report__grid">
+    <section class="surface-elevated report__panel report__panel--wide" id="gunluk" aria-labelledby="gunluk-baslik">
+        <h2 class="heading-3" id="gunluk-baslik">Günlük görüntülenme</h2>
+        @if (report.TotalViews == 0)
+        {
+            <p class="page-head__note">Bu aralıkta kayıt yok.</p>
+        }
+        else
+        {
+            <svg class="analytics-chart" viewBox="0 0 @chartWidth @(AnalyticsPageViewModel.ChartHeight + 4)" preserveAspectRatio="none" role="img" aria-label="Günlük görüntülenme çubuk grafiği; ayrıntı aşağıdaki tabloda">
+                @for (var i = 0; i < days.Count; i++)
+                {
+                    var height = Model.BarHeight(days[i].Views, maxViews);
+                    <rect class="analytics-chart__bar" x="@(i * barStep + (barStep - barWidth) / 2)" y="@(AnalyticsPageViewModel.ChartHeight - height + 2)" width="@barWidth" height="@height"><title>@days[i].Day.ToString("d MMM", turkish): @days[i].Views görüntülenme, @days[i].Visits ziyaret</title></rect>
+                }
+            </svg>
+            <details class="analytics-days">
+                <summary>Günlere göre tablo</summary>
+                <div class="table-wrap">
+                    <table class="table">
+                        <caption class="visually-hidden">Günlük görüntülenme ve yaklaşık ziyaret</caption>
+                        <thead><tr><th scope="col">Gün</th><th scope="col" class="table__num">Görüntülenme</th><th scope="col" class="table__num">Ziyaret</th></tr></thead>
+                        <tbody>
+                        @foreach (var day in report.Days)
+                        {
+                            <tr><th scope="row">@day.Day.ToString("d MMM, ddd", turkish)</th><td class="table__num">@day.Views</td><td class="table__num">@day.Visits</td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        }
+    </section>
+
+    <section class="surface-elevated report__panel" id="huni" aria-labelledby="huni-baslik">
+        <h2 class="heading-3" id="huni-baslik">Huni</h2>
+        <ol class="funnel">
+            @foreach (var step in funnel)
+            {
+                <li class="funnel__step">
+                    <span class="funnel__label">@step.Label</span>
+                    <span class="funnel__count">@step.Count</span>
+                    <svg class="funnel__track" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect class="funnel__fill" width="@(Math.Round(step.Count * 100.0 / funnelMax, 1).ToString(CultureInfo.InvariantCulture))" height="8" rx="2" /></svg>
+                    @if (step.Previous > 0 || step.Label != funnel[0].Label)
+                    {
+                        <span class="funnel__rate">@AnalyticsPageViewModel.Rate(step.Count, step.Previous) önceki adımdan</span>
+                    }
+                </li>
+            }
+        </ol>
+    </section>
+
+    <section class="surface-elevated report__panel" id="tiklamalar" aria-labelledby="tiklamalar-baslik">
+        <h2 class="heading-3" id="tiklamalar-baslik">Tıklamalar ve cihaz</h2>
+        <table class="table">
+            <caption class="visually-hidden">WhatsApp ve Instagram bağlantısı tıklamaları</caption>
+            <tbody>
+                <tr><th scope="row">WhatsApp</th><td class="table__num">@report.WhatsAppClicks</td></tr>
+                <tr><th scope="row">Instagram</th><td class="table__num">@report.InstagramClicks</td></tr>
+            </tbody>
+        </table>
+        <h3 class="heading-3 report__subhead">Cihaz</h3>
+        <table class="table">
+            <caption class="visually-hidden">Cihaz sınıfına göre görüntülenme</caption>
+            <tbody>
+            @foreach (var row in report.Devices)
+            {
+                <tr><th scope="row">@AnalyticsPageViewModel.DeviceLabel(row.Label)</th><td class="table__num">@row.Count</td></tr>
+            }
+            </tbody>
+        </table>
+    </section>
+
+    <section class="surface-elevated report__panel" id="urunler" aria-labelledby="urunler-baslik">
+        <h2 class="heading-3" id="urunler-baslik">En çok görüntülenen ürünler</h2>
+        @if (report.TopProducts.Count == 0)
+        {
+            <p class="page-head__note">Ürün sayfası görüntülenmesi yok.</p>
+        }
+        else
+        {
+            <table class="table">
+                <caption class="visually-hidden">Görüntülenmeye göre ilk 10 ürün</caption>
+                <thead><tr><th scope="col">Ürün</th><th scope="col" class="table__num">Görüntülenme</th></tr></thead>
+                <tbody>
+                @foreach (var row in report.TopProducts)
+                {
+                    <tr><th scope="row"><a href="@row.Label">@Model.NameOf(row.Label)</a></th><td class="table__num">@row.Count</td></tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="surface-elevated report__panel" id="kategoriler" aria-labelledby="kategoriler-baslik">
+        <h2 class="heading-3" id="kategoriler-baslik">En çok görüntülenen kategoriler</h2>
+        @if (report.TopCategories.Count == 0)
+        {
+            <p class="page-head__note">Kategori sayfası görüntülenmesi yok.</p>
+        }
+        else
+        {
+            <table class="table">
+                <caption class="visually-hidden">Görüntülenmeye göre ilk 10 kategori sayfası</caption>
+                <thead><tr><th scope="col">Kategori</th><th scope="col" class="table__num">Görüntülenme</th></tr></thead>
+                <tbody>
+                @foreach (var row in report.TopCategories)
+                {
+                    <tr><th scope="row"><a href="@row.Label">@Model.NameOf(row.Label)</a></th><td class="table__num">@row.Count</td></tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="surface-elevated report__panel report__panel--wide" id="kaynaklar" aria-labelledby="kaynaklar-baslik">
+        <h2 class="heading-3" id="kaynaklar-baslik">Kaynaklar</h2>
+        <p class="page-head__note">UTM kaynağı varsa o (ör. bio bağlantısındaki utm_source=instagram), yoksa yönlendiren site.</p>
+        @if (report.Sources.Count == 0)
+        {
+            <p class="page-head__note">Kayıt yok.</p>
+        }
+        else
+        {
+            <table class="table">
+                <caption class="visually-hidden">Kaynağa göre görüntülenme</caption>
+                <thead><tr><th scope="col">Kaynak</th><th scope="col" class="table__num">Görüntülenme</th></tr></thead>
+                <tbody>
+                @foreach (var row in report.Sources)
+                {
+                    <tr><th scope="row">@AnalyticsPageViewModel.SourceLabel(row.Label)</th><td class="table__num">@row.Count</td></tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+</div>

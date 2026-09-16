@@ -99,6 +99,18 @@ public sealed class ListingFilterTests : IAsyncLifetime
         Assert.Matches("value=\"Malzeme:Döküm\"[^>]*/>\\s*<span[^>]*>Döküm</span>\\s*<span class=\"filter-option__count\">2</span>", html);
     }
 
+    /// <summary>D16 A3: "Stokta olanlar" ve "Kampanyalı" seçenekleri de kapsamdaki ürün sayısını yazar (A, C, D stokta; C kampanyada).</summary>
+    [Fact]
+    public async Task Stokta_olanlar_ve_kampanyali_secenekleri_sayilarini_yazar()
+    {
+        await SeedAsync();
+
+        var html = await PageAsync("/ev");
+
+        Assert.Matches(@"name=""stok"" value=""1""[^>]*/>\s*<span[^>]*>Stokta olanlar</span>\s*<span class=""filter-option__count"">3</span>", html);
+        Assert.Matches(@"name=""kampanya"" value=""1""[^>]*/>\s*<span[^>]*>Kampanyalı</span>\s*<span class=""filter-option__count"">1</span>", html);
+    }
+
     [Fact]
     public async Task Arama_ve_marka_sayfasinda_da_suzgec_uygulanir()
     {

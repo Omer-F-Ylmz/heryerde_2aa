@@ -16,18 +16,25 @@
     };
 }
 
-<div class="admin-head">
-    <h1 class="display-2 h-mark">Kuponlar</h1>
-    <a class="btn btn--primary" href="/admin/kuponlar/yeni">Yeni kupon</a>
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Vitrin</p>
+        <h1 class="display-2">Kuponlar</h1>
+        <p class="page-head__note">Kod sepette ve ödeme adımında girilir. Kullanım sayısı iptal edilmemiş siparişlerden gelir; kupon silinse de geçmiş siparişlerdeki kod kaydı durur.</p>
+    </div>
+    <div class="page-head__actions">
+        <a class="btn btn--primary" href="/admin/kuponlar/yeni">Yeni kupon</a>
+    </div>
 </div>
 
 @if (Model.Count == 0)
 {
-    <p class="admin-empty">Henüz kupon yok. Kod sepette ve ödeme adımında girilir.</p>
+    <p class="empty surface-elevated">Henüz kupon yok.</p>
 }
 else
 {
-    <table class="admin-table">
+    <div class="table-wrap surface-elevated">
+    <table class="table">
         <caption class="visually-hidden">Tanımlı kuponlar ve kullanım sayıları</caption>
         <thead>
             <tr>
@@ -45,16 +52,18 @@ else
             {
                 var live = coupon.IsActive && coupon.StartsAt <= now && coupon.EndsAt > now;
                 <tr>
-                    <th scope="row"><a href="/admin/kuponlar/@coupon.Id">@coupon.Code</a></th>
+                    <th scope="row"><a class="cell-mono" href="/admin/kuponlar/@coupon.Id">@coupon.Code</a></th>
                     <td>@Benefit(coupon)</td>
-                    <td>@(coupon.MinSubtotal > 0m ? Money.Tl(coupon.MinSubtotal) : "—")</td>
-                    <td>@coupon.StartsAt.ToString("d MMM yyyy", turkish) – @coupon.EndsAt.AddDays(-1).ToString("d MMM yyyy", turkish)</td>
+                    <td class="table__num">@(coupon.MinSubtotal > 0m ? Money.Tl(coupon.MinSubtotal) : "—")</td>
+                    <td class="table__date">@coupon.StartsAt.ToString("d MMM yyyy", turkish) – @coupon.EndsAt.AddDays(-1).ToString("d MMM yyyy", turkish)</td>
                     <td>
-                        @used@(coupon.TotalLimit is { } limit ? " / " + limit : "")
-                        @if (coupon.PerPersonLimit is { } perPerson)
-                        {
-                            <span class="admin-table__sub">kişi başı @perPerson</span>
-                        }
+                        <div class="cell-product">
+                            <span>@used@(coupon.TotalLimit is { } limit ? " / " + limit : "")</span>
+                            @if (coupon.PerPersonLimit is { } perPerson)
+                            {
+                                <span class="cell-mono">kişi başı @perPerson</span>
+                            }
+                        </div>
                     </td>
                     <td>
                         @if (live)
@@ -71,14 +80,17 @@ else
                         }
                     </td>
                     <td>
-                        <form method="post" action="/admin/kuponlar/@coupon.Id/sil">
-                            @Html.AntiForgeryToken()
-                            <button class="btn btn--ghost btn--sm" type="submit">Sil</button>
-                        </form>
+                        <div class="table__actions">
+                            <a class="btn btn--ghost btn--sm" href="/admin/kuponlar/@coupon.Id">Düzenle</a>
+                            <form method="post" action="/admin/kuponlar/@coupon.Id/sil">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn--danger btn--sm" type="submit">Sil</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
-    <p class="field__hint">Kullanım sayısı iptal edilmemiş siparişlerden gelir. Kupon silinse de geçmiş siparişlerdeki kod kaydı durur.</p>
+    </div>
 }

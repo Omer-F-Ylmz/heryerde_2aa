@@ -28,6 +28,7 @@ public partial class CheckoutController(
     IAdminAuditService auditService,
     IInstallmentService installments,
     IProvinceDirectory provinces,
+    AnalyticsRecorder analytics,
     TimeProvider clock) : Controller
 {
     private ShopSettings Shop => shop.Value;
@@ -52,6 +53,8 @@ public partial class CheckoutController(
         {
             return Redirect("/sepet");
         }
+
+        analytics.Record(HttpContext, AnalyticsEvent.Checkout);
 
         // Kart ödemesi reddedilip buraya dönüldüyse sebep TempData'dadır.
         return View(new CheckoutPageViewModel(
@@ -170,6 +173,7 @@ public partial class CheckoutController(
         {
             var placed = result.Data!;
             LastOrderCookie.Write(HttpContext, placed.AccessToken);
+            analytics.Record(HttpContext, AnalyticsEvent.Order);
             return Redirect($"/siparis/{placed.OrderNo}/tesekkur?t={placed.AccessToken}");
         }
 
@@ -206,6 +210,7 @@ public partial class CheckoutController(
         {
             var order = result.Data!;
             LastOrderCookie.Write(HttpContext, order.AccessToken);
+            analytics.Record(HttpContext, AnalyticsEvent.Order);
             return SeeOther($"/siparis/{order.OrderNo}/tesekkur?t={order.AccessToken}");
         }
 

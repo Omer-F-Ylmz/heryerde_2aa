@@ -149,6 +149,60 @@ namespace HerYerde.DataAccess.Migrations
                     b.ToTable("admin_user", (string)null);
                 });
 
+            modelBuilder.Entity("HerYerde.Entities.Concrete.AnalyticsDaily", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Day")
+                        .HasColumnType("date")
+                        .HasColumnName("day");
+
+                    b.Property<string>("Device")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("device");
+
+                    b.Property<string>("Event")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("event");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("path");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("source");
+
+                    b.Property<int>("Views")
+                        .HasColumnType("int")
+                        .HasColumnName("views");
+
+                    b.Property<int>("Visits")
+                        .HasColumnType("int")
+                        .HasColumnName("visits");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Day", "Event", "Path", "Source", "Device")
+                        .IsUnique()
+                        .HasDatabaseName("ux_analytics_daily_key");
+
+                    b.ToTable("analytics_daily", (string)null);
+                });
+
             modelBuilder.Entity("HerYerde.Entities.Concrete.Announcement", b =>
                 {
                     b.Property<int>("Id")
@@ -984,6 +1038,73 @@ namespace HerYerde.DataAccess.Migrations
                         .HasDatabaseName("ix_outbox_message_status_next_try_at");
 
                     b.ToTable("outbox_message", (string)null);
+                });
+
+            modelBuilder.Entity("HerYerde.Entities.Concrete.PageView", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("Day")
+                        .HasColumnType("date")
+                        .HasColumnName("day");
+
+                    b.Property<string>("Device")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("device");
+
+                    b.Property<string>("Event")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("event");
+
+                    b.Property<bool>("HalfHour")
+                        .HasColumnType("bit")
+                        .HasColumnName("half_hour");
+
+                    b.Property<byte>("Hour")
+                        .HasColumnType("tinyint")
+                        .HasColumnName("hour");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("path");
+
+                    b.Property<string>("ReferrerHost")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("referrer_host");
+
+                    b.Property<string>("UtmCampaign")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("utm_campaign");
+
+                    b.Property<string>("UtmMedium")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("utm_medium");
+
+                    b.Property<string>("UtmSource")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasColumnName("utm_source");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Day", "Event")
+                        .HasDatabaseName("ix_page_view_day_event");
+
+                    b.ToTable("page_view", (string)null);
                 });
 
             modelBuilder.Entity("HerYerde.Entities.Concrete.Payment", b =>

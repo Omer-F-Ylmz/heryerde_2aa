@@ -64,7 +64,11 @@ public class ProductManager : IProductService
             .OrderBy(a => a.Name, comparer)
             .ToList();
 
-        return new ListingFacets(brands, attributes);
+        return new ListingFacets(
+            brands,
+            attributes,
+            rows.Where(r => r.Kind == FacetRow.InStockKind).Sum(r => r.Count),
+            rows.Where(r => r.Kind == FacetRow.CampaignKind).Sum(r => r.Count));
     }
 
     public async Task<(HttpStatusCode, IDataResult<ProductPage>)> GetActiveAsync(ProductQuery query, CancellationToken cancellationToken = default)

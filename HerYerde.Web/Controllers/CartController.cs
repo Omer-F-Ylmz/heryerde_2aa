@@ -1,6 +1,7 @@
 using System.Net;
 using HerYerde.Business.Abstract;
 using HerYerde.Business.Dtos;
+using HerYerde.Business.Rules;
 using HerYerde.Web.Infrastructure;
 using HerYerde.Web.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace HerYerde.Web.Controllers;
 
 /// <summary>Anonim sepet: kimlik "heryerde.cart" çerezinde, satır işlemleri POST + yönlendirme.</summary>
-public class CartController(ICartService cartService, ICouponService coupons) : Controller
+public class CartController(ICartService cartService, ICouponService coupons, AnalyticsRecorder analytics) : Controller
 {
     public const string ErrorKey = "SepetHatasi";
 
@@ -41,6 +42,7 @@ public class CartController(ICartService cartService, ICouponService coupons) : 
             return await RejectedAsync(cart.Data.Id, status, result.Message, cancellationToken);
         }
 
+        analytics.Record(HttpContext, AnalyticsEvent.AddToCart);
         return Redirect(LocalOr(donus, "/sepet"));
     }
 

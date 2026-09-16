@@ -18,6 +18,7 @@ public class StoreController(
     IReviewService reviewService,
     IInstallmentService installments,
     ISearchLogService searchLogs,
+    AnalyticsRecorder analytics,
     IConfiguration configuration) : Controller
 {
     private const string ReviewNoticeKey = "YorumBildirimi";
@@ -306,6 +307,7 @@ public class StoreController(
         if (sayfa <= 1 && !byPrice && low is null && high is null && secim.ActiveCount == 0)
         {
             await searchLogs.RecordAsync(term, total, cancellationToken);
+            analytics.Record(HttpContext, AnalyticsEvent.Search);
         }
 
         // Sonuç yoksa eli boş dönmesin: son gelen dört ürün önerilir (süzgeç seçiliyken öneri yok: boşluğu süzgeç yaratmıştır).
@@ -542,8 +544,8 @@ public class StoreController(
             .ToList())));
         groups.Add(new FilterGroupVm("Durum",
         [
-            new FilterOptionVm("stok", "1", "Stokta olanlar", null, selection.InStockOnly),
-            new FilterOptionVm("kampanya", "1", "Kampanyalı", null, selection.CampaignOnly)
+            new FilterOptionVm("stok", "1", "Stokta olanlar", facets.InStock, selection.InStockOnly),
+            new FilterOptionVm("kampanya", "1", "Kampanyalı", facets.Campaign, selection.CampaignOnly)
         ]));
 
         var chips = new List<FilterChipVm>();

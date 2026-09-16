@@ -155,7 +155,10 @@ public sealed class ProductFormViewModel
 
     /// <summary>Ad standarttan sapıyorsa önerilen yazım; uyuyorsa null. Yalnız ipucudur, kayıt engellenmez.</summary>
     public string? SuggestedName
-        => ProductRules.NormalizeName(Name, Brands.Select(b => b.Name)) is var suggested && suggested.Length > 0 && suggested != Name ? suggested : null;
+        => ProductRules.NormalizeName(Name, Brands.Select(b => b.Name).Concat(Acronyms)) is var suggested && suggested.Length > 0 && suggested != Name ? suggested : null;
+
+    /// <summary>Shop:Acronyms; ad önerisinde marka adları gibi yazımı korunur.</summary>
+    public IReadOnlyList<string> Acronyms { get; set; } = [];
 
     [Required(ErrorMessage = "Açıklama gerekli.")]
     [Display(Name = "Açıklama")]

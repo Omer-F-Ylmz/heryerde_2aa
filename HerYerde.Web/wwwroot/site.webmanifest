@@ -1,13 +1,19 @@
 {
+  "id": "/",
   "name": "HerYerde",
   "short_name": "HerYerde",
+  "description": "Çeyizden mutfağa ev ürünleri, örtü ve eşarp; kapıda ödeme, WhatsApp'tan sipariş.",
   "lang": "tr",
+  "dir": "ltr",
   "start_url": "/",
-  "display": "browser",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "categories": ["shopping"],
   "theme_color": "#A8442A",
   "background_color": "#F6F1E8",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }

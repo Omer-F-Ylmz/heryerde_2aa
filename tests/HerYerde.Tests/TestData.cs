@@ -91,6 +91,10 @@ public static class TestData
         new EfUnitOfWork(context),
         TestClock.Fixed);
 
+    public static AnalyticsManager NewAnalyticsManager(HerYerdeContext context) => new(
+        new EfPageViewDal(context),
+        new EfUnitOfWork(context));
+
     public static SearchLogManager NewSearchLogManager(HerYerdeContext context) => new(
         new EfSearchLogDal(context),
         new EfUnitOfWork(context),

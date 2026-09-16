@@ -82,7 +82,8 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
 
     public async Task<List<FacetRow>> GetFacetsAsync(ProductQuery query, CancellationToken cancellationToken = default)
     {
-        var ids = Scope(query, withSelections: false).Select(r => r.Product.Id);
+        var scope = Scope(query, withSelections: false);
+        var ids = scope.Select(r => r.Product.Id);
 
         var brands = Context.Products
             .Where(p => ids.Contains(p.Id) && p.BrandId != null)
@@ -95,7 +96,15 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
             .GroupBy(a => new { a.Name, a.Value })
             .Select(g => new FacetRow { Kind = FacetRow.AttributeKind, First = g.Key.Name, Second = g.Key.Value, Count = g.Count() });
 
-        return await brands.Concat(attributes).ToListAsync(cancellationToken);
+        // Stokta olanlar ve kampanyalı seçeneklerinin sayısı; grup boşsa satır gelmez, sayı 0 sayılır.
+        var inStock = InStock(scope)
+            .GroupBy(_ => 1)
+            .Select(g => new FacetRow { Kind = FacetRow.InStockKind, First = "", Second = "", Count = g.Count() });
+        var campaign = Campaign(scope, query.Now)
+            .GroupBy(_ => 1)
+            .Select(g => new FacetRow { Kind = FacetRow.CampaignKind, First = "", Second = "", Count = g.Count() });
+
+        return await brands.Concat(attributes).Concat(inStock).Concat(campaign).ToListAsync(cancellationToken);
     }
 
     /// <summary>Kapsam (kategori, marka sayfası, terim, fiyat …) her zaman; ziyaretçinin marka/özellik/stok/kampanya seçimleri
@@ -183,21 +192,28 @@ public class EfProductDal : EfEntityRepositoryBase<Product, HerYerdeContext>, IP
 
         if (query.InStockOnly)
         {
-            source = source.Where(r => r.Product.Stock > 0
-                                       || (r.Product.Stock == null
-                                           && (!Context.ProductVariants.Any(v => v.ProductId == r.Product.Id)
-                                               || Context.ProductVariants.Any(v => v.ProductId == r.Product.Id && v.Stock > 0))));
+            source = InStock(source);
         }
 
         if (query.CampaignOnly)
         {
-            source = source.Where(r => r.Product.CampaignPrice != null
-                                       && r.Product.CampaignPrice < r.Product.Price
-                                       && (r.Product.CampaignEndsAt == null || r.Product.CampaignEndsAt > query.Now));
+            source = Campaign(source, query.Now);
         }
 
         return source;
     }
+
+    /// <summary>Tükenmişler dışarıda: stoğu 0 olan ürün ve bütün varyantları bitmiş ürün.</summary>
+    private IQueryable<ListingRow> InStock(IQueryable<ListingRow> source)
+        => source.Where(r => r.Product.Stock > 0
+                             || (r.Product.Stock == null
+                                 && (!Context.ProductVariants.Any(v => v.ProductId == r.Product.Id)
+                                     || Context.ProductVariants.Any(v => v.ProductId == r.Product.Id && v.Stock > 0))));
+
+    private static IQueryable<ListingRow> Campaign(IQueryable<ListingRow> source, DateTime now)
+        => source.Where(r => r.Product.CampaignPrice != null
+                             && r.Product.CampaignPrice < r.Product.Price
+                             && (r.Product.CampaignEndsAt == null || r.Product.CampaignEndsAt > now));
 
     /// <summary>Listeleme satırı; nesne başlatıcıyla kurulduğu için üzerindeki süzme ve sıralama SQL'e çevrilir.</summary>
     private sealed class ListingRow

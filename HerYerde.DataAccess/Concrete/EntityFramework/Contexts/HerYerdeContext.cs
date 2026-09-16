@@ -38,6 +38,8 @@ public class HerYerdeContext : DbContext
     public DbSet<GiftRegistry> GiftRegistries => Set<GiftRegistry>();
     public DbSet<GiftRegistryItem> GiftRegistryItems => Set<GiftRegistryItem>();
     public DbSet<SearchLog> SearchLogs => Set<SearchLog>();
+    public DbSet<PageView> PageViews => Set<PageView>();
+    public DbSet<AnalyticsDaily> AnalyticsDailies => Set<AnalyticsDaily>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -511,6 +513,40 @@ public class HerYerdeContext : DbContext
             e.Property(h => h.OldSlug).HasColumnName("old_slug").HasMaxLength(220).IsRequired();
             e.Property(h => h.CreatedAt).HasColumnName("created_at");
             e.HasIndex(h => new { h.EntityType, h.OldSlug }).IsUnique().HasDatabaseName("ux_slug_history_entity_type_old_slug");
+        });
+
+        modelBuilder.Entity<PageView>(e =>
+        {
+            e.ToTable("page_view");
+            e.HasKey(v => v.Id);
+            e.Property(v => v.Id).HasColumnName("id");
+            e.Property(v => v.Event).HasColumnName("event").HasMaxLength(20).IsRequired();
+            e.Property(v => v.Path).HasColumnName("path").HasMaxLength(200).IsRequired();
+            e.Property(v => v.ReferrerHost).HasColumnName("referrer_host").HasMaxLength(100);
+            e.Property(v => v.UtmSource).HasColumnName("utm_source").HasMaxLength(60);
+            e.Property(v => v.UtmMedium).HasColumnName("utm_medium").HasMaxLength(60);
+            e.Property(v => v.UtmCampaign).HasColumnName("utm_campaign").HasMaxLength(60);
+            e.Property(v => v.Device).HasColumnName("device").HasMaxLength(10).IsRequired();
+            e.Property(v => v.Day).HasColumnName("day").HasColumnType("date");
+            e.Property(v => v.Hour).HasColumnName("hour");
+            e.Property(v => v.HalfHour).HasColumnName("half_hour");
+            // Rapor gün aralığıyla süzer; özetleme de gün sınırıyla toplayıp siler.
+            e.HasIndex(v => new { v.Day, v.Event }).HasDatabaseName("ix_page_view_day_event");
+        });
+
+        modelBuilder.Entity<AnalyticsDaily>(e =>
+        {
+            e.ToTable("analytics_daily");
+            e.HasKey(d => d.Id);
+            e.Property(d => d.Id).HasColumnName("id");
+            e.Property(d => d.Day).HasColumnName("day").HasColumnType("date");
+            e.Property(d => d.Event).HasColumnName("event").HasMaxLength(20).IsRequired();
+            e.Property(d => d.Path).HasColumnName("path").HasMaxLength(200).IsRequired();
+            e.Property(d => d.Source).HasColumnName("source").HasMaxLength(100).IsRequired();
+            e.Property(d => d.Device).HasColumnName("device").HasMaxLength(10).IsRequired();
+            e.Property(d => d.Views).HasColumnName("views");
+            e.Property(d => d.Visits).HasColumnName("visits");
+            e.HasIndex(d => new { d.Day, d.Event, d.Path, d.Source, d.Device }).IsUnique().HasDatabaseName("ux_analytics_daily_key");
         });
 
         modelBuilder.Entity<SearchLog>(e =>

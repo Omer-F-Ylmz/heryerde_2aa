@@ -82,3 +82,18 @@ Görsel küçük resim yok: satır hızlı taranır, ek sorgu yok.
 opaklığı; ikisi de `prefers-reduced-motion` ile kapalı.
 **Yasak**: çeyiz sayfasında konfeti/kalp ikonu, pembe ton, eşit kart ızgarası; filtrede
 kaydırma içinde kaydırma, yüzen "uygula" balonu.
+
+## Ek — D16a: analitik paneli, çevrimdışı sayfa, ana ekrana ekle ipucu
+
+**Analitik paneli (yönetim)** — rapor sayfasının dili: KPI şeridi (görüntülenme öne çıkan kart), altında ızgara.
+Günlük çubuklar `#A8442A` düz dolgu, üzerinde `#8A361F`; eksen/ızgara çizgisi yok, değerler `<title>` ve katlanır gün
+tablosunda (tablo sık: yatay iç boşluk 8px, tarih `18 Ağu, Sal`). Huni: adım adı + sayı, 8px yeşil (`#0F6E5C`) dolgu
+izi `#E5DBCB` üstünde, "önceki adımdan" oranı 14px `#6B5B4E`. Grafikler SVG özniteliğiyle çizilir (CSP'de satır içi stil yok).
+
+**Çevrimdışı sayfa** — 404 kalıbı (`.oops`): eyebrow "Bağlantı yok", h1 + el yazısı alt çizgi, iki düğme (birincil
+ana sayfa, ikincil Ev ürünleri). İllüstrasyon ya da wifi ikonu yok.
+
+**Ana ekrana ekle ipucu** — yüzen yüzey (`#FDFAF5`, `#E5DBCB` çerçeve, 12px köşe, `--shadow-floating`); 390'da
+alttan 16px tam genişlik, 768+'da sağ altta en çok 440px. 48px uygulama simgesi, kalın başlık `#5E2214` + tek cümle,
+Android'de "Ekle" (`btn--cta`), kapat 44px ikon düğmesi. İkinci ziyaretten önce çıkmaz; kapatılınca bir yıl gizli.
+**Yasak**: tam ekran kaplama, sayfa açılır açılmaz çıkan ipucu, geri sayım.

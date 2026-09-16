@@ -20,6 +20,8 @@ public sealed class FacetRow
 {
     public const int BrandKind = 1;
     public const int AttributeKind = 2;
+    public const int InStockKind = 3;
+    public const int CampaignKind = 4;
 
     public int Kind { get; init; }
     public string First { get; init; } = string.Empty;

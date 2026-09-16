@@ -166,6 +166,9 @@ builder.Services.AddSingleton<ILegalPdfArchive, LegalPdfArchive>();
 builder.Services.AddSingleton<INotificationSender, SmtpNotificationSender>();
 builder.Services.AddHostedService<OutboxHostedService>();
 builder.Services.AddHostedService<ReviewInviteHostedService>();
+builder.Services.AddSingleton<AnalyticsRecorder>();
+builder.Services.AddSingleton<AnalyticsWriter>();
+builder.Services.AddHostedService<AnalyticsHostedService>();
 builder.Services.AddHttpClient<IPaymentProvider, IyzicoPaymentProvider>(client => client.Timeout = TimeSpan.FromSeconds(30));
 
 builder.Services
@@ -221,6 +224,8 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = context => context.Context.Response.Headers.CacheControl =
         new StringValues("public, max-age=31536000, immutable")
 });
+// Çerezsiz analitik: statik dosyalardan sonra, yanıt durumu ve türü belli olunca sayar.
+app.UseMiddleware<PageViewMiddleware>();
 app.UseRouting();
 app.UseRateLimiter();
 app.UseOutputCache();

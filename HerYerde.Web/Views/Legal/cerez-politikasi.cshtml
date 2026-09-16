@@ -5,6 +5,7 @@
 @section Toc {
     <li><a class="legal__toc-link" href="#cerez-nedir">Çerez nedir</a></li>
     <li><a class="legal__toc-link" href="#kullandigimiz-cerezler">Kullandığımız çerezler</a></li>
+    <li><a class="legal__toc-link" href="#analitik">Çerezsiz analitik ve tarayıcı depolaması</a></li>
     <li><a class="legal__toc-link" href="#ucuncu-taraf">Üçüncü taraf ve izleme</a></li>
     <li><a class="legal__toc-link" href="#onay-bandi">Neden onay bandı yok</a></li>
     <li><a class="legal__toc-link" href="#yonetme">Çerezleri yönetmek</a></li>
@@ -59,14 +60,64 @@
     </div>
 </section>
 
+<section id="analitik">
+    <h2>Çerezsiz analitik ve tarayıcı depolaması</h2>
+    <p>Aşağıdakiler çerez değildir. Ziyaret istatistiği cihazınıza hiçbir şey bırakmaz; diğerleri yalnız tarayıcınızda kalır ve bize gönderilmez.</p>
+    <div class="table-wrap">
+        <table class="table">
+            <caption class="visually-hidden">Çerezsiz analitik ve tarayıcı depolaması</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Kayıt</th>
+                    <th scope="col">Ne işe yarar</th>
+                    <th scope="col">Süre</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th scope="row">Analitik (çerezsiz)</th>
+                    <td>Kendi sunucumuzda, hangi sayfanın görüntülendiğini, geldiğiniz sitenin adını (ör. instagram.com), kampanya etiketini, cihaz türünü (mobil, tablet, masaüstü), günü ve saati; sepete ekleme, ödeme başlangıcı, sipariş, arama ve WhatsApp/Instagram bağlantısı tıklamalarının sayısını yazar. IP adresi, tarayıcı kimliği, çerez ya da oturum tutulmaz; kayıt sizi tanımaz ve sayfa geçişlerinizi birbirine bağlamaz.</td>
+                    <td>Ham kayıt 90 gün, sonra yalnız günlük toplam</td>
+                </tr>
+                <tr>
+                    <th scope="row"><span class="cell-mono">heryerde.ziyaret</span> (yerel depolama)</th>
+                    <td>Siteyi kaçıncı kez açtığınızın sayısı; "Ana ekrana ekle" ipucu yalnız ikinci ziyaretinizden itibaren görünür.</td>
+                    <td>Tarayıcı verisini silene kadar</td>
+                </tr>
+                <tr>
+                    <th scope="row"><span class="cell-mono">heryerde.ipucu-kapatildi</span> (yerel depolama)</th>
+                    <td>İpucunu kapattığınız an; ipucu bir yıl boyunca yeniden gösterilmez.</td>
+                    <td>Tarayıcı verisini silene kadar (etkisi 1 yıl)</td>
+                </tr>
+                <tr>
+                    <th scope="row"><span class="cell-mono">heryerde.oturum</span> (oturum depolaması)</th>
+                    <td>Aynı oturumdaki sayfa geçişlerinin ziyaret sayısını artırmaması için işaret.</td>
+                    <td>Tarayıcı kapanınca</td>
+                </tr>
+                <tr>
+                    <th scope="row"><span class="cell-mono">heryerde.duyuru.*</span> (oturum depolaması)</th>
+                    <td>Kapattığınız duyuru şeridinin o oturumda yeniden çıkmaması.</td>
+                    <td>Tarayıcı kapanınca</td>
+                </tr>
+                <tr>
+                    <th scope="row">Çevrimdışı sayfa yedeği (tarayıcı önbelleği)</th>
+                    <td>Son baktığınız en çok 20 vitrin sayfası ile stil ve yazı tipi dosyaları, bağlantı yokken açılsın diye. Sepet, ödeme, sipariş ve hesap sayfaları önbelleğe alınmaz.</td>
+                    <td>Site güncellenince ya da 20 sayfa aşılınca en eskisi silinir</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <p><strong>Yerel depolama istisnası:</strong> "Ana ekrana ekle" ipucu için tarayıcınızın yerel depolamasına (localStorage) iki değer yazarız: ziyaret sayısı ve ipucunu kapattığınız an. Bu değerler kişisel veri içermez, bize ya da başka bir siteye gönderilmez, reklam ya da izleme için kullanılmaz; yalnız ipucunun ne zaman gösterileceğine karar verir. Tarayıcınızın site verilerini silerek kaldırabilirsiniz; yerel depolama kapalıysa ipucu hiç gösterilmez.</p>
+</section>
+
 <section id="ucuncu-taraf">
     <h2>Üçüncü taraf ve izleme</h2>
-    <p>Sitede üçüncü taraf, analitik, reklam ya da izleme çerezi yoktur. Yazı tipleri de kendi sunucumuzdan gelir; sayfalar başka bir siteye istek yapmaz.</p>
+    <p>Sitede üçüncü taraf, reklam ya da izleme çerezi yoktur. Ziyaret istatistiği çerezsizdir ve kendi sunucumuzda tutulur; hiçbir analitik hizmetine gönderilmez. Yazı tipleri de kendi sunucumuzdan gelir; sayfalar başka bir siteye istek yapmaz.</p>
 </section>
 
 <section id="onay-bandi">
     <h2>Neden onay bandı yok</h2>
-    <p>Yukarıdaki çerezler sitenin çalışması için zorunludur ve bunlar için onay gerekmez. Başka çerez kullanmadığımız için sayfaların altında çerez onay bandı göstermiyoruz. İleride isteğe bağlı bir çerez eklersek önce onayınızı isteyeceğiz ve bu metni güncelleyeceğiz.</p>
+    <p>Yukarıdaki çerezler sitenin çalışması için zorunludur ve bunlar için onay gerekmez. Çerezsiz analitik cihazınızda bir şey saklamaz ve sizi tanımaz; ipucu ve duyuru şeridi için tarayıcıda tutulan değerler yalnız cihazınızda kalan işlevsel tercihlerdir. Başka çerez kullanmadığımız için sayfaların altında çerez onay bandı göstermiyoruz. İleride isteğe bağlı bir çerez eklersek önce onayınızı isteyeceğiz ve bu metni güncelleyeceğiz.</p>
 </section>
 
 <section id="yonetme">

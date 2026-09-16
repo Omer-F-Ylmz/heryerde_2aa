@@ -17,6 +17,9 @@ public sealed class ShopSettings
     /// <summary>Ürün görselinin gelebileceği dış kökenler (ör. https://placehold.co); CSP img-src'e eklenir.</summary>
     public string[] ImageOrigins { get; set; } = [];
 
+    /// <summary>Ürün adı önerisinde büyük harf kalan kısaltmalar (LED, TV, USB); marka adlarına ek olarak.</summary>
+    public string[] Acronyms { get; set; } = [];
+
     /// <summary>Ürün sayfasında "Son N adet" rozeti bu adet ve altında görünür (varyantlıda seçili varyanta göre).</summary>
     public int LowStockBadgeAt { get; set; } = 3;
 
